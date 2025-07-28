@@ -234,14 +234,14 @@ if(true){
   color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
  }
 module globe(){
-  color("blue", alpha=.6)
+  color("blue", alpha=.3)
     difference(){
     sphere(d=globe_d);
     sphere(d=globe_d - 4);
     translate([-500, -500, -150-100])cube([1000, 1000, 100]);
   }
 }
-//globe();
+globe();
 //color("grey")aov_arm();
 
 
