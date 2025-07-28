@@ -225,12 +225,14 @@ module aov_motor_assy(inc, aov){
 }
 
 
-//color("cornflowerblue")Ring();
-//eqx_motor_assy();
-//color("lightslategrey")base_with_1010_hole();
-//idlers();
-//aov_motor_assy(55, 50);
-//color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+if(true){
+  color("cornflowerblue")Ring();
+  eqx_motor_assy();
+  color("lightslategrey")base_with_1010_hole();
+  idlers();
+  aov_motor_assy(55, 50);
+  color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+ }
 module globe(){
   color("blue", alpha=.6)
     difference(){
@@ -240,6 +242,6 @@ module globe(){
   }
 }
 //globe();
-color("grey")aov_arm();
+//color("grey")aov_arm();
 
 
