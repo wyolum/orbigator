@@ -22,16 +22,19 @@ At its core, Orbigator combines open hardware and open software:
 
     Electrical interface – The schematics/ directory contains SVG drawings for the ring gear, azimuth dial and motor mounts. These illustrate hole patterns, gear tooth counts and mounting dimensions. You will also find an eqx_base.svg for the equatorial base that clamps around a standard globe.
 
-Example assembly
+### Example assembly
 
-Here are some renderings of the design to give an idea of how the parts fit together. All of these images live in this repository’s images/ folder.
+![Oblique view of Orbigator with satellite pointer](images/2025-07-10_18-57.png)
 
-A three‑quarter view of the assembled device. The pointer arm holds a small model satellite at its tip and is mounted on a yellow base ring that sits on top of the globe.
+*Oblique view of the assembled device.*  The pointer arm holds a small model satellite at its tip and is mounted on a yellow base ring that sits on top of the globe.
 
-Side view showing the curved arm, stepper motor housing and the large ring gear that allows the device to rotate around the globe’s axis.
+![Side view showing the articulated arm and base ring gear](images/2025-07-11_18-12.png)
 
-Fabrication drawing of the mount used to attach Orbigator to a globe. Dimensions are provided for reference when milling or 3D‑printing your own mount.
-Repository overview
+*Side view showing the curved arm, stepper motor housing and the large ring gear that allows the device to rotate around the globe’s axis.*
+
+![Detailed drawing of the globe mount](images/2025-07-28_08-08.png)
+
+*Fabrication drawing of the mount used to attach Orbigator to a globe. Dimensions are provided for reference when milling or 3D‑printing your own mount.*
 
 This repository is organised into several directories:
 Directory	Contents
