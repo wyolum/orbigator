@@ -134,14 +134,19 @@ module aov_motor_mount(){
 	cylinder(d=3.0, h=20, $fn=30, center=true);
       translate([0,2,20])
 	rotate([0,90,0])cylinder(d=7, $fn=30, h=50, center=true);
+
+      // make tick marks
       for(theta=[0:5:85]){
 	rotate([theta,0, 0])translate([-2.5, 0, 71])cylinder(d=1, h=100);
+	rotate([theta,0, 0])translate([-2.5, 0, 47.5])cylinder(d=.5, h=2.5);
       }
       for(theta=[0:15:85]){
 	rotate([theta,0, 0])translate([-2.5, 0, 68])cylinder(d=1, h=100);
+	rotate([theta,0, 0])translate([-2.5, 0, 46])cylinder(d=.5, h=4);
       }
       for(theta=[0:1:85]){
 	rotate([theta,0, 0])translate([-2.5, 0, 73])cylinder(d=1, h=100);
+	rotate([theta,0, 0])translate([-2.5, 0, 49.])cylinder(d=.5, h=1.5);
       }
     }
     difference(){

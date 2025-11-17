@@ -14,26 +14,33 @@ module bearings(d=6){
 }
 
 module sled_base(){
-  L = 23;
-  W = 12;
-  H = 4;
+  L = 25;
+  W = 15;
+  H = 6.;
   
   difference(){
     translate([-L/2, -W/2,-1])cube([L, W, H],center=false);
-    translate([0, 0,2.5])bearings(6.6);
+    translate([0, 0,2.9])bearings(7);
     translate([0, 0, -D/2])sphere(d=D, $fn=300);
+    translate([MAGNET_SEP, 0, 1.7])cylinder(d=7, h=3, $fn=30);
+    translate([-MAGNET_SEP, 0, 1.7])cylinder(d=7, h=3, $fn=30);
+    translate([MAGNET_SEP, 0, 1.7])cylinder(d=6, h=10, $fn=30);
+    translate([-MAGNET_SEP, 0, 1.7])cylinder(d=6, h=10, $fn=30);
   }
-  color("silver")translate([0,0,2.2])bearings(6);
-  color("silver")cylinder(h=inch, d=1.5, $fn=30);
+  //color("silver")translate([0,0,2.2])bearings(6);
+  //color("silver")cylinder(h=inch, d=1.5, $fn=30);
 }
 
 module sled_complete(){
-  translate([-3,-3,inch])rotate([-40, 0, 0])rotate([0, 70, 0])scale(30)translate([-28.85, 0, 0])
+  /*
+  translate([-3,-3,inch])rotate([-40, 0, 0])
+    rotate([0, 70, 0])scale(30)translate([-28.85, 0, 0])
     color("grey")import("sat_model_2.stl");
+  */
 
   intersection(){
     sled_base();
-    scale([1, .55, 1])translate([0,0,-50])cylinder(d=22, h=100);
+    scale([1, .55, 1])translate([0,0,-50])cylinder(d=25, h=100);
   }
 }
 
@@ -66,4 +73,4 @@ module magnets(){
   magnets_up();
 }
 
-magnets();
+//magnets();
