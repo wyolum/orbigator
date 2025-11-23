@@ -2,13 +2,16 @@
 """
 FreeCAD script to convert STL files to STEP format.
 
-Usage:
-  FreeCADCmd stl_to_step.py --all                    # Convert all except skipped
-  FreeCADCmd stl_to_step.py file1.stl file2.stl      # Convert specific files
-  FreeCADCmd stl_to_step.py --list                   # List available STL files
+Usage (environment variables, since FreeCAD intercepts command line args):
 
-For Flatpak:
-  flatpak run --command=FreeCADCmd org.freecad.FreeCAD /path/to/stl_to_step.py --all
+  # Convert all except skipped
+  STL_MODE=all flatpak run --command=FreeCADCmd org.freecad.FreeCAD /path/to/stl_to_step.py
+
+  # List available files
+  STL_MODE=list flatpak run --command=FreeCADCmd org.freecad.FreeCAD /path/to/stl_to_step.py
+
+  # Convert specific files (comma-separated)
+  STL_FILES="sled.stl,ring_gear.stl" flatpak run --command=FreeCADCmd org.freecad.FreeCAD /path/to/stl_to_step.py
 """
 
 skip = ['pi-pico-2w-cad-reference.stl',
@@ -16,7 +19,6 @@ skip = ['pi-pico-2w-cad-reference.stl',
 
 import os
 import sys
-import argparse
 
 # FreeCAD imports
 import FreeCAD
@@ -130,11 +132,15 @@ def resolve_stl_path(filename):
     return None
 
 
-def main(args):
-    """Process STL files based on arguments."""
+def main():
+    """Process STL files based on environment variables."""
     all_stl_files = get_all_stl_files()
 
-    if args.list:
+    # Get mode from environment
+    mode = os.environ.get('STL_MODE', '').lower()
+    files_env = os.environ.get('STL_FILES', '')
+
+    if mode == 'list':
         print("Available STL files:")
         print("-" * 50)
         for stl_path in all_stl_files:
@@ -147,26 +153,32 @@ def main(args):
         return
 
     # Determine which files to convert
-    if args.all:
+    if mode == 'all':
         # Convert all except those in skip list
         stl_files = [
             f for f in all_stl_files
             if os.path.basename(f) not in SKIP_LIST
         ]
         print(f"Converting all STL files (excluding {len(SKIP_LIST)} in skip list)")
-    elif args.files:
-        # Convert specific files
+    elif files_env:
+        # Convert specific files (comma-separated)
         stl_files = []
-        for filename in args.files:
+        for filename in files_env.split(','):
+            filename = filename.strip()
+            if not filename:
+                continue
             resolved = resolve_stl_path(filename)
             if resolved:
                 stl_files.append(resolved)
             else:
                 print(f"WARNING: Could not find STL file: {filename}")
     else:
-        print("Error: Specify --all or provide specific STL files")
-        print("Use --list to see available files")
-        print("Use --help for usage information")
+        print("Error: Set STL_MODE=all or STL_MODE=list or STL_FILES='file1.stl,file2.stl'")
+        print("")
+        print("Examples:")
+        print("  STL_MODE=all flatpak run --command=FreeCADCmd org.freecad.FreeCAD script.py")
+        print("  STL_MODE=list flatpak run --command=FreeCADCmd org.freecad.FreeCAD script.py")
+        print("  STL_FILES='sled.stl,ring_gear.stl' flatpak run --command=FreeCADCmd org.freecad.FreeCAD script.py")
         return
 
     if not stl_files:
@@ -197,18 +209,4 @@ def main(args):
 print("=" * 50)
 print("STL to STEP Converter")
 print("=" * 50)
-
-# Parse command line arguments
-# FreeCAD may pass the script path as first arg, so we filter it out
-argv = [arg for arg in sys.argv if not arg.endswith('.py')]
-
-parser = argparse.ArgumentParser(description='Convert STL files to STEP format')
-parser.add_argument('--all', action='store_true',
-                    help='Convert all STL files except those in skip list')
-parser.add_argument('--list', action='store_true',
-                    help='List available STL files')
-parser.add_argument('files', nargs='*', metavar='FILE',
-                    help='Specific STL files to convert')
-
-args = parser.parse_args(argv)
-main(args)
+main()
