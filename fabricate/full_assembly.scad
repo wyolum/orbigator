@@ -8,6 +8,10 @@ use <sled.scad>
 use <spring.scad>
 use <spring_ring.scad>
 use <aov_arm.scad>
+// Import the STEP file
+module pico(){
+  import("stls/pi-pico-2w-cad-reference.stl");
+}
 
 inch = 25.4;
 $fn=100;
@@ -357,7 +361,8 @@ module aov_motor_assy(inc, aov){
       rotate([inc, 0, 0])rotate([0, 180, 0]){
       translate([0,0,0])worm_gear_stepper();
       color("coral")aov_motor_mount();
-      translate([-10,10,90])rotate([90, 180, 180])arduino();
+      //translate([-10,10,90])rotate([90, 180, 180])arduino();
+      translate([0,10,40])rotate([90, 0, 180])pico();
     }
     translate([0, -3, 140])
       rotate([inc, 0, 0])rotate([0, 0, aov-180]){
