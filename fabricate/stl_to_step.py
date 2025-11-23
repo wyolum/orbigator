@@ -14,9 +14,6 @@ Usage (environment variables, since FreeCAD intercepts command line args):
   STL_FILES="sled.stl,ring_gear.stl" flatpak run --command=FreeCADCmd org.freecad.FreeCAD /path/to/stl_to_step.py
 """
 
-skip = ['pi-pico-2w-cad-reference.stl',
-        'pepper_funnel.stl']
-
 import os
 import sys
 
@@ -31,10 +28,10 @@ STL_DIR = os.path.dirname(os.path.abspath(__file__))
 STLS_SUBDIR = os.path.join(STL_DIR, "stls")
 STEP_DIR = os.path.join(STL_DIR, "step_files")
 
-# STL files to skip when using --all
+# STL files to skip when using STL_MODE=all
 SKIP_LIST = [
-    "sat_model_2.stl",
     "pi-pico-2w-cad-reference.stl",
+    "pepper_funnel.stl",
 ]
 
 # Create output directory
@@ -97,21 +94,6 @@ def stl_to_step(stl_path, step_path):
             pass
         return False
 
-def main():
-    """Process all STL files."""
-    # Collect all STL files
-    stl_files = []
-
-    # Check main fabricate directory
-    for f in os.listdir(STL_DIR):
-        if f not in skip and f.lower().endswith('.stl'):
-            stl_files.append(os.path.join(STL_DIR, f))
-
-    # Check stls subdirectory
-    if os.path.isdir(STLS_SUBDIR):
-        for f in os.listdir(STLS_SUBDIR):
-            if f not in skip and f.lower().endswith('.stl'):
-                stl_files.append(os.path.join(STLS_SUBDIR, f))
 
 def resolve_stl_path(filename):
     """Resolve an STL filename to its full path."""
