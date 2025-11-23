@@ -100,5 +100,8 @@ def main():
     print("-" * 50)
     print(f"Conversion complete: {success} succeeded, {failed} failed")
 
-if __name__ == "__main__":
-    main()
+# Run directly (FreeCAD doesn't always set __name__ correctly)
+print("=" * 50)
+print("STL to STEP Converter")
+print("=" * 50)
+main()
