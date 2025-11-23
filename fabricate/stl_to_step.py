@@ -88,7 +88,8 @@ failed = 0
 for stl_path in sorted(stl_files):
     basename = os.path.splitext(os.path.basename(stl_path))[0]
     step_path = os.path.join(STEP_DIR, f"{basename}.step")
-
+    if os.path.exists(step_path):
+        continue
     if stl_to_step(stl_path, step_path):
         success += 1
     else:
