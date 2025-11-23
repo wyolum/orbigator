@@ -1,7 +1,7 @@
 // Render aov_arm as positioned in assembly
 // Export with: openscad -o stls/aov_arm_oriented.stl render_aov_arm.scad
 
-include <aov_arm.scad>
+use <aov_arm.scad>
 
 // Assembly values from full_assembly.scad line 382: aov_motor_assy(65, 90)
 inc = 65;
