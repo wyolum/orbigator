@@ -10,6 +10,9 @@ Usage:
   FreeCAD --console stl_to_step.py
 """
 
+skip = ['pi-pico-2w-cad-reference.stl',
+        'pepper_funnel.stl']
+
 import os
 import sys
 
@@ -72,13 +75,13 @@ def main():
 
     # Check main fabricate directory
     for f in os.listdir(STL_DIR):
-        if f.lower().endswith('.stl'):
+        if f not in skip and f.lower().endswith('.stl'):
             stl_files.append(os.path.join(STL_DIR, f))
 
     # Check stls subdirectory
     if os.path.isdir(STLS_SUBDIR):
         for f in os.listdir(STLS_SUBDIR):
-            if f.lower().endswith('.stl'):
+            if f not in skip and f.lower().endswith('.stl'):
                 stl_files.append(os.path.join(STLS_SUBDIR, f))
 
     print(f"Found {len(stl_files)} STL files to convert")
