@@ -16,7 +16,7 @@ import MeshPart
 
 # Configuration
 STL_DIR = os.path.dirname(os.path.abspath(__file__))
-STLS_SUBDIR = os.path.join(STL_DIR, "stls")
+STLS_SUBDIR = os.path.join(STL_DIR, "stls_in_situ")
 STEP_DIR = os.path.join(STL_DIR, "step_files")
 
 # STL files to skip
@@ -67,14 +67,10 @@ print("=" * 50)
 
 stl_files = []
 
-# Collect STL files from main directory
-for f in os.listdir(STL_DIR):
-    if f.lower().endswith('.stl') and f not in SKIP_LIST:
-        stl_files.append(os.path.join(STL_DIR, f))
-
 # Collect STL files from stls subdirectory
 if os.path.isdir(STLS_SUBDIR):
     for f in os.listdir(STLS_SUBDIR):
+        print(f)
         if f.lower().endswith('.stl') and f not in SKIP_LIST:
             stl_files.append(os.path.join(STLS_SUBDIR, f))
 
