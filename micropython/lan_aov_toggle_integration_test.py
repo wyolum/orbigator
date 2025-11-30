@@ -20,7 +20,8 @@ AOV_STEP_MS = 2                  # ms per half-step
 
 # Encoder
 DETENT_DIV = 4                   # edges per detent
-STEPS_PER_DETENT = 1             # steps per detent click
+LAN_STEPS_PER_DETENT = 1         # LAN: steps per detent click
+AOV_STEPS_PER_DETENT = 6         # AOV: 6 half-steps = ~0.527° per click
 REVERSE_ENCODER = False
 
 # Motor control
@@ -210,9 +211,9 @@ def update_target_from_encoder():
         last_det = d
         detents = d
         if active_motor == 0:  # LAN
-            lan_target += step_det * STEPS_PER_DETENT
+            lan_target += step_det * LAN_STEPS_PER_DETENT
         else:  # AOV
-            aov_target += step_det * STEPS_PER_DETENT
+            aov_target += step_det * AOV_STEPS_PER_DETENT
 
 def move_towards_targets(max_steps=40):
     """Move motors toward their targets."""
@@ -272,9 +273,9 @@ while True:
     disp.text("     {:.2f} rev".format(lan_rev), 0, 32)
 
     # Show AOV position
-    disp.text("AOV: {} steps".format(aov_position), 0, 40)
-    aov_rev = aov_position / AOV_STEPS_PER_REV
-    disp.text("     {:.2f} rev".format(aov_rev), 0, 48)
+    aov_deg = (aov_position / AOV_STEPS_PER_REV) * 360
+    disp.text("AOV: {:.1f} deg".format(aov_deg), 0, 40)
+    disp.text("     {} steps".format(aov_position), 0, 48)
 
     # Show motor status
     status = "ON" if (lan_enabled or (time.ticks_diff(time.ticks_ms(), aov_last_step_time) < MOTOR_IDLE_TIMEOUT_MS)) else "OFF"
