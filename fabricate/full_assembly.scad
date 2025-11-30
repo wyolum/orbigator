@@ -375,12 +375,12 @@ module aov_motor_assy(inc, aov){
 
 
 if(true){
-  color("cornflowerblue")Ring();
+  //color("cornflowerblue")Ring();
   //eqx_motor_assy();
   //color("lightslategrey")base_with_1010_hole();
   //idlers();
-  aov_motor_assy(65, 90);
-  color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+  //aov_motor_assy(65, 90);
+  //color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
 }
 else{
   //Ring();

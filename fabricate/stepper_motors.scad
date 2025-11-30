@@ -5,6 +5,72 @@ include <MCAD/stepper.scad>
 
 //color("red")motor(Nema14, NemaShort, dualAxis=false)
 
+module kevin_shaft(){
+  intersection(){
+    cylinder(d=5, h=10, $fn=20);
+    cube([4, 10, 100], center=true);
+  }
+}
+module kevin_gear_motor(){
+  $fn=30;
+  translate([0,0,0])rotate([0,0,-90]){
+    color("blue")translate([0,-19,1])cube([14.6,10,2],center=true);
+    color("grey")translate([0, -8, 0])cylinder(d=28, h=20);
+    color("black")translate([0,0,-1.5])cylinder(d=10, h=1.5);
+    color("silver")translate([0,0,-10])kevin_shaft();
+    color("grey")difference(){
+      union(){
+	translate([-35/2, -8, 0])cylinder(d=7, h=1);
+	translate([+35/2, -8, 0])cylinder(d=7, h=1);
+	translate([0,-8,.5])cube([35, 7, 1], center=true);
+      }
+      cylinder(d=7, h=1);
+      translate([ 35/2, -8, 0])translate([0,0,-1])cylinder(d=5, h=3);
+      translate([-35/2, -8, 0])translate([0,0,-1])cylinder(d=5, h=3);
+    }
+  }
+}
+module kevin_motor_mount(){
+  union(){
+    translate([-3.0-5, 0, 0])difference(){
+      union(){
+	rotate([-30, 0, 0])rotate([0, -90, 180])wedge(7, 50, 120);
+	translate([-3.5,-3,1])cube([7, 30, 42]);
+      }
+      
+      translate([0,35/2,-10])cylinder(d=3.5, h=20, $fn=20);
+      translate([0,-35/2,-10])cylinder(d=3.5, h=20, $fn=20);
+      translate([-10,35/2,5])cube([100, 5.7, 2.5], center=true);
+      translate([-10,-35/2,5])cube([100, 5.7, 2.5], center=true);
+      cube([35,29,43], center=true);
+      rotate([0,90,0])rotate([0,0,180-0])arc(10, 45, 85, 42);
+      rotate([0,90,0])rotate([0,0,180-0])arc(10, 35, 85, 32);
+      translate([0, 0, 33.5])rotate([0, -90, 0])
+	cylinder(d=3.0, h=20, $fn=30, center=true);
+      translate([0, 0, 43.5])rotate([0, -90, 0])
+	cylinder(d=3.0, h=20, $fn=30, center=true);
+      translate([-50, 25, 0])cube(100);
+      translate([-50, -100, -99])cube(100);
+      translate([0,2,20])
+	rotate([0,90,0])cylinder(d=7, $fn=30, h=50, center=true);
+
+      // make tick marks
+      translate([-1, 0, 0]){
+	for(theta=[0:5:85]){
+	  rotate([theta,0, 0])translate([-2.5, 0, 71])cylinder(d=1, h=100);
+	  rotate([theta,0, 0])translate([-2.5, 0, 47.5])cylinder(d=.5, h=2.5);
+	}
+	for(theta=[0:15:85]){
+	  rotate([theta,0, 0])translate([-2.5, 0, 68])cylinder(d=2, h=100);
+	  rotate([theta,0, 0])translate([-2.5, 0, 0])cylinder(d=1.5, h=100);
+	}
+      }
+    }
+  }
+}
+//kevin_gear_motor();
+kevin_motor_mount();
+
 module nema11(){
   size = NemaShort;
   difference(){
@@ -182,4 +248,4 @@ module inclination_support(){
   }
 }
 //color("blue")inclination_support();
-aov_motor_mount();
+//aov_motor_mount();
