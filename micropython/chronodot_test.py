@@ -4,7 +4,8 @@ from ds3231 import DS3231
 import time
 
 # Initialize I2C (same bus as OLED)
-i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=400_000)
+# Using 100kHz for better reliability with ChronoDot
+i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=100_000)
 
 # Scan for I2C devices
 print("Scanning I2C bus...")
