@@ -23,8 +23,9 @@ class DS3231:
         If dt is None, returns current datetime. If dt is provided, sets the datetime.
         """
         if dt is None:
-            # Read current datetime
-            buf = self.i2c.readfrom_mem(self.addr, 0x00, 7)
+            # Read current datetime using write-then-read method (more reliable)
+            self.i2c.writeto(self.addr, b'\x00')  # Set register pointer to 0x00
+            buf = self.i2c.readfrom(self.addr, 7)  # Read 7 bytes
             second = self._bcd2dec(buf[0] & 0x7F)
             minute = self._bcd2dec(buf[1] & 0x7F)
             hour = self._bcd2dec(buf[2] & 0x3F)  # 24-hour mode
@@ -36,19 +37,21 @@ class DS3231:
         else:
             # Set datetime
             year, month, day, weekday, hour, minute, second, subsecond = dt
-            buf = bytearray(7)
-            buf[0] = self._dec2bcd(second)
-            buf[1] = self._dec2bcd(minute)
-            buf[2] = self._dec2bcd(hour)  # 24-hour mode
-            buf[3] = self._dec2bcd(weekday + 1)  # DS3231 uses 1-7
-            buf[4] = self._dec2bcd(day)
-            buf[5] = self._dec2bcd(month)
-            buf[6] = self._dec2bcd(year - 2000)
-            self.i2c.writeto_mem(self.addr, 0x00, buf)
+            buf = bytearray(8)
+            buf[0] = 0x00  # Register address
+            buf[1] = self._dec2bcd(second)
+            buf[2] = self._dec2bcd(minute)
+            buf[3] = self._dec2bcd(hour)  # 24-hour mode
+            buf[4] = self._dec2bcd(weekday + 1)  # DS3231 uses 1-7
+            buf[5] = self._dec2bcd(day)
+            buf[6] = self._dec2bcd(month)
+            buf[7] = self._dec2bcd(year - 2000)
+            self.i2c.writeto(self.addr, buf)
 
     def temperature(self):
         """Read temperature in Celsius from DS3231's built-in sensor"""
-        buf = self.i2c.readfrom_mem(self.addr, 0x11, 2)
+        self.i2c.writeto(self.addr, b'\x11')  # Set register pointer to 0x11
+        buf = self.i2c.readfrom(self.addr, 2)  # Read 2 bytes
         temp = buf[0] + (buf[1] >> 6) * 0.25
         if buf[0] & 0x80:  # negative temperature
             temp = temp - 256
