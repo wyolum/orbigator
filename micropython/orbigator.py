@@ -93,7 +93,7 @@ try:
         # Set to 2020-01-01 00:00:00
         rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0)) # Wed
 except Exception as e:
-    print("RTC init failed:", e)
+    print("RTC init failed:", str(e))
     rtc = None
 
 def get_timestamp():
