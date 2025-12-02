@@ -1,0 +1,35 @@
+Raspberry Pi Pico 2  (USB at top)
+----------------------------------------------------
+# OLED Display (I²C0)
+GP4   -> OLED SDA
+GP5   -> OLED SCL
+3V3   -> OLED VCC
+GND   -> OLED GND
+
+# Encoder (quadrature + push)
+GP6   -> Encoder A
+GP7   -> Encoder B
+GP8   -> Encoder SW (push button)
+GND   -> Encoder CON (common)
+
+# Stepper Motor Driver 1 (DRV8834 #1)
+GP10  -> DRV8834 #1 M0
+GP11  -> DRV8834 #1 M1
+GP12  -> DRV8834 #1 nSLEEP   (HIGH = awake)
+GP13  -> DRV8834 #1 nENBL    (LOW = enabled)
+GP14  -> DRV8834 #1 STEP
+GP15  -> DRV8834 #1 DIR
+GND   -> DRV8834 #1 GND
+VMOT  -> DRV8834 #1 VMOT (external motor supply, 5–10 V)
+       -> DRV8834 #1 A1/A2, B1/B2 -> Motor 1 coils
+
+# Stepper Motor Driver 2 (DRV8834 #2)
+GP16  -> DRV8834 #2 M0
+GP17  -> DRV8834 #2 M1
+GP18  -> DRV8834 #2 nSLEEP   (HIGH = awake)
+GP19  -> DRV8834 #2 nENBL    (LOW = enabled)
+GP20  -> DRV8834 #2 STEP
+GP21  -> DRV8834 #2 DIR
+GND   -> DRV8834 #2 GND
+VMOT  -> DRV8834 #2 VMOT (external motor supply, 5–10 V)
+       -> DRV8834 #2 A1/A2, B1/B2 -> Motor 2 coils

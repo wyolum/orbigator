@@ -1,0 +1,9 @@
+height = 14;
+
+  RR = 70;
+  echo("RR=", RR);
+  rr = RR - 40;
+  echo("rr=", rr);
+  dd = 8; // magnet support offset from globe_r
+  echo("Globe_radius - 8", globe_r - 8);
+  cylinder(d=28, h=12+2);

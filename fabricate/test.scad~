@@ -1,0 +1,134 @@
+//
+// OrbiGator – azimuth base + top plate with 3 feet
+// Parametric, print-friendly (designed to sit on the three feet)
+//
+// Notes:
+// - Dimensions are taken from your annotated image where clear.
+// - Anything fuzzy is exposed as a parameter so you can nudge it.
+// - The “dome” is a frustum; ribs are simple hulls for strength.
+// - Top plate has a big bore (25 mm) plus 4 x M3 pattern and a 10 mm square cutout.
+// - Three feet at 120° with 4.5 mm thru-holes.
+//
+// Justin: change only the parameters section until it matches your exact part.
+//
+
+// -------------------- Parameters --------------------
+$fn = 120;                       // smoothness
+
+// Central dome / frustum
+dome_d_base      = 60;           // Ø at the base (from your “60”)
+dome_d_top       = 35;           // Ø at the top (from your “35”)
+dome_h           = 33;           // overall dome height (side view)
+
+// Feet (3x at 120°)
+foot_rad         = 42.18;        // radial distance from center to foot center
+foot_h           = 10;           // foot height (side view shows 10)
+foot_d_outer     = 10;           // Ø of foot outer
+foot_d_hole      = 4.5;          // Ø of foot mounting hole
+
+// Ribs between dome and feet
+rib_thickness    = 6;            // thickness of each web
+rib_height       = 15;           // how high the rib climbs up the dome
+
+// Top plate
+plate_t          = 10;           // thickness (side view shows 10)
+plate_len        = 59.18;        // length along X (side view)
+plate_w          = 23;           // width along Y (taken from annotated 23 label)
+plate_z          = dome_h - plate_t; // sits on top portion of dome
+
+// Big bore & small holes on the plate
+bore_d           = 25;           // main circular bore (d:25)
+bore_x_from_left = 23;           // center offset from left edge (annotated 23)
+bore_y           = 0;            // centered on Y by default
+
+m3_hole_d        = 3;            // four small holes (d:3)
+m3_pitch_x       = 20;           // guess; adjust to your real pattern
+m3_pitch_y       = 16;           // guess; adjust to your real pattern
+
+// Square cutouts (10 mm)
+square_cut_d     = 10;           // d:10 square
+square_cut_inset = 35;           // distance from plate left edge to square center (tweak)
+
+// Small rectangular window through the dome (10 x 10)
+dome_window_size = [10,10];      // from your top-view 10x10 square
+dome_window_z    = 12;           // height where it pierces (tweak)
+
+// Convenience
+plate_left_x     = -(plate_len/2);  // plate centered in X for balance; move if needed
+
+// -------------------- Helpers --------------------
+module foot_with_hole(d_outer, h, hole_d) {
+    difference() {
+        cylinder(d=d_outer, h=h);
+        translate([0,0,-1]) cylinder(d=hole_d, h=h+2);
+    }
+}
+
+module dome_frustum(d_base, d_top, h) {
+    cylinder(h=h, d1=d_base, d2=d_top);
+}
+
+module rib_between(p1, p2, t, h) {
+    // Simple vertical rib made by hulling two rectangles
+    hull() {
+        translate([p1[0], p1[1], 0]) cube([t, t, h], center=true);
+        translate([p2[0], p2[1], 0]) cube([t, t, h], center=true);
+    }
+}
+
+module plate_with_holes() {
+    // Plate is aligned so that its LEFT edge is at plate_left_x
+    translate([plate_left_x, -plate_w/2, plate_z])
+    difference() {
+        // plate solid
+        cube([plate_len, plate_w, plate_t]);
+
+        // big bore
+        translate([bore_x_from_left, plate_w/2 + bore_y, -1])
+            cylinder(d=bore_d, h=plate_t+2);
+
+        // 4 x M3 holes around the bore center (rectangular pattern)
+        for (sx = [-m3_pitch_x/2, m3_pitch_x/2])
+        for (sy = [-m3_pitch_y/2, m3_pitch_y/2])
+            translate([bore_x_from_left + sx, plate_w/2 + bore_y + sy, -1])
+                cylinder(d=m3_hole_d, h=plate_t+2);
+
+        // 10x10 square cutout through plate (positioned from left edge)
+        translate([square_cut_inset, plate_w/2, -1])
+            cube([square_cut_d, square_cut_d, plate_t+2], center=true);
+    }
+}
+
+// -------------------- Assembly --------------------
+difference() {
+    // UNION of structural solids
+    union() {
+        // 1) Central dome
+        dome_frustum(dome_d_base, dome_d_top, dome_h);
+
+        // 2) Three feet at 120°
+        for (a = [0,120,240])
+            rotate([0,0,a])
+                translate([foot_rad, 0, 0])
+                    foot_with_hole(foot_d_outer, foot_h, foot_d_hole);
+
+        // 3) Simple ribs from each foot toward the dome (low-profile for printability)
+        for (a = [0,120,240]) {
+            rotate([0,0,a]) {
+                // foot center
+                p_foot = [foot_rad, 0];
+                // point on dome side (slightly inside the base diameter) to hull toward
+                r_on_dome = (dome_d_base/2) - 5;
+                p_dome = [r_on_dome, 0];
+                rib_between(p_foot, p_dome, rib_thickness, rib_height);
+            }
+        }
+
+        // 4) Top plate
+        plate_with_holes();
+    }
+
+    // 5) Rectangular window through the dome (10x10)
+    translate([0, 0, dome_window_z])
+        cube([dome_window_size[0], dome_window_size[1], dome_h], center=true);
+}

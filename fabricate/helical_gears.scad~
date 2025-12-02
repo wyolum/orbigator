@@ -1,0 +1,10 @@
+include </home/justin/code/BOSL2/gears.scad>
+
+N = 60 * 2;
+n = 7 * 2;
+pitch = 2.5;
+
+h = 8;
+
+spur_gear(circ_pitch=pitch, teeth=n, thickness=h, shaft_diam=5.3,
+	  herringbone=false, helical=0);

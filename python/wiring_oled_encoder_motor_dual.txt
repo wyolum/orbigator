@@ -1,0 +1,40 @@
+Raspberry Pi Pico 2  (USB at top)
+----------------------------------------------------
+# OLED Display (I²C0)
+GP4   -> OLED SDA
+GP5   -> OLED SCL
+3V3   -> OLED VCC
+GND   -> OLED GND
+
+# Encoder (quadrature + push)
+GP6   -> Encoder A
+GP7   -> Encoder B
+GP8   -> Encoder SW (push button)
+GND   -> Encoder CON (common)
+
+# Stepper Motor Driver 1 (DRV8834 #1)
+GP12  -> DRV8834 #1 nSLEEP   (HIGH = awake)
+GP13  -> DRV8834 #1 nENBL    (LOW = enabled)
+GP14  -> DRV8834 #1 STEP
+GP15  -> DRV8834 #1 DIR
+GND   -> DRV8834 #1 GND
+VBUS  -> DRV8834 #1 VMOT (external motor supply)
+       -> DRV8834 #1 A1/A2, B1/B2 -> Motor 1 coils
+
+# Stepper Motor Driver 2 (DRV8834 #2)
+GP16  -> DRV8834 #2 nSLEEP   (HIGH = awake)
+GP17  -> DRV8834 #2 nENBL    (LOW = enabled)
+GP18  -> DRV8834 #2 STEP
+GP19  -> DRV8834 #2 DIR
+GND   -> DRV8834 #2 GND
+VBUS  -> DRV8834 #2 VMOT (external motor supply)
+       -> DRV8834 #2 A1/A2, B1/B2 -> Motor 2 coils
+
+
+Notes
+Grounds: Tie Pico GND, both DRV8834 GNDs, and encoder GND together.
+VMOT: Both drivers can share the same external motor supply (e.g. 5–10 V) if current capacity is
+sufficient.
+Independent control: Each motor has its own STEP/DIR/ENBL/SLEEP. You can run them in parallel or
+sequence in software.
+Expansion: GP10/GP11 are still free if you want runtime microstep mode control (M0/M1).

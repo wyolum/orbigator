@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+
+<html _manifest="receiver.appcache">
+
+<html lang="en">
+<head>
+    <meta http-equiv="content-security-policy" content="manifest-src 'self' blob:;"/>
+    <link rel="manifest" id="manifest-placeholder" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8" />
+    <title class="_ctxstxt_AppStore"></title>
+    <link rel="ICON" href="receiver/images/common/favicon_9B19689CB70C681E.ico" sizes="16x16 32x32 48x48 64x64" type="image/vnd.microsoft.icon" />
+    <link rel="SHORTCUT ICON" href="receiver/images/common/favicon_9B19689CB70C681E.ico" sizes="16x16 32x32 48x48 64x64" type="image/vnd.microsoft.icon" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- Allow app to use the full screen if it is launched from a web clip on the springboard -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+    <!-- This script block is to get the HTML5 elements to display correctly in older versions of IE that do not support them -->
+    <script>
+        document.createElement('header');
+        document.createElement('nav');
+        document.createElement('section');
+    </script>
+
+    <noscript>
+        <link href="receiver/css/ctxs.no-js-ui.min_F768BD369B9FBF5E.css" rel="stylesheet" />
+    </noscript>
+
+    <script type="text/html" id="large-ui-styles">
+        <link href="receiver/css/ctxs.large-ui.min_4C09C407246611E8.css" rel="stylesheet" />
+    </script>
+
+    <script type="text/html" id="medium-ui-styles">
+        <link href="receiver/css/ctxs.medium-ui.min_E601FD7148F4DD0C.css" rel="stylesheet" />
+    </script>
+    <script type="text/html" id="small-ui-styles">
+        <link href="receiver/css/ctxs.small-ui.min_77C79AEEB1E8A209.css" rel="stylesheet" />
+    </script>
+
+    <script type="text/javascript">
+        // Calculates the minimum width that would be available to the web UI on this device
+        function calculateMinimumAvailableWidth(urlParams) {
+            var availableWidth, availableHeight,
+                deviceSupportsRotation = true,
+                screenWidthInUrl = urlParams.match(/screenwidth=(\d+)(&|$)/i),
+                screenHeightInUrl = urlParams.match(/screenheight=(\d+)(&|$)/i);
+
+            if (screenWidthInUrl && screenHeightInUrl) {
+                // Screen dimensions have been provided by the native client in the URL - use them
+                availableWidth = screenWidthInUrl[1];
+                availableHeight = screenHeightInUrl[1];
+            } else if (navigator.userAgent.match(/(Android)\s+([\d.]+)/) || navigator.userAgent.match(/(Windows Phone)/i)) {
+                // Android and Windows Phone give inconsistent screen dimensions - either physical pixels or CSS pixels depending on the device
+                // We can attempt to work out which dimensions we've got by comparing with window size
+                var screenWidth = window.screen.width,
+                    screenHeight = window.screen.height,
+                    windowWidth = document.documentElement.clientWidth,
+                    windowHeight = document.documentElement.clientHeight,
+                    pixelRatio = window.devicePixelRatio;
+
+                if (screenWidth == windowWidth) {
+                    // Screen dimensions seem to be provided in CSS pixels - use them
+                    availableWidth = screenWidth;
+                    availableHeight = screenHeight;
+                } else if (screenWidth == (windowWidth * pixelRatio)) {
+                    // Screen dimensions seem to be provided in physical pixels - convert to CSS pixels
+                    availableWidth = Math.floor(screenWidth / pixelRatio);
+                    availableHeight = Math.floor(screenHeight / pixelRatio);
+                } else {
+                    // No discernable relationship between screen and window dimensions - fall back to using window dimensions
+                    availableWidth = windowWidth;
+                    availableHeight = windowHeight;
+                }
+            } else if (navigator.userAgent.match(/(iPad|iPhone|iPod)/i)) {
+                // For iOS devices we assume that the web page could stretch to the full width of the screen
+                availableWidth = window.screen.width;
+                availableHeight = window.screen.height;
+            } else {
+                deviceSupportsRotation = false; // We assume that all other devices are desktops, and therefore that they are not capable of being rotated.
+                availableWidth = window.screen.availWidth;
+                availableHeight = window.screen.availHeight;
+            }
+
+            // Special overrides that a client may provide
+            if ((urlParams.indexOf("-norotate") != -1) || (urlParams.indexOf("-desktop") != -1)) {
+                deviceSupportsRotation = false;
+            }
+
+            // If rotation is possible then consider both dimensions, otherwise (e.g. for desktops) just look at the width
+            return deviceSupportsRotation ? Math.min(availableWidth, availableHeight) : availableWidth;
+        }
+
+        var uiSize,
+            query = window.location.search + window.location.hash,
+            MEDIUM_UI_MINIMUM_WIDTH = 600,
+            LARGE_UI_MINIMUM_WIDTH = 768; // Also defined in CSS to set minimum width of the page
+
+        // Note window.minimumAvailableWidth, window.useSmallUI and window.useSmallTiles are referenced in ctxs.ui.js
+
+        if (query.indexOf('-ph') != -1) {
+            window.minimumAvailableWidth = 100; // act as if on very small device
+        } else if (query.indexOf('-med') != -1) {
+            window.minimumAvailableWidth = 700; // act as if medium
+        } else if (query.indexOf('-lg') != -1) {
+            window.minimumAvailableWidth = 1000; // act as if large
+        } else {
+            // Use the screen size to decide which UI layout is most suitable for this device
+            window.minimumAvailableWidth = calculateMinimumAvailableWidth(query);
+        }
+
+        if (window.minimumAvailableWidth >= LARGE_UI_MINIMUM_WIDTH) {
+            // Large layout
+            window.useSmallUI = false;
+            window.useSmallTiles = false;
+            window.useSmallCards = true;
+            window.useListView = false;
+            uisize = "large";
+        } else if (window.minimumAvailableWidth >= MEDIUM_UI_MINIMUM_WIDTH) {
+            // Small Tablet Layout
+            window.useSmallUI = true;
+            window.useSmallTiles = false;
+            window.useSmallCards = true;
+            window.useListView = false;
+            uisize = "medium";
+        } else {
+            // Phone layout
+            window.useSmallUI = true;
+            window.useSmallTiles = true;
+            window.useSmallCards = false;
+            window.useListView = true;
+            uisize = "small";
+        }
+           
+        // load correct CSS and add marker classes 
+        document.write(document.getElementById(uisize + "-ui-styles").innerHTML);
+        document.documentElement.className += (window.useSmallUI ? "small" : "large") +
+            (window.useSmallTiles ? " smallTiles" : " largeTiles");
+
+        if (window.useListView) {
+            document.documentElement.className += " listView";
+        } else {
+            document.documentElement.className += (window.useSmallCards ? " smallCards" : " largeCards");
+        }
+
+        if (query.indexOf('-nocustom') == -1) {
+            document.write('<link href="custom/style.css" rel="stylesheet" id="customStyle" />');
+        }
+    </script>   
+</head>
+<body>
+    <noscript>
+        <!-- JavaScript is not enabled, text in this section cannot be localized using JavaScript -->
+        <div>
+            <section id="no-javascript-screen" class="no-javascript-view fullscreen-pane web-screen" style="display: block;">
+                <div class="vertical-center-outer">
+                    <div class="vertical-center-inner">
+                        <div class="content-area">
+                            <h1 class="no-javascript-message-title">JavaScript is required</h1>
+                            <p class="no-javascript-message-description">Please enable JavaScript in your browser before using Citrix Workspace.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </noscript>
+    <p id="recolor-actions" style="display: none;" class="theme-highlight-sprite theme-highlight-color"></p>
+    <div id="bundle-actions" style="display: none;" class="bundleDetail"></div>
+    <!--
+        SVG images to recolor and embed.
+        Ensure that the "svg" style is the first one defined.
+    -->
+    <div id="embed-svg-actions" style="display: none;">
+        <div class="home-svg theme-header-color high-contrast-recolor"></div>
+        <div class="allapps-svg theme-header-color high-contrast-recolor"></div>
+        <div class="myapps-svg theme-header-color high-contrast-recolor"></div>
+        <div class="desktops-svg theme-header-color high-contrast-recolor"></div>
+        <div class="files-svg theme-header-color high-contrast-recolor"></div>
+        <div class="app-open-svg theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="app-unfavorite-svg theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="app-favorite-svg theme-highlight-color high-contrast-recolor"></div>
+        <div class="app-restart-svg theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="app-install-svg theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="storeapp-action-link-sprite-hover theme-highlight-color high-contrast-recolor">.largeTiles .storeapp-action-link-sprite:hover,.largeTiles .storeapp-action-link:hover .storeapp-action-link-sprite,.largeTiles .storeapp.showDetails .storeapp-action-link-sprite,.largeTiles .storeapp.showDetails .storeapp-action-link .storeapp-action-link-sprite</div>
+        <div class="settings-activate theme-highlight-background-color fill bg-fill bg-stroke high-contrast-recolor"></div>
+        <div class="settings-changeClient theme-highlight-background-color fill bg-fill bg-stroke high-contrast-recolor"></div>
+        <div class="settings-changePassword theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="settings-connect theme-highlight-background-color fill bg-fill high-contrast-recolor"></div>
+        <div class="settings-disconnect theme-highlight-background-color fill bg-fill bg-stroke high-contrast-recolor"></div>
+        <div class="settings-about theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="settings-logOff theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="defaultSetting theme-highlight-background-color fill high-contrast-recolor"></div>
+        <div class="menu-icon-svg theme-header-color fill"></div>
+        <div class="search-svg theme-header-color fill high-contrast-recolor"></div>
+        <div class="settings-icon-svg theme-header-color fill high-contrast-recolor"></div>
+        <div class="settings-view-toggle theme-highlight-background-color fill high-contrast-only-recolor"></div>
+        <div class="settings-view-toggle grid theme-highlight-background-color fill high-contrast-only-recolor"></div>
+        <div class="storeapp-action-link-sprite largeTiles high-contrast-only-recolor"></div>
+        <div class="subtitle-icon fill high-contrast-only-recolor"></div>
+        <div class="storeapp-favorite-icon largeTiles bg-fill high-contrast-only-recolor"></div>
+        <div class="settings-phone-icon-svg theme-header-color fill"></div>
+        <div class="refresh-icon-svg theme-header-color fill"></div>
+        <div class="logoff-icon-svg theme-header-color fill"></div>
+    </div>
+    <div class="high-contrast-colors" style="display: none;"></div>
+    <div class="folderTemplate" style="display:none;"></div>
+    <section id="loading-screen" class="loading-screen fullscreen-pane show-on-page-load">
+        <div class="loading-message">
+            <div class="loading-logo"></div>
+            <img class="loading-spinner" src="receiver/images/common/wspinner@2x_26FCB0A3548E30DC.gif" />
+        </div>
+    </section>
+
+    <section id="about-screen-phone" class="about-view fullscreen-pane phone-only">
+        <header class="about-header theme-header-bgcolor">
+            <a id="aboutphoneBackBtn" class="about-button-back _ctxsattr_aria-label_Back" href="#"><div class="backButton view-sprite"></div></a>
+            <span class="header-title theme-header-color phone-only _ctxstxt_About"></span>
+        </header>
+        <div class="aboutPhoneContent scrollable">
+            <div class="citrixReceiverLogoAboutBox"></div>
+            <div class="copyrightContainer">
+                <p class="thirdPartyNoticeHeader _ctxstxt_ThirdPartyNotices"></p>
+                <a id="thirdPartyNoticesPhoneBtn" href="ReceiverThirdPartyNotices.htm" class="thirdPartyNoticeLink _ctxstxt_ThirdPartyNoticesWeb" target="_blank"></a>
+                <a id="html5ThirdPartyNoticesPhoneBtn" href="clients/HTML5Client/src/ReceiverThirdPartyNotices.html" class="thirdPartyNoticeLink _ctxstxt_ThirdPartyNoticesHtml5" target="_blank"></a>
+                <span class="citrixCopyright _ctxstxt_CitrixCopyright"></span><br />
+                <span class="_ctxstxt_AllRightsReserved"></span><br />
+                <a href="http://www.citrix.com" class="citrixLink" target="_blank">www.citrix.com</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="home-screen" class="home-view fullscreen-pane">
+        <nav class="phone-only side-menu theme-header-bgcolor">
+            <div class="side-menu-container">
+                <div class="logo-area"><div class="logo-container hdpi-capable"></div></div>
+
+                <div role="tablist" class="navigation-button-container">
+                    <a id="myHomeBtnPhone" role="tab" aria-selected="false" class="toggle-view-button myhome-view primary menu-action theme-header-color theme-header-selection-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-home-svg headerButton"></div></div>
+                        <span class="action-text _ctxstxt_Home"></span>
+                    </a>
+                    <a id="desktopsBtnPhone" role="tab" aria-selected="false" class="toggle-view-button desktops-view primary menu-action theme-header-color theme-header-selection-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-desktops-svg headerButton"></div></div>
+                        <span class="action-text _ctxstxt_Desktops"></span>
+                    </a>
+                    <a id="allAppsBtnPhone" role="tab" aria-selected="false" class="toggle-view-button store-view primary menu-action theme-header-color theme-header-selection-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-allapps-svg headerButton"></div></div>
+                        <span class="action-text _ctxstxt_AllApps"></span>
+                    </a>
+                    <a id="filesBtnPhone" role="tab" aria-selected="false" class="toggle-view-button files-view primary menu-action theme-header-color theme-header-selection-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-files-svg headerButton"></div></div>
+                        <span class="action-text _ctxstxt_Files"></span>
+                    </a>
+                    <!-- <a class="toggle-view-button updates-view primary menu-action theme-header-color"><div class="action-icon-container"><div class="action-icon view-sprite"></div></div><span class="action-text _todo_ctxstxt_Update" data-updates=""></span></a>
+                    -->
+                </div>
+                <div class="user-actions">
+                    <p class="user-display-name theme-header-color"></p>
+                    <a href="#" class="settings menu-action settings-button theme-header-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-settings-phone-icon-svg"></div></div>
+                        <span class="action-text _ctxstxt_Settings"></span>
+                    </a>
+                    <a href="#" class="help menu-action help-button theme-header-color hide">
+                        <div class="action-icon-container"><div class="action-icon view-sprite"></div></div>
+                        <span class="action-text _ctxstxt_Help"></span>
+                    </a>
+                    <a href="#" class="refresh menu-action refresh-button theme-header-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-refresh-icon-svg"></div></div>
+                        <span class="action-text _ctxstxt_Refresh"></span>
+                    </a>
+                    <a href="#" class="logoff menu-action logoff-button theme-header-color">
+                        <div class="action-icon-container"><div class="action-icon embedded-logoff-icon-svg"></div></div>
+                        <span class="action-text _ctxstxt_LogOff"></span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="side-menu-content-overlay overlay"></div>
+
+        <div class="home-view-content">
+            <a href="#" id="user-menu-overlay" class="overlay"></a>
+
+            <section class="phone-only pullout-search-container theme-header-bgcolor">
+                <a id="searchBtnPhone" class="search-container-thumb" href="#">
+                    <div class="action-icon embedded-search-svg"></div>
+                </a>
+                <table class="search-toolbar-table phone-only">
+                    <tr>
+                        <td class="search-container phone-only ">
+                            <div class="search-ruler-container phone-only"><span></span></div>
+                            <input id="searchInputPhoneId" type="search" value="" class="searchInput phone-only _ctxsattr_placeholder_SearchPlaceholder _ctxsattr_aria-label_SearchPlaceholder" placeholder="" disabled="disabled" />
+                            <a href="#" class="searchClearButton _ctxsattr_aria-label_ClearSearch"></a>
+                        </td>
+                        <td class="search-hide-container phone-only">
+                            <a class="searchHideButton _ctxstxt_Cancel theme-header-color" href="#"></a>
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <a href="#" class="phone-only search-overlay"></a>
+
+            <header class="store-header theme-header-bgcolor">
+                <div class="phone-only phone-store-header"></div>
+                <a href="#" id="menuBtnPhone" class="side-menu-thumb phone-only">
+                    <div class="action-icon embedded-menu-icon-svg"></div>
+                </a>
+                <div class="logo-container hdpi-capable tablet-only"></div>
+                <span class="header-title theme-header-color phone-only"></span>
+
+                <!-- Contiguous link tags to avoid space between inline blocks -->
+                <!-- use a section to group buttons to allow easy extension. This allows -->
+                <!-- tablet-only to be on the container rather than the item -->
+                <section class="tablet-only view-buttons initial-hide" role="tablist">
+                    <a id="myHomeBtn" role="tab" aria-selected="false" class="toggle-view-button myhome-view theme-header-selection-color">
+                        <div class="embedded-home-svg headerButton"></div>
+                        <span class="_ctxstxt_Home theme-header-color"></span>
+                    </a><a id="allAppsBtn" role="tab" aria-selected="false" class="toggle-view-button store-view theme-header-selection-color">
+                        <div class="embedded-allapps-svg headerButton"></div>
+                        <span class="_ctxstxt_AllApps theme-header-color"></span>
+                    </a><a id="desktopsBtn" role="tab" aria-selected="false" class="toggle-view-button desktops-view theme-header-selection-color">
+                        <div class="embedded-desktops-svg headerButton"></div>
+                        <span class="_ctxstxt_Desktops theme-header-color"></span>
+                    </a><a id="filesBtn" role="tab" aria-selected="false" class="toggle-view-button files-view theme-header-selection-color">
+                        <div class="embedded-files-svg headerButton"></div>
+                        <span class="_ctxstxt_Files theme-header-color"></span>
+                    </a><a id="tasksBtn" role="tab" aria-selected="false" class="toggle-view-button tasks-view theme-header-selection-color">
+                        <div class="view-sprite headerButton"></div>
+                        <span class="_ctxstxt_Tasks theme-header-color"></span>
+                    </a>
+                </section>
+                <div class="headerRight tablet-only">
+                    <div class="header-search-container hidden">
+                        <a id="searchBtn" class="search-container-thumb" href="#">
+                            <div class="action-icon embedded-search-svg"></div>
+                        </a>
+                        <div class="search-container hidden">
+                            <div class="search-ruler-container">
+                                <span></span>
+                            </div>
+                            <a id="searchHeaderHideBtn" class="searchHideButton hidden" href="#"></a>
+                            <input id="searchHeaderInputId" type="search" value="" class="searchInput _ctxsattr_placeholder_SearchPlaceholder _ctxsattr_aria-label_SearchPlaceholder" placeholder="" disabled="disabled" />
+                            <a href="#" class="searchClearButton _ctxsattr_aria-label_ClearSearch"></a>
+                        </div>
+                    </div>
+                    <div class="tablet-only dropdown-menu-container user-menu">
+                        <a id="userMenuBtn" href="#" class="dropdown-menu-trigger settings-button">
+                            <div class="embedded-settings-icon-svg"></div>
+                        </a>
+                        <div class="dropdown-menu">
+                            <div class="dropdown-menu-top"></div>
+                            <div class="dropdown-menu-body"></div>
+                            <div class="dropdown-menu-bottom"></div>
+                        </div>
+                    </div>
+
+                    <a class="help-icon view-sprite" href="#"></a>
+                </div>
+            </header>
+            <div id="pluginTop" class="zero-margin"><p id="customTop" class="zero-margin"></p></div>
+
+            <nav class="toolbar store-toolbar tablet-only initial-hide">
+                <div class="toolbar-left">
+                    <!-- Contiguous link tags to avoid space between inline blocks -->
+                    <!-- Left hand side of toolbar-->
+                    <div class="toolbar-header _ctxstxt_AllApps" role="heading" aria-level="1"></div>
+                    <p class="toolbar-home-header zero-margin"></p>
+                    <a id="searchBack" class="theme-highlight-color _ctxsattr_aria-label_Back" href="#"><div class="backButton theme-highlight-sprite"></div></a>
+                    <div class="searchinformation-ruler-container"><span></span></div>
+                    <div class="searchInformation" aria-live="polite"></div>
+                    <div class="submenu-tabs-container" role="tablist">
+                        <a id="allAppsFilterBtn" role="tab" aria-selected="false" class="filter-button allApps _ctxstxt_AllAppsWithCount theme-highlight-color theme-highlight-border-color" href="#"></a>
+                        <a id="myAppsFilterBtn" role="tab" aria-selected="false" class="filter-button myApps _ctxstxt_FavouritesWithCount theme-highlight-color theme-highlight-border-color" href="#"></a>
+                        <a id="folderHierarchyFilterBtn" role="tab" aria-selected="false" class="filter-button folderHierarchy _ctxstxt_Categories theme-highlight-color theme-highlight-border-color" href="#"></a>
+                        <a id="categoriesTabBtn" role="tab" aria-selected="false" class="tab-button categories theme-highlight-color theme-highlight-border-color" href="#">
+                            <span class="_ctxstxt_Categories"></span>
+                            <div class="select-icon"></div>
+                        </a>
+                        <a id="bundlesTabBtn" role="tab" aria-selected="false" class="tab-button bundles theme-highlight-color theme-highlight-border-color" href="#">
+                            <span class="_ctxstxt_Bundles"></span>
+                            <div class="select-icon"></div>
+                        </a>
+                    </div>
+                </div>
+                <a class="settings-view-toggle" tabindex="0"></a>
+            </nav>
+
+            <section class="toolbar bundleDetail-toolbar">
+                <a id="bundleDetailBack" class="theme-highlight-color _ctxsattr_aria-label_Back" href="#"><div class="backButton theme-highlight-sprite"></div></a>
+                <a id="bundleAddAll" class="theme-highlight-color _ctxstxt_AddAll" href="#"></a>
+            </section>
+
+            <section class="toolbar store-toolbar-phone phone-only theme-highlight-color">
+                <div class="store-toolbar-phone-content" role="tablist">
+                    <a id="toolbarAllAppsBtnPhone" role="tab" aria-selected="false" href="#" class="phone-toolbar-button filter-button allApps">
+                        <span class="_ctxstxt_AllAppsWithCount"></span>
+                    </a>
+                    <a id="myAppsFilterBtnPhone" role="tab" aria-selected="false" href="#" class=" phone-toolbar-button filter-button myApps">
+                        <span class="_ctxstxt_FavouritesWithCount"></span>
+                    </a>
+                    <a id="folderHierarchyFilterBtnPhone" role="tab" aria-selected="false" href="#" class=" phone-toolbar-button filter-button folderHierarchy">
+                        <span class="_ctxstxt_Categories"></span>
+                    </a>
+                    <a id="toolbarFoldersBtnPhone" role="tab" aria-selected="false" href="#" class="phone-toolbar-button tab-button categories">
+                        <span class="_ctxstxt_Categories"></span>
+                        <div class="select-icon"></div>
+                    </a>
+                    <a id="bundlesTabBtnPhone" role="tab" aria-selected="false" href="#" class="phone-toolbar-button tab-button bundles">
+                        <span class="_ctxstxt_Bundles"></span>
+                        <div class="select-icon"></div>
+                    </a>
+                    <div class="sliding-highlight theme-highlight-color">
+                    </div>
+                </div>
+                <div class="folder-toolbar-phone-content">
+                    <a id="folderViewPhoneBackButton" class="_ctxsattr_aria-label_Back" href="#">
+                        <div class="backButton theme-highlight-sprite"></div>
+                    </a>
+                    <div class="toolbar-foldername-text"></div>
+                </div>
+
+            </section>
+
+            <section class="sliding-submenu-section">
+                <div class="categoriesContainer">
+                </div>
+                <div class="bundlesContainer"></div>
+                <a href="#" class="sliding-submenu-close-btn">
+                    <div class="sliding-submenu-close-icon-placement">
+                        <!-- As this div gets rotated by the CSS it was easier to put it in another div and position that inside the touch area -->
+                        <div class="sliding-submenu-close-icon theme-highlight-color">+</div>
+                    </div>
+                </a>
+
+            </section>
+
+            <section class="scrollable storeViewSection">
+                <div id="pluginScrollTop" class="zero-margin"><p id="customScrollTop" class="zero-margin"></p></div>
+                <div class="applicationBundleHeader bundleDetail">
+                    <div class="applicationBundleHeaderTitle"></div>
+                    <div class="applicationBundleHeaderText"></div>
+                    <div class="applicationBundleHeaderOverlay"></div>
+                </div>
+                <div class="applicationBundleContainer">
+                    <div class="content">
+                        <div class="appBundles">
+                        </div>
+                        <a class="prevBundleOuter hidden" href="#">
+                            <div class="prevBundle theme-highlight-color theme-highlight-sprite"></div>
+                            <div class="prevBundle hover theme-highlight-color theme-highlight-sprite"></div>
+                        </a>
+                        <a class="nextBundleOuter hidden" href="#">
+                            <div class="nextBundle theme-highlight-color theme-highlight-sprite"></div>
+                            <div class="nextBundle hover theme-highlight-color theme-highlight-sprite"></div>
+                        </a>
+                    </div>
+                </div>
+                <div class="breadcrumb-section">
+                    <div class="breadcrumb-container">
+                        <div class="breadcrumb-ruler-container"></div>
+                        <div class="breadcrumb-contents"></div>
+                    </div>
+                </div>
+                <div class="store-apps-container"></div>
+                <div class="no-results-message">
+                    <div class="_ctxstxt_NoAppsFound"></div>
+                    <a href="#" class="all-app-results theme-highlight-color _ctxstxt_TrySearchingInApps"></a>
+                </div>
+                <div class="custom-appDetails-buttons-container"></div>
+                <div class="no-fav-results-message">
+                    <div class="no-fav-results-message-image"></div>
+                    <div id="no-fav-msg-title" class="no-fav-results-message-title"></div>
+                    <div id="no-fav-msg-desc" class="no-fav-results-message-description"></div>
+                    <div id="no-fav-msg-desc-phone" class="no-fav-results-message-description"></div>
+                </div>
+                <div class="no-fav-results-filter-message">
+                    <div class="no-fav-results-message-image"></div>
+                    <div id="no-fav-filter-msg-title" class="no-fav-results-message-title"></div>
+                    <div id="no-fav-filter-msg-desc" class="no-fav-results-message-description"></div>
+                    <div id="no-fav-filter-msg-desc-phone" class="no-fav-results-message-description"></div>
+                </div>
+                <div class="no-updates text _ctxstxt_NoUpdates"></div>
+                <div class="no-apps-or-desktops-message"></div>
+            </section>
+            <div class="fadeAnimation"></div>
+            <div class="slideAnimation scrollable"></div>
+
+            <section class="toolbar appinfo-toolbar phone-only">
+                <a id="appInfoBackPhone" class="theme-highlight-color _ctxsattr_aria-label_Back appInfoBack phone-only" href="#"><div class="backButton theme-highlight-sprite"></div></a>
+            </section>
+
+            <div class="appDetailsBox overlay"></div>
+            <section class="appInfoView scrollable tablet-only">
+                <div class="popup appDetailsBox" id="detailsBoxPopupLarge" role="alertdialog" aria-describedby="detailsBoxHeader">
+
+                    <div class='appInfoHeaderBar theme-header-bgcolor'>
+                        <div class="appInfoHeaderBarTitle theme-header-color"></div>
+                        <a href="#" class="aboutBoxCloseBtn _ctxsattr_aria-label_Back appInfoBack" aria-describedby="detailsBoxHeader"></a>
+                    </div>
+                    <div class="detailsScrollable">
+                        <div class="appInfoHeader">
+                            <!--<a href="#" id="appInfoBack" class="aboutBoxCloseBtn _ctxsattr_aria-label_Back"></a>-->
+                            <img class="appInfoIcon" alt="" />
+                            <div class="storeapp-loading-overlay">
+                                <div class="spinner storeapp-loading-spinner"></div>
+                            </div>
+                            <div class="storeapp-ready-overlay"></div>
+                            <div class="appInfoHeaderDetails">
+                                <h1 class="appInfoName"></h1>
+                                <div class="appInfoCategoriesOrHostName"></div>
+                            </div>
+
+                        </div>
+                        <div class="appInfoActions">
+                            <!-- Contiguous link tags to avoid space between inline blocks -->
+                            <a href="#" class="appInfoOpen theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Open">
+                            </a><a href="#" class="appInfoRestart theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Restart">
+                            </a><a href="#" class="appInfoRequest theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Request">
+                            </a><a href="#" class="appInfoCancelRequest theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_CancelRequest">
+                            </a><a href="#" class="appInfoAdd theme-highlight-color theme-highlight-border-color appInfoActionButton">
+                                <div class="theme-highlight-sprite addIcon"></div><span class="_ctxstxt_AddToFavorites"></span><div class="addIconSpacer"></div>
+                            </a><a href="#" class="appInfoRemove theme-highlight-color theme-highlight-border-color appInfoActionButton">
+                                <div class="theme-highlight-sprite addedIcon"></div><span class="_ctxstxt_Remove"></span><div class="addIconSpacer"></div>
+                            </a><a href="#" class="appInfoInstall theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Install"></a>
+                        </div>
+                        <div id="pluginInfoTopLarge">
+                            <div id="customInfoTopLarge"></div>
+                        </div>
+                        <div class="appInfoMain">
+                            <div class="truncated app-description descriptionText">
+                                <a href="#" class="more desc-link descriptionText theme-highlight-color _ctxstxt_More"></a>
+                            </div>
+                            <div class="full app-description descriptionText">
+                                <a href="#" class="less desc-link descriptionText theme-highlight-color _ctxstxt_Less"></a>
+                            </div>
+                            <div id="pluginInfoLarge">
+                                <div id="customInfoLarge"></div>
+                            </div>
+                            <div class="appInfoSocialData tabContainer">
+                                <div class="tabHeader"></div>
+                                <div class="appInfoOverviewTab tabContent">
+                                    <div class="appInfoFaqDetail">
+                                        <h1 class="faqHeader tabContentHeader _ctxstxt_Faq"></h1>
+                                        <div class="faqQuestions"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="appInfoView scrollable phone-only">
+                <div class="appInfoHeader">
+                    <img class="appInfoIcon" alt="" />
+                    <div class="storeapp-loading-overlay">
+                        <div class="spinner storeapp-loading-spinner"></div>
+                    </div>
+                    <div class="storeapp-ready-overlay"></div>
+                    <div class="appInfoHeaderDetails">
+                        <h1 class="appInfoName"></h1>
+                        <div class="appInfoCategoriesOrHostName"></div>
+                    </div>
+                </div>
+                <div class="appinfo-installation-message">
+                    <div class="install-icon"></div>
+                    <p class="install-message"></p>
+                </div>
+                <div id="pluginInfoTop" class="zero-margin"><p id="customInfoTop" class="zero-margin"></p></div>
+                <div class="appInfoMain">
+                    <div class="truncated app-description descriptionText">
+                        <a href="#" class="more desc-link descriptionText theme-highlight-color _ctxstxt_More"></a>
+                    </div>
+                    <div class="full app-description descriptionText">
+                        <a href="#" class="less desc-link descriptionText theme-highlight-color _ctxstxt_Less"></a>
+                    </div>
+                    <div id="pluginInfo" class="zero-margin"><p id="customInfo" class="zero-margin"></p></div>
+                    <div class="appInfoSocialData tabContainer">
+                        <div class="tabHeader"></div>
+                        <div class="appInfoOverviewTab tabContent">
+                            <div class="appInfoFaqDetail">
+                                <h1 class="faqHeader tabContentHeader _ctxstxt_Faq"></h1>
+                                <div class="faqQuestions"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="appInfoActions">
+                    <!-- Contiguous link tags to avoid space between inline blocks -->
+                    <a href="#" class="appInfoOpen theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Open">
+                    </a><a href="#" class="appInfoRestart theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Restart">
+                    </a><a href="#" class="appInfoRequest theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Request">
+                    </a><a href="#" class="appInfoCancelRequest theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_CancelRequest">
+                    </a><a href="#" class="appInfoAdd theme-highlight-color theme-highlight-border-color appInfoActionButton">
+                        <span class="_ctxstxt_AddToFavorites"></span>
+                    </a><a href="#" class="appInfoRemove theme-highlight-color theme-highlight-border-color appInfoActionButton">
+                        <span class="_ctxstxt_Remove"></span>
+                    </a><a href="#" class="appInfoInstall theme-highlight-color theme-highlight-border-color appInfoActionButton _ctxstxt_Install"></a>
+                </div>
+            </section>
+
+            <section class="filesViewSection"></section>
+            <section class="settingsView scrollable">
+                <div class="settingsViewMain"></div>
+            </section>
+            <div class="fadeAnimation"></div>
+            <div class="slideAnimation scrollable"></div>
+            <div id="pluginBottom" class="zero-margin"><p id="customBottom" class="zero-margin"></p></div>
+
+            <a href="#" class="overlay" id="autoMessageOverlay" aria-hidden="true"></a>
+            <div class="transient popup" id="autoMessagePopup"></div>
+
+            <a href="#" class="overlay" id="refresh-overlay" aria-hidden="true"></a>
+            <div class="spinner refresh-spinner _ctxsattr_aria-label_RefreshInProgress" role="alert"></div>
+        </div>
+    </section>
+
+    <section id="logoff-screen" class="logoff-view scrollable fullscreen-pane web-screen">
+        <div class="vertical-center-outer">
+            <div class="logoff-heading-container"><h1 class="logoff-heading-content _ctxstxt_LoggedOff" /></div>
+            <div class="vertical-center-inner">
+                <div class="logon-small logon-logo-container"></div>
+                <div class="logoff-progress content-area">
+                    <h1 class="_ctxstxt_LoggingOff main-text"></h1>
+                    <div class="spinner authentication-spinner"></div>
+                </div>
+                <div class="logoff-complete content-area">
+                    <div class="logoff-area">
+                        <div class="logon-spacer logon-large logon-logo-container"></div>
+                        <div class="logoff-content">
+                            <p class="logoff-complete-title main-text"></p>
+                            <div class="logoff-complete-content detail-text"></div>
+                            <a href="#" class="logon-button default button"></a>
+                            <a href="#" class="idplogoff-button default button" id="idplogoff-button"></a>
+                            <p class="remember-logon-method detail-text">
+                                <input id="remember-logon-method-checkbox" type="checkbox" checked="checked" />
+                                <label for="remember-logon-method-checkbox"></label>
+                            </p>
+                        </div>
+                        <div class="logon-spacer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="cookie-error-screen" class="cookie-error-view fullscreen-pane web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="cookie-error content-area">
+                    <h1 class="cookie-error-title main-text _ctxstxt_CookiesAreDisabledTitle"></h1>
+                    <div class="cookie-error-content detail-text _ctxstxt_CookiesAreDisabledBody"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="chrome-app-origin-mismatch-screen" class="chrome-App-Origin-Mismatch fullscreen-pane web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="content-area">
+                    <div class="chrome-App-Origin-content detail-text _ctxstxt_ChromeAppOriginMismatch"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="explicit-auth-screen" class="explicit-auth-view scrollable x-scrollable fullscreen-pane web-screen">
+        <div id="pluginExplicitAuthHeader" class="pluginAuthHeader zero-margin"><p id="customExplicitAuthHeader" class="customAuthHeader zero-margin"></p></div>
+        <div class="vertical-center-outer">
+            <div class="logon-heading-container"><h1 class="logon-heading-content _ctxstxt_LogOn" /></div>
+            <div class="vertical-center-inner">
+                <div class="logon-small logon-logo-container"></div>
+                <div class="content-area">
+                    <div id="pluginExplicitAuthTop" class="pluginAuthTop zero-margin"><p id="customExplicitAuthTop" class="customAuthTop zero-margin"></p></div>
+                    <div class="logon-area">
+                        <div class="logon-spacer logon-large logon-logo-container"></div>
+                        <div class="form-content">
+                            <div class="form-container"></div>
+                            <div class="explicit-auth-progress">
+                                <h1 class="_ctxstxt_ResumingLogon main-text"></h1>
+                                <div class="spinner authentication-spinner"></div>
+                            </div>
+                            <p class="back-to-choices"><a href="#" class="authentication-link _ctxstxt_UseAnotherLogonOption"></a></p>
+                        </div>
+                        <div class="logon-spacer"></div>
+                    </div>
+                    <div id="pluginExplicitAuthBottom" class="pluginAuthBottom zero-margin"><p id="customExplicitAuthBottom" class="customAuthBottom zero-margin"></p></div>
+                </div>
+            </div>
+        </div>
+        <div id="pluginExplicitAuthFooter" class="pluginAuthFooter zero-margin"><p id="customExplicitAuthFooter" class="customAuthFooter zero-margin"></p></div>
+    </section>
+
+    <section id="authentication-screen" class="authentication-view scrollable x-scrollable fullscreen-pane web-screen">
+        <div id="pluginAuthHeader" class="pluginAuthHeader zero-margin"><p id="customAuthHeader" class="customAuthHeader zero-margin"></p></div>
+        <div class="vertical-center-outer">
+            <div class="logon-heading-container"><h1 class="logon-heading-content _ctxstxt_LogOn" /></div>
+            <div class="vertical-center-inner">
+                <div class="logon-small logon-logo-container"></div>
+                <div class="content-area">
+                    <div id="pluginAuthTop" class="pluginAuthTop zero-margin"><p id="customAuthTop" class="customAuthTop zero-margin"></p></div>
+                    <div class="logon-area">
+                        <div class="logon-spacer logon-large logon-logo-container"></div>
+                        <div class="authentication-content"></div>
+                        <div class="logon-spacer"></div>
+                    </div>
+                    <div id="pluginAuthBottom" class="pluginAuthBottom zero-margin"><p id="customAuthBottom" class="customAuthBottom zero-margin"></p></div>
+                </div>
+            </div>
+        </div>
+        <div id="pluginAuthFooter" class="pluginAuthFooter zero-margin"><p id="customAuthFooter" class="customAuthFooter zero-margin"></p></div>
+    </section>
+
+    <section id="password-expiry-warning-screen" class="auth-password-expiry-view scrollable x-scrollable fullscreen-pane web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="logon-small logon-logo-container"></div>
+                <div class="content-area">
+                    <div class="logon-area">
+                        <div class="logon-spacer logon-large logon-logo-container"></div>
+                        <div class="authentication-content" role="alertdialog" aria-describedby="changePasswordHeader">
+                            <h1 class="authentication-title main-text _ctxstxt_PasswordExpiryTitle" id="changePasswordHeader"></h1>
+                            <p class="authentication-message detail-text"></p>
+                            <div class="buttonscontainer">
+                                <a href="#" id="btnPasswordChange" class="default stacked button _ctxstxt_PasswordExpiryChange"></a>
+                                <a href="#" id="btnPasswordContinue" class="stacked button _ctxstxt_PasswordExpiryChangeLater"></a>
+                            </div>
+                        </div>
+                        <div class="logon-spacer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <a href="#" class="messagebox overlay" id="genericMessageBoxOverlay" aria-hidden="true"></a>
+    <div class="popup messageBoxPopup" id="genericMessageBoxPopup" role="alertdialog" aria-labelledby="messageBoxTitle" aria-describedby="messageBoxText">
+        <div class="messageBoxContent">
+            <h1 class="messageBoxTitle"></h1>
+            <p class="messageBoxText"></p>
+        </div>
+        <div class="messageBoxAction"><a href="#" class="dialog button"></a></div>
+        <div class="messageBoxCancelAction"><a href="#" class="dialog button"></a></div>
+    </div>
+
+    <div class="popup aboutBox" id="aboutBoxPopup" role="alertdialog" aria-describedby="aboutBoxHeader">
+        <a href="#" id="aboutBoxCloseBtn" class="aboutBoxCloseBtn _ctxsattr_aria-label_Close"></a>
+        <div class="citrixReceiverLogoAboutBox"></div>
+        <p id="aboutBoxHeader" class="thirdPartyNoticeHeader _ctxstxt_ThirdPartyNotices"></p>
+        <a id="thirdPartyNoticesBtn" href="ReceiverThirdPartyNotices.htm" class="thirdPartyNoticeLink _ctxstxt_ThirdPartyNoticesWeb" target="_blank"></a>
+        <a id="html5ThirdPartyNoticesBtn" href="clients/HTML5Client/src/ReceiverThirdPartyNotices.html" class="thirdPartyNoticeLink _ctxstxt_ThirdPartyNoticesHtml5" target="_blank"></a><br />
+        <span class="citrixCopyright _ctxstxt_CitrixCopyright"></span><br />
+        <span class="_ctxstxt_AllRightsReserved"></span><br />
+        <a href="http://www.citrix.com" class="citrixLink" target="_blank">www.citrix.com</a>
+    </div>
+
+    <a href="#" class="messagebox overlay" id="genericDialogBoxOverlay" aria-hidden="true"></a>
+    <div class="popup dialogBox" id="genericDialogBox" role="alertdialog"></div>
+
+    <section id="plugin-activation" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="activate-plugin-content detail-text content-area" role="alertdialog" aria-live="polite">
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="plugin-assistance-download" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="download-plugin content-area">
+                    <h1 class="_ctxstxt_ClickInstall plugin-assistant-header main-text"></h1>
+                    <div class="actions">
+                        <p class="pluginassistant-details">
+                            <input id="legalstatement-checkbox1" class="legalstatement-checkbox" type="checkbox" />
+                            <label class="legalstatement-label" for="legalstatement-checkbox1">
+                                <span class="detail-text _ctxstxt_IAgreeWith"></span>
+                                <a class="licenseagreement-link web-screen-link _ctxstxt_CitrixLicenseAgreement" href="#" role="link"></a>
+                            </label>
+                        </p>
+                        <p>
+                            <a href="#" class="installbutton default button disabled action-with-long-tooltip _ctxstxt_Install" aria-disabled="true" tabindex="-1"></a>
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <a class="securitydetailslink web-screen-link _ctxstxt_SecurityDetails" href="#" role="link">
+
+                        </a><span class="bar-separator">|</span><a class="pluginassistant-skiplink web-screen-link _ctxstxt_SkipToLogon _ctxsattr_title_SkipToLogonTip" href="#" title=""></a>
+                    </div>
+                    <div class="acceptterms-popup pluginassistant-popup">
+                        <div class="_ctxstxt_AcceptTermsMessage" role="alertdialog"></div>
+                    </div>
+                    <div class="securitydetails-popup pluginassistant-popup" role="alertdialog">
+                        <h3 class="_ctxstxt_SecurityInformationTitle"></h3>
+                        <p class="_ctxstxt_SecurityInformationText"></p>
+                    </div>
+                    <div class="licenseagreement-popup pluginassistant-popup _ctxstxt_LicenseAgreementContent" role="alertdialog">
+                        <h3 class="_ctxstxt_LicenseAgreementContentTitle"></h3>
+                        <p class="_ctxstxt_LicenseAgreementContentText"></p>
+                        <p class="_ctxstxt_LicenseAgreementContentCode"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="plugin-assistance-download-unavailable" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div id="plugin-download-unavailable" class="content-area">
+                    <h1 class="main-text _ctxstxt_SoftwareNotDetected"></h1>
+                    <div class="content">
+                        <p class="detail-text _ctxstxt_SoftwareNotDetectedDetails"></p>
+                        <a href="#" class="pluginassistant-skiplink default button _ctxstxt_Continue"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="plugin-assistance-polling" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="polling-plugin content-area">
+                    <h1 class="_ctxstxt_ConfirmInstallationIsComplete plugin-assistant-header main-text"></h1>
+                    <div class="content">
+                        <p class="detail-text _ctxstxt_InstallationBegins"></p>
+                        <p class="detail-text">
+                            <span class="_ctxstxt_OnceComplete"></span>
+                        </p>
+                    </div>
+                    <div class="actions">
+                        <a href="#" class="skip-polling-wait default button _ctxstxt_Continue"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="plugin-assistance-polling-ie-upgrade" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="polling-plugin-ie content-area">
+                    <h1 class="main-text _ctxstxt_UpgradeInProgress plugin-assistant-header"></h1>
+                    <div class="content">
+                        <p class="polling-plugin-installmessage detail-text _ctxstxt_UpgradeCloseBrowser"></p>
+                    </div>
+                    <div class="actions">
+                        <a class="securitydetailslink _ctxstxt_SecurityDetails web-screen-link" href="#" role="link">
+                        </a><span class="bar-separator">|</span><a class="skip-polling-wait web-screen-link _ctxstxt_UpgradeLater _ctxsattr_title_UpgradeLaterTip" href="#" title=""></a>
+                    </div>
+                    <div class="securitydetails-popup-ie pluginassistant-popup" role="alertdialog">
+                        <h3 class="_ctxstxt_SecurityInformationTitle"></h3>
+                        <p class="_ctxstxt_InfoBarSecurityInformation"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-welcome" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="welcome-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="_ctxstxt_WelcomeToReceiver main-text"></h1>
+                        <p class="welcome-for-full-experience detail-text"></p>
+                        <a id="protocolhandler-welcome-installButton" class="welcome-use-native-client default button _ctxstxt_DetectReceiver" href="#"></a>
+                        <div class="footer">
+                            <p class="welcome-use-light-text detail-text _ctxstxt_YouCanUseLightVersion"></p>
+                            <a id="protocolhandler-welcome-useLightVersionLink" class="welcome-use-light-link web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-detect" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="detect-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="detect-heading main-text"></h1>
+                        <p class="detect-if-already-installed detail-text"></p>
+                        <p class="detect-no-prompt detail-text"></p>
+                        <p class="detect-already-installed-note detail-text"></p>
+                        <p class="pluginassistant-details">
+                            <input id="legalstatement-checkbox2" class="legalstatement-checkbox" type="checkbox" />
+                            <label class="legalstatement-label" for="legalstatement-checkbox2">
+                                <span class="detail-text _ctxstxt_IAgreeWith"></span>
+                                <a class="licenseagreement-link web-screen-link _ctxstxt_CitrixLicenseAgreement" href="#" role="link"></a>
+                            </label>
+                        </p>
+                        <a id="protocolhandler-detect-downloadButton" class="installbutton default button disabled _ctxstxt_Download" href="#" aria-disabled="true" tabindex="-1"></a>
+                        <div class="footer">
+                            <a id="protocolhandler-detect-detectAgainLink" class="detect-retry-detection web-screen-link _ctxstxt_DetectAgain" href="#"></a>
+                            <span class="detect-retry-detection-separator bar-separator">|</span>
+                            <a id="protocolhandler-detect-useLightVersionLink" class="detect-use-light-version web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                            <span class="detect-use-light-version-separator bar-separator">|</span>
+                            <a id="protocolhandler-detect-alreadyInstalledLink" class="detect-already-installed web-screen-link _ctxstxt_AlreadyInstalled" href="#"></a>
+                            <span class="detect-already-installed-separator bar-separator">|</span>
+                            <a class="securitydetailslink web-screen-link _ctxstxt_SecurityDetails" href="#" role="link"></a>
+                        </div>
+                        <div class="acceptterms-popup pluginassistant-popup">
+                            <div class="_ctxstxt_AcceptTermsMessage" role="alertdialog"></div>
+                        </div>
+                        <div class="securitydetails-popup pluginassistant-popup" role="alertdialog">
+                            <h3 class="_ctxstxt_SecurityInformationTitle"></h3>
+                            <p class="_ctxstxt_SecurityInformationText"></p>
+                        </div>
+                        <div class="licenseagreement-popup pluginassistant-popup _ctxstxt_LicenseAgreementContent" role="alertdialog">
+                            <h3 class="_ctxstxt_LicenseAgreementContentTitle"></h3>
+                            <p class="_ctxstxt_LicenseAgreementContentText"></p>
+                            <p class="_ctxstxt_LicenseAgreementContentCode"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-download" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="download-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="main-text _ctxstxt_DownloadingReceiver"></h1>
+                        <p class="download-install-receiver detail-text"></p>
+                        <a class="download-complete default button _ctxstxt_Continue" href="#"></a>
+                        <div class="footer">
+                            <a id="protocolhandler-download-retryLink" class="download-retry web-screen-link _ctxstxt_RetryDownload" href="#"></a>
+                            <span class="download-retry-separator bar-separator">|</span>
+                            <a id="protocolhandler-download-useLightVersionLink" class="download-use-light-version web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-validate" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="validate-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="main-text _ctxstxt_WaitWhileConfirmInstall"></h1>
+                        <p class="validate-was-installed detail-text"></p>
+                        <p class="validate-no-window detail-text"></p>
+                        <p class="validate-already-installed-note detail-text"></p>
+                        <div class="footer">
+                            <a id="protocolhandler-validate-detectAgainLink" class="validate-retry-detection web-screen-link _ctxstxt_DetectAgain" href="#"></a>
+                            <span class="bar-separator">|</span>
+                            <a id="protocolhandler-validate-downloadAgainLink" class="validate-retry-download web-screen-link _ctxstxt_DownloadAgain" href="#"></a>
+                            <span class="validate-retry-download-separator bar-separator">|</span>
+                            <a id="protocolhandler-validate-useLightVersionLink" class="validate-use-light-version web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                            <span class="validate-use-light-version-separator bar-separator">|</span>
+                            <a id="protocolhandler-validate-alreadyInstalledLink" class="validate-already-installed web-screen-link _ctxstxt_AlreadyInstalled" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="change-client-screen" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="changeclient-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="changeclient-heading main-text"></h1>
+                        <p class="changeclient-currently-using detail-text"></p>
+                        <div class="footer">
+                            <a id="changeclient-use-light-version" class="changeclient-use-light-version web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                            <span class="changeclient-use-light-version-separator bar-separator">|</span>
+                            <a id="changeclient-use-full-version" class="changeclient-use-full-version web-screen-link _ctxstxt_UseFullVersion" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-checkupgrade" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="checkupgrade-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="_ctxstxt_CheckForUpgrade main-text"></h1>
+                        <a id="checkUpgrade-CheckButton" class="installbutton default button _ctxstxt_Check" href="#"></a>
+                        <div class="footer">
+                            <a id="checkUpgrade-UpgradeLaterLink" class="checkupgrade-upgrade-later web-screen-link _ctxstxt_UpgradeLater" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-detectupgrade" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="detectupgrade-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="_ctxstxt_CheckingForUpgrade main-text"></h1>
+                        <p class="windowAppearsMessage detail-text"></p>
+                        <p class="detectupgrade-continue-message detail-text"></p>
+                        <a id="detectUpgrade-ContinueButton" class="installbutton default button _ctxstxt_Continue" href="#"></a>
+                        <div class="footer">
+                            <a id="detectUpgrade-DetectAgainLink" class="detectupgrade-detect-again web-screen-link _ctxstxt_DetectAgain" href="#"></a>
+                            <span class="bar-separator">|</span>
+                            <a id="detectUpgrade-UpgradeLaterLink" class="detectupgrade-upgrade-later web-screen-link _ctxstxt_UpgradeLater" href="#"></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-upgradeavailable" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="upgradeavailable-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="_ctxstxt_ProtocolHandlerUpgradeAvailable main-text"></h1>
+                        <p class="upgradeavailable-already-installed-note detail-text"></p>
+                        <p class="pluginassistant-details">
+                            <input id="legalstatement-upgrade-checkbox" class="legalstatement-checkbox" type="checkbox" />
+                            <label class="legalstatement-label" for="legalstatement-upgrade-checkbox">
+                                <span class="detail-text _ctxstxt_IAgreeWith"></span>
+                                <a class="licenseagreement-link web-screen-link _ctxstxt_CitrixLicenseAgreement" href="#" role="link"></a>
+                            </label>
+                        </p>
+                        <a id="upgradeAvailable-DownloadButton" class="installbutton default button disabled _ctxstxt_Download" href="#"></a>
+                        <div class="footer">
+                            <a class="securitydetailslink web-screen-link _ctxstxt_SecurityDetails" href="#" role="link"></a>
+                            <span class="upgradeavailable-securitydetails-separator bar-separator">|</span>
+                            <a id="upgradeAvailable-UpgradeLaterLink" class="upgradeavailable-upgrade-later web-screen-link _ctxstxt_UpgradeLater" href="#"></a>
+                            <a id="upgradeAvailable-UseLightVersionLink" class="upgradeavailable-use-light-version web-screen-link _ctxstxt_UseLightVersion" href="#"></a>
+                            <span class="upgradeavailable-already-installed-separator bar-separator">|</span>
+                            <a id="upgradeAvailable-AlreadyInstalledLink" class="upgradeavailable-already-installed web-screen-link _ctxstxt_AlreadyInstalled" href="#"></a>
+                        </div>
+                        <div class="acceptterms-popup pluginassistant-popup">
+                            <div class="_ctxstxt_AcceptTermsMessage" role="alertdialog"></div>
+                        </div>
+                        <div class="securitydetails-popup pluginassistant-popup" role="alertdialog">
+                            <h3 class="_ctxstxt_SecurityInformationTitle"></h3>
+                            <p class="_ctxstxt_SecurityInformationText"></p>
+                        </div>
+                        <div class="licenseagreement-popup pluginassistant-popup _ctxstxt_LicenseAgreementContent" role="alertdialog">
+                            <h3 class="_ctxstxt_LicenseAgreementContentTitle"></h3>
+                            <p class="_ctxstxt_LicenseAgreementContentText"></p>
+                            <p class="_ctxstxt_LicenseAgreementContentCode"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="protocolhandler-noupgrades" class="fullscreen-pane scrollable web-screen">
+        <div class="vertical-center-outer">
+            <div class="vertical-center-inner">
+                <div class="noupgrades-container content-area">
+                    <div class="box-links detection-right-links">
+                        <h1 class="_ctxstxt_NoUpgradesAvailable main-text"></h1>
+                        <a id="noUpgradesAvailable-ContinueButton" class="installbutton default button _ctxstxt_Continue" href="#"></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="myapps-ruler-container"><span></span></div>
+    <div class="ruler-container"><span></span></div>
+    <div class="appfilter-ruler-container"><span></span></div>
+    <div class="folder-ruler-container"><span></span></div>
+    <div class="appinfo-ruler-container appInfoHeaderDetails"><span></span></div>
+
+    <canvas style="display:none;" id="scratchcanvas16" width="16" height="16"></canvas>
+    <canvas style="display:none;" id="scratchcanvas32" width="32" height="32"></canvas>
+    <canvas style="display:none;" id="scratchcanvas48" width="48" height="48"></canvas>
+    <div id="hiddeniframes">
+        <iframe id="protocolhandler-invoker"></iframe>
+        <a id="protocolhandler-invoker-android" href=""></a>
+        <div id="wizard-plugindetection">
+            <!--For the wizard-->
+        </div>
+    </div>
+    <div id="ica-download-container"></div>
+    <div id="pwa-prompt-container" class="pwa-container">
+        <div id="pwa-prompt-close" class="pwa-close-button"></div>
+        <div>
+            <div id="pwa-prompt-text" class="pwa-prompt-desc"> </div>
+            <div class="pwa-dont-show-again-container">
+              <input type="checkbox" id="pwa-dont-show" class="pwa-checkbox"/>
+              <label for="pwa-dont-show" class="pwa-dont-show-desc"></label>
+            </div>
+        </div>
+        <button id="pwa-install-btn" class="pwa-install-button"></button>
+    </div>
+
+    
+    <script src="receiver/js/external/jquery-3.7.1.min_352506D0BCC2EE79.js"></script>
+    <script src="receiver/js/external/jquery-ui-v1.13.2.min_BFBC897355B124DF.js"></script>
+    <script src="receiver/js/external/jquery.ui.touch-punch.min_94EA8262E7FD35F4.js"></script>
+    <![if gte IE 9]><script src="receiver/js/external/hammer.v2.0.8.min_92DC2205994418A4.js"></script><![endif]>
+    <script src="receiver/js/external/velocity.min_4B2D1831B87BD9EA.js"></script>
+    <script src="receiver/js/external/slick.min_777DA4AAF5B96063.js"></script>
+    
+    
+    <script src="receiver/js/ctxs.core.min_E34F7A76F0B0448B.js"></script>
+    <script src="receiver/js/ctxs.webui.min_D5BC01F29684D32B.js"></script>
+    <script src="receiver/js/ctxs.registermanifestforpwa_67D084344468616F.js"></script>
+
+    <script type="text/javascript" id="customScript">
+        var query = window.location.search + window.location.hash;
+
+        if (query.indexOf('-nocustom') == -1) {
+            document.write('<script src="custom/script.js"></scri' + 'pt>');
+            document.write('<script src="custom/strings.en.js"></scri' + 'pt>');
+        }
+    </script>
+    <script type="text/javascript">
+		$(document).ready(function() {
+     		document.documentElement.setAttribute('lang', navigator.language);
+		}); 
+   </script>
+</body>
+</html>

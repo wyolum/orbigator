@@ -16,7 +16,7 @@ LAN_STEP_US = 1500               # µs per step
 
 # AOV motor (ULN2003)
 AOV_STEPS_PER_REV = 4096         # 28BYJ-48 half-steps per rev
-AOV_STEP_MS = 2                  # ms per half-step
+AOV_STEP_MS = 10                 # ms per half-step
 
 # Encoder
 DETENT_DIV = 4                   # edges per detent
@@ -179,17 +179,40 @@ def _enc_isr(_):
 A.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 B.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 
-# ---------------- Button handling (toggle motor on click) ----------------
-active_motor = 0  # 0 = LAN, 1 = AOV
+# ---------------- Button handling (3-state system) ----------------
+# State 0: Encoder controls LAN motor
+# State 1: Encoder controls AOV motor  
+# State 2: Continuous motion (AOV: 1 rev/90min, LAN: 2°/9min)
+current_state = 0
 last_button_time = 0
 
+# Continuous motion settings for State 2
+# AOV: 1 rev per 90 minutes = 4096 steps per 5400 seconds = 0.758 steps/sec
+# LAN: 2 deg per 9 minutes = (2/360)*200 steps per 540 sec = 0.00206 steps/sec
+AOV_CONTINUOUS_STEPS_PER_SEC = 4096.0 / 5400.0  # ~0.758 steps/sec
+LAN_CONTINUOUS_STEPS_PER_SEC = (2.0 / 360.0) * 200.0 / 540.0  # ~0.00206 steps/sec
+
+continuous_start_time = 0
+continuous_aov_accumulator = 0.0
+continuous_lan_accumulator = 0.0
+
 def poll_button():
-    """Check for button press and toggle active motor."""
-    global active_motor, last_button_time
+    """Check for button press and cycle through states."""
+    global current_state, last_button_time
+    global continuous_start_time, continuous_aov_accumulator, continuous_lan_accumulator
+    
     if SW.value() == 0:  # pressed (pull-up)
         now = time.ticks_ms()
         if time.ticks_diff(now, last_button_time) > DEBOUNCE_MS:
-            active_motor = 1 - active_motor  # toggle
+            # Cycle to next state
+            current_state = (current_state + 1) % 3
+            
+            if current_state == 2:
+                # Entering continuous motion state
+                continuous_start_time = time.ticks_ms()
+                continuous_aov_accumulator = 0.0
+                continuous_lan_accumulator = 0.0
+            
             last_button_time = now
             # wait for release
             while SW.value() == 0:
@@ -202,7 +225,7 @@ lan_target = 0
 aov_target = 0
 
 def update_target_from_encoder():
-    """Read encoder and update target for active motor."""
+    """Read encoder and update target for active motor based on current state."""
     global detents, last_det, lan_target, aov_target
     irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
     d = rc // DETENT_DIV
@@ -210,10 +233,11 @@ def update_target_from_encoder():
         step_det = d - last_det
         last_det = d
         detents = d
-        if active_motor == 0:  # LAN
+        if current_state == 0:  # LAN control
             lan_target += step_det * LAN_STEPS_PER_DETENT
-        else:  # AOV
+        elif current_state == 1:  # AOV control
             aov_target += step_det * AOV_STEPS_PER_DETENT
+        # State 2 (continuous motion) ignores encoder input
 
 def move_towards_targets(max_steps=40):
     """Move motors toward their targets."""
@@ -240,45 +264,80 @@ lan_set_fullstep()
 lan_enable(False)
 aov_release()
 
-print("LAN/AOV Integration Test")
-print("Knob controls active motor")
-print("Button toggles between LAN and AOV")
+print("LAN/AOV 3-State Integration Test")
+print("State 0: Encoder controls LAN motor")
+print("State 1: Encoder controls AOV motor")
+print("State 2: Continuous motion (AOV: 1rev/90min, LAN: 2deg/9min)")
+print("Button press cycles through states")
+
 
 while True:
     time.sleep_ms(20)
 
     poll_button()
-    update_target_from_encoder()
-    move_towards_targets()
+    
+    if current_state == 2:
+        # State 2: Continuous motion - move both motors at specified rates
+        now = time.ticks_ms()
+        elapsed_sec = time.ticks_diff(now, continuous_start_time) / 1000.0
+        
+        # Calculate how many steps should have been taken by now
+        target_aov_steps = elapsed_sec * AOV_CONTINUOUS_STEPS_PER_SEC
+        target_lan_steps = elapsed_sec * LAN_CONTINUOUS_STEPS_PER_SEC
+        
+        # Calculate steps to take this iteration (using accumulators for fractional steps)
+        continuous_aov_accumulator += AOV_CONTINUOUS_STEPS_PER_SEC * 0.02  # 20ms loop
+        continuous_lan_accumulator += LAN_CONTINUOUS_STEPS_PER_SEC * 0.02
+        
+        # Take integer steps when accumulator >= 1
+        if continuous_aov_accumulator >= 1.0:
+            steps_to_take = int(continuous_aov_accumulator)
+            aov_move_steps(steps_to_take)
+            aov_position += steps_to_take
+            continuous_aov_accumulator -= steps_to_take
+        
+        if continuous_lan_accumulator >= 1.0:
+            steps_to_take = int(continuous_lan_accumulator)
+            lan_move_steps(steps_to_take)
+            lan_position += steps_to_take
+            continuous_lan_accumulator -= steps_to_take
+    else:
+        # State 0 or 1: Encoder control mode
+        update_target_from_encoder()
+        move_towards_targets()
 
-    # Auto-disable LAN motor if idle
-    if lan_enabled and time.ticks_diff(time.ticks_ms(), lan_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
-        lan_enable(False)
+        # Auto-disable LAN motor if idle
+        if lan_enabled and time.ticks_diff(time.ticks_ms(), lan_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+            lan_enable(False)
 
-    # Auto-release AOV motor if idle
-    if time.ticks_diff(time.ticks_ms(), aov_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
-        aov_release()
+        # Auto-release AOV motor if idle
+        if time.ticks_diff(time.ticks_ms(), aov_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+            aov_release()
 
     # Display
     disp.fill(0)
     disp.text("{} LAN/AOV".format(DRIVER), 0, 0)
 
-    # Show active motor
-    motor_name = "LAN" if active_motor == 0 else "AOV"
-    disp.text("Active: {}".format(motor_name), 0, 12)
+    # Show state
+    if current_state == 0:
+        state_name = "State 0: LAN"
+    elif current_state == 1:
+        state_name = "State 1: AOV"
+    else:
+        state_name = "State 2: AUTO"
+    disp.text(state_name, 0, 12)
 
     # Show LAN position
-    disp.text("LAN: {} steps".format(lan_position), 0, 24)
     lan_rev = lan_position / (LAN_STEPS_PER_REV * LAN_MICROSTEP)
-    disp.text("     {:.2f} rev".format(lan_rev), 0, 32)
+    disp.text("LAN: {:.2f} rev".format(lan_rev), 0, 24)
 
     # Show AOV position
     aov_deg = (aov_position / AOV_STEPS_PER_REV) * 360
-    disp.text("AOV: {:.1f} deg".format(aov_deg), 0, 40)
-    disp.text("     {} steps".format(aov_position), 0, 48)
+    disp.text("AOV: {:.1f} deg".format(aov_deg), 0, 36)
 
     # Show motor status
     status = "ON" if (lan_enabled or (time.ticks_diff(time.ticks_ms(), aov_last_step_time) < MOTOR_IDLE_TIMEOUT_MS)) else "OFF"
-    disp.text("Motor: {}".format(status), 0, 56)
+    disp.text("Motor: {}".format(status), 0, 48)
 
     disp.show()
+
