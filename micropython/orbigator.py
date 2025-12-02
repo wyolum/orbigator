@@ -580,56 +580,58 @@ run_start_aov_deg = 0.0
 # Encoder tracking
 last_detent = 0
 
+# Button state tracking for long press detection
+button_down = False
+button_press_start = 0
+
 def poll_button():
-    """Check for button press and advance state."""
+    """Check for button press and advance state (non-blocking state machine)."""
     global current_state, last_button_time
     global run_start_time, run_start_lan_deg, run_start_aov_deg
     global aov_rate_deg_sec, lan_rate_deg_sec, lan_rate_deg_day, orbital_period_min
+    global button_down, button_press_start
     
-    if SW.value() == 0:  # pressed
-        now = time.ticks_ms()
+    now = time.ticks_ms()
+    
+    # Detect button press (transition from released to pressed)
+    if SW.value() == 0 and not button_down:
+        # Button just pressed
         if time.ticks_diff(now, last_button_time) > DEBOUNCE_MS:
-            # Check for long press
-            press_start = now
-            long_press = False
-            while SW.value() == 0:
-                if time.ticks_diff(time.ticks_ms(), press_start) > 1000:
-                    long_press = True
-                    break
-                time.sleep_ms(10)
+            button_down = True
+            button_press_start = now
+    
+    # Detect button release (transition from pressed to released)
+    elif SW.value() == 1 and button_down:
+        # Button just released
+        button_down = False
+        press_duration = time.ticks_diff(now, button_press_start)
+        last_button_time = now
+        
+        # Check if it was a long press (>= 1 second)
+        if press_duration >= 1000:
+            # Long press - trigger date/time setup
+            setup_datetime()
+            return
+        
+        # Short press - advance state
+        # Save state before changing (persists user adjustments)
+        save_state()
+        
+        # Advance to next state
+        current_state = (current_state + 1) % 4
+        
+        if current_state == 3:
+            # Entering run state - compute motor rates
+            _, _, lan_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
             
-            if long_press:
-                # Wait for release
-                while SW.value() == 0: time.sleep_ms(10)
-                # Trigger setup
-                setup_datetime()
-                last_button_time = time.ticks_ms()
-                return
-
-            # Short press action
-            # Save state before changing (persists user adjustments)
-            save_state()
+            # Calculate rates in deg/sec for RTC loop
+            lan_rate_deg_sec = lan_rate_deg_day / 86400.0
+            aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
             
-            # Advance to next state
-            current_state = (current_state + 1) % 4
-            
-            if current_state == 3:
-                # Entering run state - compute motor rates
-                _, _, lan_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
-                
-                # Calculate rates in deg/sec for RTC loop
-                lan_rate_deg_sec = lan_rate_deg_day / 86400.0
-                aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
-                
-                # Initialize RTC tracking
-                run_start_time = get_timestamp()
-                run_start_lan_deg = lan_position_deg
-                run_start_aov_deg = aov_position_deg
-            
-            last_button_time = now
-            # wait for release (if not already released from short press check)
-            while SW.value() == 0:
-                time.sleep_ms(10)
+            # Initialize RTC tracking
+            run_start_time = get_timestamp()
+            run_start_lan_deg = lan_position_deg
+            run_start_aov_deg = aov_position_deg
 
 def update_from_encoder():
     """Update current parameter based on encoder and state."""
