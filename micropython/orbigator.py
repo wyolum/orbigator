@@ -106,12 +106,29 @@ def get_timestamp():
                  rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0))
                  t = rtc.datetime()
             # DS3231: (year, month, day, weekday, hour, minute, second, subsecond)
-            # time.mktime: (year, month, day, hour, minute, second, weekday, yearday)
-            return time.mktime((t[0], t[1], t[2], t[4], t[5], t[6], t[3], 0))
+            # Calculate Unix timestamp manually (seconds since 1970-01-01)
+            # Simple approximation - good enough for relative time tracking
+            year, month, day, weekday, hour, minute, second, subsec = t
+            
+            # Days since epoch (1970-01-01)
+            # Simplified calculation - assumes 365.25 days/year average
+            days = (year - 1970) * 365 + (year - 1969) // 4  # Account for leap years
+            
+            # Add days for months (approximate - doesn't account for exact month lengths)
+            month_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+            if month > 0 and month <= 12:
+                days += month_days[month - 1]
+            
+            # Add current day
+            days += day - 1
+            
+            # Convert to seconds and add time of day
+            timestamp = days * 86400 + hour * 3600 + minute * 60 + second
+            return timestamp
         else:
             return time.time()
     except Exception as e:
-        print("RTC read error:", e)
+        print("RTC read error:", str(e))
         return time.time()
 
 def get_time_string():
