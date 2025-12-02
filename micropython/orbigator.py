@@ -5,11 +5,14 @@
 # Encoder: A=GP6, B=GP7, SW=GP8 (pull-ups)
 # OLED (SH1106/SSD1306 auto): I2C0 SDA=GP4, SCL=GP5
 
-import machine, time, math
+import machine, time, math, json
 from machine import Pin, I2C
 import framebuf
+from ds3231 import DS3231
 
 # ---------------- Constants ----------------
+CONFIG_FILE = "orbigator_config.json"
+
 # Earth parameters
 EARTH_RADIUS = 6378.137  # km
 EARTH_MU = 398600.4418   # km^3/s^2 (gravitational parameter)
@@ -34,11 +37,14 @@ MAX_ALTITUDE_KM = 2000
 
 # ---------------- OLED init ----------------
 OLED_W, OLED_H = 128, 64
-i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=400_000)
+# Using 100kHz for better reliability with ChronoDot/DS3231
+i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=100_000)
 addrs = i2c.scan()
 if not addrs:
-    raise SystemExit("No I2C OLED on I2C0 (GP4/GP5).")
-ADDR = addrs[0]
+    print("No I2C devices found on I2C0 (GP4/GP5).")
+    # Don't exit, might be loose connection, try to proceed
+else:
+    ADDR = addrs[0]
 
 class SH1106_I2C:
     def __init__(self, w,h,i2c,addr=0x3C):
@@ -59,10 +65,141 @@ class SH1106_I2C:
             self.i2c.writeto(self.addr, b'\x40'+self.buffer[s:e])
 
 try:
-    disp = SH1106_I2C(OLED_W, OLED_H, i2c, addr=ADDR); DRIVER="SH1106"
+    if addrs:
+        disp = SH1106_I2C(OLED_W, OLED_H, i2c, addr=ADDR); DRIVER="SH1106"
+    else:
+        raise Exception("No display")
 except Exception:
-    from ssd1306 import SSD1306_I2C
-    disp = SSD1306_I2C(OLED_W, OLED_H, i2c, addr=ADDR); DRIVER="SSD1306"
+    try:
+        if addrs:
+            from ssd1306 import SSD1306_I2C
+            disp = SSD1306_I2C(OLED_W, OLED_H, i2c, addr=ADDR); DRIVER="SSD1306"
+    except:
+        # Dummy display class if init fails
+        class DummyDisp:
+            def fill(self, c): pass
+            def text(self, s, x, y, c=1): pass
+            def show(self): pass
+        disp = DummyDisp()
+
+# ---------------- RTC Init ----------------
+try:
+    rtc = DS3231(i2c)
+    print("RTC found and initialized.")
+    # Check for valid year
+    t = rtc.datetime()
+    if t[0] < 2020:
+        print("RTC year < 2020, resetting to default.")
+        # Set to 2020-01-01 00:00:00
+        rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0)) # Wed
+except Exception as e:
+    print("RTC init failed:", e)
+    rtc = None
+
+def get_timestamp():
+    """Get current unix timestamp from RTC or system time."""
+    try:
+        if rtc:
+            t = rtc.datetime()
+            # Check year again just in case
+            if t[0] < 2020:
+                 rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0))
+                 t = rtc.datetime()
+            # DS3231: (year, month, day, weekday, hour, minute, second, subsecond)
+            # time.mktime: (year, month, day, hour, minute, second, weekday, yearday)
+            return time.mktime((t[0], t[1], t[2], t[4], t[5], t[6], t[3], 0))
+        else:
+            return time.time()
+    except Exception as e:
+        print("RTC read error:", e)
+        return time.time()
+
+def get_time_string():
+    """Return formatted time string YY-MM-DD HH:MM:SS"""
+    if rtc:
+        t = rtc.datetime()
+        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}".format(
+            t[0]%100, t[1], t[2], t[4], t[5], t[6])
+    else:
+        t = time.localtime()
+        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}".format(
+            t[0]%100, t[1], t[2], t[3], t[4], t[5])
+
+def setup_datetime():
+    """Prompt user to set date and time on startup."""
+    global last_detent, raw_count
+    
+    if not rtc:
+        print("No RTC found, skipping time setup.")
+        return
+
+    print("Entering Date/Time Setup...")
+    
+    # Get current time or default
+    t = rtc.datetime()
+    # (year, month, day, weekday, hour, minute, second, subsecond)
+    # Mutable list for editing: [year, month, day, hour, minute, second]
+    dt = [t[0], t[1], t[2], t[4], t[5], t[6]]
+    
+    fields = [
+        ("Year",   2020, 2099),
+        ("Month",  1, 12),
+        ("Day",    1, 31),
+        ("Hour",   0, 23),
+        ("Minute", 0, 59),
+        ("Second", 0, 59)
+    ]
+    
+    # Reset encoder for setup
+    raw_count = 0
+    last_detent = 0
+    
+    for i, (name, min_val, max_val) in enumerate(fields):
+        # Reset encoder for each field to avoid jumps
+        raw_count = 0
+        last_detent = 0
+        current_val = dt[i]
+        
+        while True:
+            # Encoder handling
+            irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
+            d = rc // DETENT_DIV
+            
+            if d != last_detent:
+                delta = d - last_detent
+                last_detent = d
+                current_val += delta
+                # Wrap or clamp? Let's clamp for Year, wrap for others maybe?
+                # Simple clamping is safer for UI
+                current_val = max(min_val, min(max_val, current_val))
+            
+            # Display
+            disp.fill(0)
+            disp.text("Set " + name + ":", 0, 0)
+            disp.text("{}".format(current_val), 0, 16)
+            disp.text("Click to Next", 0, 50)
+            disp.show()
+            
+            # Button handling
+            if SW.value() == 0: # Pressed
+                time.sleep_ms(DEBOUNCE_MS) # Debounce
+                while SW.value() == 0: time.sleep_ms(10) # Wait for release
+                dt[i] = current_val
+                break # Next field
+            
+            time.sleep_ms(20)
+            
+    # Save to RTC
+    # (year, month, day, weekday, hour, minute, second, subsecond)
+    # We need to calculate weekday. simple approach or just set to 0 (Mon)
+    # DS3231 calculates weekday automatically if running, but setting it might be needed.
+    # Let's use a dummy weekday 0.
+    new_t = (dt[0], dt[1], dt[2], 0, dt[3], dt[4], dt[5], 0)
+    rtc.datetime(new_t)
+    print("Time set to:", get_time_string())
+    
+    # Clear display
+    disp.fill(0); disp.show()
 
 # ---------------- LAN Motor (DRV8834) ----------------
 LAN_STEP  = Pin(14, Pin.OUT, value=0)
@@ -101,6 +238,60 @@ def lan_move_steps(steps):
     for _ in range(abs(steps)):
         lan_step_pulse()
 
+def get_delay(step_in_phase, phase_steps, v_start, v_end):
+    """
+    Get delay for a step within accel/decel phase.
+    Uses smoothstep: v = v_start + (v_end - v_start) * (3p² - 2p³)
+    """
+    p = (step_in_phase + 0.5) / phase_steps
+    blend = p * p * (3.0 - 2.0 * p)
+    v = v_start + (v_end - v_start) * blend
+    return int(1_000_000 / v)
+
+def lan_move_smooth(steps, max_speed_hz=500, min_speed_hz=50, jerk=10000):
+    """Rotate LAN motor with S-curve profile."""
+    if steps == 0: return
+    lan_enable(True)
+    LAN_DIR.value(1 if steps > 0 else 0)
+    steps = abs(steps)
+    
+    # Calculate accel distance
+    delta_v = max_speed_hz - min_speed_hz
+    accel_steps = int((min_speed_hz + max_speed_hz) * math.sqrt(delta_v / jerk))
+    accel_steps = max(accel_steps, 10)
+    decel_steps = accel_steps
+    
+    if accel_steps + decel_steps > steps:
+        accel_steps = steps // 2
+        decel_steps = steps - accel_steps
+    
+    cruise_steps = steps - accel_steps - decel_steps
+    cruise_delay = int(1_000_000 / max_speed_hz)
+    
+    last_time_us = time.ticks_us()
+    
+    # Accel
+    for i in range(accel_steps):
+        delay_us = get_delay(i, accel_steps, min_speed_hz, max_speed_hz)
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
+    # Cruise
+    for _ in range(cruise_steps):
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < cruise_delay: pass
+        last_time_us = time.ticks_us()
+        
+    # Decel
+    for i in range(decel_steps - 1, -1, -1):
+        delay_us = get_delay(i, decel_steps, min_speed_hz, max_speed_hz)
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+
+
+
 # ---------------- AOV Motor (ULN2003) ----------------
 AOV_IN1 = Pin(2, Pin.OUT)
 AOV_IN2 = Pin(3, Pin.OUT)
@@ -129,11 +320,66 @@ def aov_move_steps(steps):
     for _ in range(abs(steps)):
         aov_output_step(aov_half_step[aov_step_index])
         time.sleep_ms(AOV_STEP_MS)
+        aov_step_index = (aov_step_index - 1 + n) % n
+    aov_last_step_time = time.ticks_ms()
+
+def aov_move_smooth(steps, max_speed_hz=500, min_speed_hz=50, jerk=10000):
+    """Rotate AOV motor with S-curve profile."""
+    global aov_step_index, aov_last_step_time
+    if steps == 0: return
+    
+    # Direction logic (same as move_steps)
+    steps = -steps # Reverse direction as per user request
+    direction = 1 if steps > 0 else -1
+    steps = abs(steps)
+    n = len(aov_half_step)
+    
+    # Calculate accel distance
+    delta_v = max_speed_hz - min_speed_hz
+    accel_steps = int((min_speed_hz + max_speed_hz) * math.sqrt(delta_v / jerk))
+    accel_steps = max(accel_steps, 10)
+    decel_steps = accel_steps
+    
+    if accel_steps + decel_steps > steps:
+        accel_steps = steps // 2
+        decel_steps = steps - accel_steps
+    
+    cruise_steps = steps - accel_steps - decel_steps
+    cruise_delay = int(1_000_000 / max_speed_hz)
+    
+    last_time_us = time.ticks_us()
+    
+    def do_step():
+        global aov_step_index
+        aov_output_step(aov_half_step[aov_step_index])
         if direction > 0:
             aov_step_index = (aov_step_index + 1) % n
         else:
             aov_step_index = (aov_step_index - 1 + n) % n
+
+    # Accel
+    for i in range(accel_steps):
+        delay_us = get_delay(i, accel_steps, min_speed_hz, max_speed_hz)
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
+    # Cruise
+    for _ in range(cruise_steps):
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < cruise_delay: pass
+        last_time_us = time.ticks_us()
+        
+    # Decel
+    for i in range(decel_steps - 1, -1, -1):
+        delay_us = get_delay(i, decel_steps, min_speed_hz, max_speed_hz)
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
     aov_last_step_time = time.ticks_ms()
+
+
 
 def aov_release():
     AOV_IN1.value(0); AOV_IN2.value(0)
@@ -211,6 +457,97 @@ def compute_motor_rates(altitude_km):
     
     return aov_steps_per_sec, lan_steps_per_sec, lan_rate_deg_day, period_min
 
+# ---------------- Persistence ----------------
+def save_state():
+    """Save current orbital parameters to config file."""
+    try:
+        config = {
+            "altitude_km": orbital_altitude_km,
+            "lan_deg": lan_position_deg,
+            "aov_deg": aov_position_deg,
+            "timestamp": get_timestamp()
+        }
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f)
+        print("State saved:", config)
+    except Exception as e:
+        print("Error saving state:", e)
+
+def load_state():
+    """Load orbital parameters from config file."""
+    global orbital_altitude_km, lan_position_deg, aov_position_deg
+    global lan_position, aov_position, orbital_period_min
+    
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+            
+        orbital_altitude_km = config.get("altitude_km", 400.0)
+        lan_position_deg = config.get("lan_deg", 0.0)
+        aov_position_deg = config.get("aov_deg", 0.0)
+        saved_timestamp = config.get("timestamp", 0)
+        
+        # Update computed values
+        orbital_period_min = compute_period_from_altitude(orbital_altitude_km)
+        
+        # Restore logical motor positions (assuming motors are at the stored angles)
+        # This sets the "zero point" for the catch-up move
+        lan_position = int((lan_position_deg / 360.0) * LAN_STEPS_PER_REV)
+        aov_position = int((aov_position_deg / 360.0) * AOV_STEPS_PER_REV)
+        
+        # Calculate catch-up if we have a valid timestamp
+        current_timestamp = get_timestamp()
+        delta_t = current_timestamp - saved_timestamp
+        
+        if delta_t > 0 and saved_timestamp > 0:
+            print("Catching up {} seconds...".format(delta_t))
+            
+            # Compute rates for catch-up
+            _, _, lan_rate_deg_day, period_min = compute_motor_rates(orbital_altitude_km)
+            
+            # LAN catch-up
+            lan_rate_deg_sec = lan_rate_deg_day / 86400.0
+            lan_delta = lan_rate_deg_sec * delta_t
+            target_lan_deg = (lan_position_deg + lan_delta) % 360.0
+            
+            # Move LAN
+            target_lan_steps = int((target_lan_deg / 360.0) * LAN_STEPS_PER_REV)
+            diff_lan = target_lan_steps - lan_position
+            # Shortest path
+            if diff_lan > LAN_STEPS_PER_REV // 2: diff_lan -= LAN_STEPS_PER_REV
+            elif diff_lan < -(LAN_STEPS_PER_REV // 2): diff_lan += LAN_STEPS_PER_REV
+            
+            if diff_lan != 0:
+                lan_move_smooth(diff_lan)
+                lan_position = target_lan_steps
+                lan_position_deg = target_lan_deg
+
+            # AOV catch-up
+            aov_rate_deg_sec = 360.0 / (period_min * 60.0)
+            aov_delta = aov_rate_deg_sec * delta_t
+            target_aov_deg = (aov_position_deg + aov_delta) % 360.0
+            
+            # Move AOV
+            target_aov_steps = int((target_aov_deg / 360.0) * AOV_STEPS_PER_REV)
+            diff_aov = target_aov_steps - aov_position
+            # Shortest path
+            if diff_aov > AOV_STEPS_PER_REV // 2: diff_aov -= AOV_STEPS_PER_REV
+            elif diff_aov < -(AOV_STEPS_PER_REV // 2): diff_aov += AOV_STEPS_PER_REV
+            
+            if diff_aov != 0:
+                # Let's correct the call to pass diff_aov.
+                aov_move_smooth(diff_aov)
+                aov_position = target_aov_steps
+                aov_position_deg = target_aov_deg
+            
+            print("Moved LAN: {:.2f} deg, AOV: {:.2f} deg".format(lan_delta, aov_delta))
+        
+        print("State loaded:", config)
+    except OSError:
+        print("No config file found, using defaults.")
+    except Exception as e:
+        print("Error loading state:", e)
+
 # ---------------- State Machine ----------------
 # State 0: Set altitude
 # State 1: Set LAN position
@@ -230,15 +567,15 @@ lan_position = 0
 aov_position = 0
 
 # Computed rates
-aov_rate = 0.0
-lan_rate = 0.0
+aov_rate_deg_sec = 0.0
+lan_rate_deg_sec = 0.0
 lan_rate_deg_day = 0.0
 orbital_period_min = 0.0
 
-# Continuous motion accumulators
-continuous_start_time = 0
-continuous_aov_accumulator = 0.0
-continuous_lan_accumulator = 0.0
+# RTC motion tracking
+run_start_time = 0
+run_start_lan_deg = 0.0
+run_start_aov_deg = 0.0
 
 # Encoder tracking
 last_detent = 0
@@ -246,24 +583,51 @@ last_detent = 0
 def poll_button():
     """Check for button press and advance state."""
     global current_state, last_button_time
-    global continuous_start_time, continuous_aov_accumulator, continuous_lan_accumulator
-    global aov_rate, lan_rate, lan_rate_deg_day
+    global run_start_time, run_start_lan_deg, run_start_aov_deg
+    global aov_rate_deg_sec, lan_rate_deg_sec, lan_rate_deg_day, orbital_period_min
     
     if SW.value() == 0:  # pressed
         now = time.ticks_ms()
         if time.ticks_diff(now, last_button_time) > DEBOUNCE_MS:
+            # Check for long press
+            press_start = now
+            long_press = False
+            while SW.value() == 0:
+                if time.ticks_diff(time.ticks_ms(), press_start) > 1000:
+                    long_press = True
+                    break
+                time.sleep_ms(10)
+            
+            if long_press:
+                # Wait for release
+                while SW.value() == 0: time.sleep_ms(10)
+                # Trigger setup
+                setup_datetime()
+                last_button_time = time.ticks_ms()
+                return
+
+            # Short press action
+            # Save state before changing (persists user adjustments)
+            save_state()
+            
             # Advance to next state
             current_state = (current_state + 1) % 4
             
             if current_state == 3:
                 # Entering run state - compute motor rates
-                aov_rate, lan_rate, lan_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
-                continuous_start_time = time.ticks_ms()
-                continuous_aov_accumulator = 0.0
-                continuous_lan_accumulator = 0.0
+                _, _, lan_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
+                
+                # Calculate rates in deg/sec for RTC loop
+                lan_rate_deg_sec = lan_rate_deg_day / 86400.0
+                aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
+                
+                # Initialize RTC tracking
+                run_start_time = get_timestamp()
+                run_start_lan_deg = lan_position_deg
+                run_start_aov_deg = aov_position_deg
             
             last_button_time = now
-            # wait for release
+            # wait for release (if not already released from short press check)
             while SW.value() == 0:
                 time.sleep_ms(10)
 
@@ -321,6 +685,12 @@ LAN_M0.value(0); LAN_M1.value(0)  # Full-step mode
 lan_enable(False)
 aov_release()
 
+# Setup Date/Time on startup
+setup_datetime()
+
+# Load saved state on startup
+load_state()
+
 print("Orbigator - Orbital Mechanics Simulator")
 print("State 0: Set Altitude | State 1: Set LAN")
 print("State 2: Set AOV | State 3: Run")
@@ -334,27 +704,46 @@ while True:
     poll_button()
     
     if current_state == 3:
-        # State 3: Run simulation with continuous motion
-        continuous_aov_accumulator += aov_rate * 0.02  # 20ms loop
-        continuous_lan_accumulator += lan_rate * 0.02
+        # State 3: Run simulation with RTC-based motion
+        now = get_timestamp()
+        elapsed = now - run_start_time
         
-        if continuous_aov_accumulator >= 1.0:
-            steps = int(continuous_aov_accumulator)
-            aov_move_steps(steps)
-            aov_position += steps
-            continuous_aov_accumulator -= steps
+        # Calculate target positions based on elapsed time
+        target_lan_deg = (run_start_lan_deg + (lan_rate_deg_sec * elapsed)) % 360.0
+        target_aov_deg = (run_start_aov_deg + (aov_rate_deg_sec * elapsed)) % 360.0
         
-        if continuous_lan_accumulator >= 1.0:
-            steps = int(continuous_lan_accumulator)
-            lan_move_steps(steps)
-            lan_position += steps
-            continuous_lan_accumulator -= steps
+        # Update global positions for display/saving
+
+        lan_position_deg = target_lan_deg
+        aov_position_deg = target_aov_deg
+        
+        # Move LAN motor
+        target_lan_steps = int((target_lan_deg / 360.0) * LAN_STEPS_PER_REV)
+        delta_lan = target_lan_steps - lan_position
+        # Handle wrap-around for shortest path
+        if delta_lan > LAN_STEPS_PER_REV // 2: delta_lan -= LAN_STEPS_PER_REV
+        elif delta_lan < -(LAN_STEPS_PER_REV // 2): delta_lan += LAN_STEPS_PER_REV
+        
+        if delta_lan != 0:
+            lan_move_steps(delta_lan)
+            lan_position = target_lan_steps
+            
+        # Move AOV motor
+        target_aov_steps = int((target_aov_deg / 360.0) * AOV_STEPS_PER_REV)
+        delta_aov = target_aov_steps - aov_position
+        # Handle wrap-around for shortest path
+        if delta_aov > AOV_STEPS_PER_REV // 2: delta_aov -= AOV_STEPS_PER_REV
+        elif delta_aov < -(AOV_STEPS_PER_REV // 2): delta_aov += AOV_STEPS_PER_REV
+        
+        if delta_aov != 0:
+            aov_move_steps(-delta_aov) # Negative to reverse direction (as per user request)
+            aov_position = target_aov_steps
         
         # Auto-disable motors after idle timeout to save power
-        now = time.ticks_ms()
-        if lan_enabled and time.ticks_diff(now, lan_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+        now_ms = time.ticks_ms()
+        if lan_enabled and time.ticks_diff(now_ms, lan_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
             lan_enable(False)
-        if time.ticks_diff(now, aov_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+        if time.ticks_diff(now_ms, aov_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
             aov_release()
     else:
         # States 0-2: Encoder control
@@ -362,7 +751,7 @@ while True:
     
     # Display
     disp.fill(0)
-    disp.text("Orbigator", 0, 0)
+    disp.text(get_time_string(), 0, 0)
     
     if current_state == 0:
         disp.text("Set Altitude:", 0, 12)

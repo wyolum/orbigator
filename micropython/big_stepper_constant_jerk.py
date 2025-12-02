@@ -142,5 +142,4 @@ while True:
     release()
     time.sleep(5)
     break
-while True:
     
