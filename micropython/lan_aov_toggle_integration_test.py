@@ -3,10 +3,12 @@
 # AOV Motor (ULN2003): IN1=GP2, IN2=GP3, IN3=GP22, IN4=GP26
 # Encoder (COM/CON -> GND): A=GP6, B=GP7, SW=GP8  (pull-ups)
 # OLED (SH1106/SSD1306 auto): I2C0 SDA=GP4, SCL=GP5
+# RTC (DS3231): I2C0 (shared with OLED)
 
 import machine, time
 from machine import Pin, I2C
 import framebuf
+from ds3231 import DS3231
 
 # ---------------- User settings ----------------
 # LAN motor (DRV8834)
@@ -27,10 +29,11 @@ REVERSE_ENCODER = False
 # Motor control
 MOTOR_IDLE_TIMEOUT_MS = 500      # disable after inactivity
 DEBOUNCE_MS = 200                # button debounce time
+LONG_PRESS_MS = 1000             # long press threshold for time setting
 
-# ---------------- OLED detect & init ----------------
+# ---------------- I2C & OLED init ----------------
 OLED_W, OLED_H = 128, 64
-i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=400_000)
+i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=100_000)  # 100kHz for RTC compatibility
 addrs = i2c.scan()
 if not addrs:
     raise SystemExit("No I2C OLED on I2C0 (GP4/GP5).")
@@ -59,6 +62,14 @@ try:
 except Exception:
     from ssd1306 import SSD1306_I2C
     disp = SSD1306_I2C(OLED_W, OLED_H, i2c, addr=ADDR); DRIVER="SSD1306"
+
+# ---------------- RTC init ----------------
+try:
+    rtc = DS3231(i2c)
+    print("DS3231 RTC initialized")
+except Exception as e:
+    print("Warning: DS3231 not found:", e)
+    rtc = None
 
 # ---------------- LAN Motor (DRV8834) pins ----------------
 LAN_STEP  = Pin(14, Pin.OUT, value=0)
@@ -179,12 +190,16 @@ def _enc_isr(_):
 A.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 B.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 
-# ---------------- Button handling (3-state system) ----------------
+# ---------------- Button handling (4-state system + time setting) ----------------
 # State 0: Encoder controls LAN motor
-# State 1: Encoder controls AOV motor  
+# State 1: Encoder controls AOV motor
 # State 2: Continuous motion (AOV: 1 rev/90min, LAN: 2°/9min)
+# State 3: Time setting mode (long press to enter/exit)
 current_state = 0
-last_button_time = 0
+time_setting_field = 0  # 0=hour, 1=minute, 2=year, 3=month, 4=day
+button_press_start = 0
+button_is_pressed = False
+last_button_action = 0
 
 # Continuous motion settings for State 2
 # AOV: 1 rev per 90 minutes = 4096 steps per 5400 seconds = 0.758 steps/sec
@@ -196,27 +211,75 @@ continuous_start_time = 0
 continuous_aov_accumulator = 0.0
 continuous_lan_accumulator = 0.0
 
+# Time setting variables
+edit_time = [0, 0, 0, 0, 0]  # [hour, minute, year, month, day]
+
 def poll_button():
-    """Check for button press and cycle through states."""
-    global current_state, last_button_time
+    """Check for button press - short press cycles states, long press enters time setting."""
+    global current_state, button_press_start, button_is_pressed, last_button_action
     global continuous_start_time, continuous_aov_accumulator, continuous_lan_accumulator
-    
-    if SW.value() == 0:  # pressed (pull-up)
-        now = time.ticks_ms()
-        if time.ticks_diff(now, last_button_time) > DEBOUNCE_MS:
-            # Cycle to next state
-            current_state = (current_state + 1) % 3
-            
-            if current_state == 2:
-                # Entering continuous motion state
-                continuous_start_time = time.ticks_ms()
-                continuous_aov_accumulator = 0.0
-                continuous_lan_accumulator = 0.0
-            
-            last_button_time = now
-            # wait for release
-            while SW.value() == 0:
-                time.sleep_ms(10)
+    global time_setting_field, edit_time
+
+    now = time.ticks_ms()
+    sw_state = SW.value()
+
+    # Detect button press (falling edge)
+    if sw_state == 0 and not button_is_pressed:
+        button_is_pressed = True
+        button_press_start = now
+
+    # Detect button release (rising edge)
+    elif sw_state == 1 and button_is_pressed:
+        button_is_pressed = False
+        press_duration = time.ticks_diff(now, button_press_start)
+
+        # Debounce check
+        if time.ticks_diff(now, last_button_action) < DEBOUNCE_MS:
+            return
+
+        last_button_action = now
+
+        # Long press: toggle time setting mode
+        if press_duration >= LONG_PRESS_MS:
+            if current_state == 3:
+                # Exit time setting mode - save time to RTC
+                if rtc:
+                    # Get current time to preserve weekday and seconds
+                    dt = rtc.datetime()
+                    # Update with edited values
+                    rtc.datetime((edit_time[2], edit_time[3], edit_time[4], dt[3],
+                                  edit_time[0], edit_time[1], 0, 0))
+                current_state = 0  # Return to LAN control mode
+                time_setting_field = 0
+            else:
+                # Enter time setting mode - load current time
+                if rtc:
+                    dt = rtc.datetime()
+                    edit_time[0] = dt[4]  # hour
+                    edit_time[1] = dt[5]  # minute
+                    edit_time[2] = dt[0]  # year
+                    edit_time[3] = dt[1]  # month
+                    edit_time[4] = dt[2]  # day
+                else:
+                    # Default time if no RTC
+                    edit_time = [12, 0, 2025, 12, 1]
+                current_state = 3
+                time_setting_field = 0
+
+        # Short press: cycle states or fields
+        else:
+            if current_state == 3:
+                # In time setting: cycle through fields
+                time_setting_field = (time_setting_field + 1) % 5
+            else:
+                # Normal mode: cycle through motor control states
+                current_state = (current_state + 1) % 3
+
+                if current_state == 2:
+                    # Entering continuous motion state
+                    continuous_start_time = time.ticks_ms()
+                    continuous_aov_accumulator = 0.0
+                    continuous_lan_accumulator = 0.0
 
 # ---------------- Motor position tracking ----------------
 lan_position = 0
@@ -225,18 +288,31 @@ lan_target = 0
 aov_target = 0
 
 def update_target_from_encoder():
-    """Read encoder and update target for active motor based on current state."""
-    global detents, last_det, lan_target, aov_target
+    """Read encoder and update target for active motor or time field based on current state."""
+    global detents, last_det, lan_target, aov_target, edit_time, time_setting_field
     irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
     d = rc // DETENT_DIV
     if d != last_det:
         step_det = d - last_det
         last_det = d
         detents = d
+
         if current_state == 0:  # LAN control
             lan_target += step_det * LAN_STEPS_PER_DETENT
         elif current_state == 1:  # AOV control
             aov_target += step_det * AOV_STEPS_PER_DETENT
+        elif current_state == 3:  # Time setting mode
+            # Adjust the active time field
+            if time_setting_field == 0:  # Hour
+                edit_time[0] = (edit_time[0] + step_det) % 24
+            elif time_setting_field == 1:  # Minute
+                edit_time[1] = (edit_time[1] + step_det) % 60
+            elif time_setting_field == 2:  # Year
+                edit_time[2] = max(2000, min(2099, edit_time[2] + step_det))
+            elif time_setting_field == 3:  # Month
+                edit_time[3] = max(1, min(12, edit_time[3] + step_det))
+            elif time_setting_field == 4:  # Day
+                edit_time[4] = max(1, min(31, edit_time[4] + step_det))
         # State 2 (continuous motion) ignores encoder input
 
 def move_towards_targets(max_steps=40):
@@ -264,11 +340,11 @@ lan_set_fullstep()
 lan_enable(False)
 aov_release()
 
-print("LAN/AOV 3-State Integration Test")
+print("LAN/AOV Integration Test with RTC Time Setting")
 print("State 0: Encoder controls LAN motor")
 print("State 1: Encoder controls AOV motor")
 print("State 2: Continuous motion (AOV: 1rev/90min, LAN: 2deg/9min)")
-print("Button press cycles through states")
+print("SHORT PRESS: Cycle states | LONG PRESS (1s): Set time")
 
 
 while True:
@@ -280,27 +356,28 @@ while True:
         # State 2: Continuous motion - move both motors at specified rates
         now = time.ticks_ms()
         elapsed_sec = time.ticks_diff(now, continuous_start_time) / 1000.0
-        
-        # Calculate how many steps should have been taken by now
-        target_aov_steps = elapsed_sec * AOV_CONTINUOUS_STEPS_PER_SEC
-        target_lan_steps = elapsed_sec * LAN_CONTINUOUS_STEPS_PER_SEC
-        
+
         # Calculate steps to take this iteration (using accumulators for fractional steps)
         continuous_aov_accumulator += AOV_CONTINUOUS_STEPS_PER_SEC * 0.02  # 20ms loop
         continuous_lan_accumulator += LAN_CONTINUOUS_STEPS_PER_SEC * 0.02
-        
+
         # Take integer steps when accumulator >= 1
         if continuous_aov_accumulator >= 1.0:
             steps_to_take = int(continuous_aov_accumulator)
             aov_move_steps(steps_to_take)
             aov_position += steps_to_take
             continuous_aov_accumulator -= steps_to_take
-        
+
         if continuous_lan_accumulator >= 1.0:
             steps_to_take = int(continuous_lan_accumulator)
             lan_move_steps(steps_to_take)
             lan_position += steps_to_take
             continuous_lan_accumulator -= steps_to_take
+
+    elif current_state == 3:
+        # State 3: Time setting mode - encoder adjusts time fields
+        update_target_from_encoder()
+
     else:
         # State 0 or 1: Encoder control mode
         update_target_from_encoder()
@@ -316,28 +393,48 @@ while True:
 
     # Display
     disp.fill(0)
-    disp.text("{} LAN/AOV".format(DRIVER), 0, 0)
 
-    # Show state
-    if current_state == 0:
-        state_name = "State 0: LAN"
-    elif current_state == 1:
-        state_name = "State 1: AOV"
+    if current_state == 3:
+        # Time setting display
+        disp.text("SET TIME", 0, 0)
+        disp.text("(Hold to save)", 0, 8)
+
+        # Show current time being edited with cursor
+        field_names = ["Hour", "Min", "Year", "Mon", "Day"]
+        cursor = ">" if (time.ticks_ms() // 500) % 2 == 0 else " "  # Blink cursor
+
+        # Display fields with active field highlighted
+        for i in range(5):
+            y = 20 + i * 8
+            if i == time_setting_field:
+                disp.text("{}{}:{}".format(cursor, field_names[i], edit_time[i]), 0, y)
+            else:
+                disp.text(" {}:{}".format(field_names[i], edit_time[i]), 0, y)
+
     else:
-        state_name = "State 2: AUTO"
-    disp.text(state_name, 0, 12)
+        # Normal mode display
+        disp.text("{} LAN/AOV".format(DRIVER), 0, 0)
 
-    # Show LAN position
-    lan_rev = lan_position / (LAN_STEPS_PER_REV * LAN_MICROSTEP)
-    disp.text("LAN: {:.2f} rev".format(lan_rev), 0, 24)
+        # Show state
+        if current_state == 0:
+            state_name = "State 0: LAN"
+        elif current_state == 1:
+            state_name = "State 1: AOV"
+        else:
+            state_name = "State 2: AUTO"
+        disp.text(state_name, 0, 12)
 
-    # Show AOV position
-    aov_deg = (aov_position / AOV_STEPS_PER_REV) * 360
-    disp.text("AOV: {:.1f} deg".format(aov_deg), 0, 36)
+        # Show LAN position
+        lan_rev = lan_position / (LAN_STEPS_PER_REV * LAN_MICROSTEP)
+        disp.text("LAN: {:.2f} rev".format(lan_rev), 0, 24)
 
-    # Show motor status
-    status = "ON" if (lan_enabled or (time.ticks_diff(time.ticks_ms(), aov_last_step_time) < MOTOR_IDLE_TIMEOUT_MS)) else "OFF"
-    disp.text("Motor: {}".format(status), 0, 48)
+        # Show AOV position
+        aov_deg = (aov_position / AOV_STEPS_PER_REV) * 360
+        disp.text("AOV: {:.1f} deg".format(aov_deg), 0, 36)
+
+        # Show motor status
+        status = "ON" if (lan_enabled or (time.ticks_diff(time.ticks_ms(), aov_last_step_time) < MOTOR_IDLE_TIMEOUT_MS)) else "OFF"
+        disp.text("Motor: {}".format(status), 0, 48)
 
     disp.show()
 
