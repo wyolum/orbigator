@@ -1,6 +1,8 @@
 # Simple DS3231 RTC driver for MicroPython
 # Based on DS3231 datasheet and community implementations
 
+import time
+
 class DS3231:
     def __init__(self, i2c, addr=0x68):
         self.i2c = i2c
