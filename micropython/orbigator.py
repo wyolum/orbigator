@@ -135,11 +135,11 @@ def get_time_string():
     """Return formatted time string YY-MM-DD HH:MM:SS"""
     if rtc:
         t = rtc.datetime()
-        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}".format(
+        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
             t[0]%100, t[1], t[2], t[4], t[5], t[6])
     else:
         t = time.localtime()
-        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}".format(
+        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
             t[0]%100, t[1], t[2], t[3], t[4], t[5])
 
 def setup_datetime():
