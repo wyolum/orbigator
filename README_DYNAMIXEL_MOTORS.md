@@ -1,4 +1,19 @@
-# 🎉 DYNAMIXEL MOTORS ARRIVED - START HERE! 🎉
+# 🎉 DYNAMIXEL MOTORS - START HERE! 🎉
+
+## ⚡ SERVO CHOICE: XC330-M288-T (Upgraded)
+
+**Selected Model:** DYNAMIXEL XC330-M288-T
+**Why:** XL330-M288-T backordered until Q1 2026. XC330 is the upgraded version with:
+- ✅ Metal gears (vs plastic in XL330)
+- ✅ Upgraded bearings
+- ✅ 78% more torque (0.93 vs 0.52 N·m @ 5V)
+- ✅ **100% compatible** with all XL330 documentation below
+- ✅ Same Protocol 2.0, same wiring, same code
+- ✅ Available immediately
+
+**Note:** All documentation references to "XL330" apply equally to "XC330". No changes needed.
+
+---
 
 ## Quick Start Guide for Orbigator DYNAMIXEL Integration
 
