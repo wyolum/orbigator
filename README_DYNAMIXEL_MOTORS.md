@@ -45,7 +45,7 @@
    ```
 4. Follow prompts to set:
    - First servo → ID=1 (LAN Motor)
-   - Second servo → ID=2 (AOV Motor)
+   - Second servo → ID=2 (AoV Motor - Argument of Vehicle)
 
 **Alternative - Interactive Menu:**
 ```python
@@ -78,7 +78,7 @@ scan_servos()
 
 # Should find ID 1 and 2
 ping(1)  # LAN Motor
-ping(2)  # AOV Motor
+ping(2)  # AoV Motor
 
 # Test movement
 set_torque(1, True)
@@ -107,7 +107,7 @@ Before you start, verify you have:
 | Servo ID | Motor Type | Function |
 |----------|------------|----------|
 | 1 | LAN Motor | Longitude of Ascending Node |
-| 2 | AOV Motor | Argument of Perigee / True Anomaly |
+| 2 | AoV Motor | Argument of Vehicle (0°=equator↑, 90°=max lat, 180°=equator↓, 270°=min lat) |
 
 ### 📞 **Need Help?**
 

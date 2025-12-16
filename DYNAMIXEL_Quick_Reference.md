@@ -27,8 +27,10 @@
 - GND → Servo GND (Pin 1, Black)
 
 ### Servo IDs
-- Servo 1 (ID=1): LAN Motor
-- Servo 2 (ID=2): AOV Motor
+| Servo ID | Motor Type | Function |
+|----------|------------|----------|
+| 1 | LAN Motor | Longitude of Ascending Node (0-360°) |
+| 2 | AoV Motor | Argument of Vehicle (orbital position: 0°=equator↑, 90°=max lat, 180°=equator↓, 270°=min lat) |
 
 ### Direction Control Logic
 - **GP2 = HIGH**: Transmit mode (Pico sends data)

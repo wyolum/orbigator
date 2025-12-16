@@ -3,6 +3,7 @@ include </home/justin/code/BOSL2/std.scad>
 include </home/justin/code/BOSL2/gears.scad>
 
 use <stepper_motors.scad>
+use <dynamixel_motor.scad>
 use <flange.scad>
 use <sled.scad>
 use <spring.scad>
@@ -111,7 +112,9 @@ module idlers(){
 }
 module eqx_motor_assy(){
   translate([0,0,-150]){
-    translate([0, r, 17.8 - h/2])nema11();
+    //translate([0, r, 17.8 - h/2])nema11();
+    translate([0, r, 17.8 - h/2])rotate([0,180,0])dynamixel_xl330();
+    translate([0, r, 17.8 - h/2])rotate([0,180,0])dynamixel_drive_shaft();
     translate([0, r, 0])drive_gear();
   }
 }
@@ -189,28 +192,21 @@ module RingLock(){
 
 module new_base_assy(){
   dd = 23/2;
-  hh = 23;
+  hh = 23;  
   translate([0,0,-150]){
     difference(){
       union(){
-	translate([-35/2, -10, h/2+1])cube([35, r, 10]);
-	translate([-35/2, -10, -hh])cube([35, 35, hh+10]);
-	translate([0, r, h/2+1])cylinder(d=40, h=10);
+
+	translate([-22/2, -10, h/2+1])cube([22, 62, 10]);
+	translate([-35/2, -10, -hh])cube([35, 25, hh+10]);
+	//translate([0, r, h/2+1])cylinder(d=40, h=10);
 
 	// front post to clamp sun gear
 	translate([0,-r, -24])cylinder(d=10, h=18, center=false);
 	translate([0,-r, -24+18])cylinder(d1=8, d2=8, h=10, center=false);
 	
       }
-      translate([0, r, -50])cylinder(d=25, h=100);
-      translate([dd, r+dd, -50]) cylinder(h=100, d=3.5);
-      translate([-dd, r+dd, -50]) cylinder(h=100, d=3.5);
-      translate([ dd, r-dd, -50]) cylinder(h=100, d=3.5);
-      translate([-dd, r-dd, -50]) cylinder(h=100, d=3.5);
-      translate([ dd, r+dd, -100+dd]) cylinder(h=100, d=6.5);
-      translate([ dd, r-dd, -100+dd]) cylinder(h=100, d=6.5);
-      translate([-dd, r+dd, -100+dd]) cylinder(h=100, d=6.5);
-      translate([-dd, r-dd, -100+dd]) cylinder(h=100, d=6.5);
+      translate([0, r, -50])cylinder(d=15, h=100);
     }
     TT = 14;
     if(true){// base enclosure
@@ -230,9 +226,10 @@ module new_base_assy(){
 
 module base_with_1010_hole(){
   dd = 23/2;
-  
   difference(){
     new_base_assy();
+    translate([0, r, 17.8 - h/2-150])rotate([0,180,0])dynamixel_mounting_screws();
+
     cube([10.2, 10.2, 1000],center=true);
     translate([5, 5, 0])cylinder(d=3, h=1000, center=true);
     translate([-5, 5, 0])cylinder(d=3, h=1000, center=true);
@@ -247,12 +244,6 @@ module base_with_1010_hole(){
       translate([0, 8, 0])rotate([-90, 0, 0])cylinder(d=6, h=100);
       translate([0, 0, -13])rotate([-90, 0, 0])cylinder(d=2.5, h=100);
       translate([0, 8, -13])rotate([-90, 0, 0])cylinder(d=6, h=100);
-
-      //access holes for motor mount screws
-       translate([dd, r-dd, -100]) cylinder(h=100, d=5);
-       translate([dd, r+dd, -100]) cylinder(h=100, d=5);
-       translate([-dd, r+dd, -100]) cylinder(h=100, d=5);
-       translate([-dd, r-dd, -100]) cylinder(h=100, d=5);
 
        // big holes in bottom
        translate([35,0,-50])scale([1,1.7,1])cylinder(d=35, h=100);
@@ -376,7 +367,7 @@ module aov_motor_assy(inc, aov){
 
 if(true){
   //color("cornflowerblue")Ring();
-  //eqx_motor_assy();
+  eqx_motor_assy();
   //color("lightslategrey")base_with_1010_hole();
   //idlers();
   //aov_motor_assy(65, 90);
@@ -398,6 +389,4 @@ module globe(){
     translate([-500, -500, -150-100])cube([1000, 1000, 100]);
   }
 }
-
-
-
+  
