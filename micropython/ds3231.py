@@ -8,8 +8,9 @@ class DS3231:
         self.i2c = i2c
         self.addr = addr
         # Check if device is present
-        if addr not in i2c.scan():
-            raise OSError("DS3231 not found at address 0x{:02x}".format(addr))
+        # Note: Scan check disabled - do i2c.scan() before creating DS3231 instance
+        # if addr not in i2c.scan():
+        #     raise OSError("DS3231 not found at address 0x{:02x}".format(addr))
 
     def _bcd2dec(self, bcd):
         """Convert BCD to decimal"""

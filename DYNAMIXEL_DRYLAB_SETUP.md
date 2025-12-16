@@ -73,7 +73,49 @@ Since you found the horn is thinner than expected:
 - [ ] Raspberry Pi Pico 2
 - [ ] 5V power supply with appropriate connector
 
-### 2.2 Build the Interface Circuit
+### 2.2 Understanding the 74x126 Tri-State Buffer
+
+The **SN74HC126N** (or 74x126 family) is a quad tri-state buffer that enables half-duplex communication with DYNAMIXEL servos. We only use one of the four buffers (gate 1).
+
+![74x126 Pinout Diagram](images/74x126_pinout.png)
+
+#### Why Do We Need This?
+
+DYNAMIXEL servos use **half-duplex UART** - a single DATA wire for both transmit (TX) and receive (RX). The Pico has separate TX and RX pins, so we need the buffer to:
+1. **Connect Pico TX to DATA** when transmitting (buffer enabled)
+2. **Disconnect Pico TX from DATA** when receiving (buffer tri-stated/high-Z)
+3. **Allow Pico RX to always listen** on DATA line
+
+#### Pin Functions (14-pin DIP):
+
+| Pin | Name | Function | Connection |
+|-----|------|----------|------------|
+| 1 | 1OE | Output Enable (Gate 1) | GP2 (Direction Control) |
+| 2 | 1A | Input (Gate 1) | GP0 (UART TX) |
+| 3 | 1Y | Output (Gate 1) | DATA BUS |
+| 4 | 2OE | Output Enable (Gate 2) | Not used |
+| 5 | 2A | Input (Gate 2) | Not used |
+| 6 | 2Y | Output (Gate 2) | Not used |
+| 7 | GND | Ground | GND rail |
+| 8 | 3Y | Output (Gate 3) | Not used |
+| 9 | 3A | Input (Gate 3) | Not used |
+| 10 | 3OE | Output Enable (Gate 3) | Not used |
+| 11 | 4Y | Output (Gate 4) | Not used |
+| 12 | 4A | Input (Gate 4) | Not used |
+| 13 | 4OE | Output Enable (Gate 4) | Not used |
+| 14 | VCC | Power Supply | 3.3V from Pico |
+
+#### How It Works:
+
+```
+Direction Control (GP2):
+  HIGH (1) → Buffer ENABLED  → 1Y outputs 1A signal → Pico transmits to DATA
+  LOW  (0) → Buffer TRI-STATE → 1Y is high-Z       → Servo transmits on DATA
+
+Pico RX (GP1) is always connected to DATA to receive responses.
+```
+
+### 2.3 Build the Interface Circuit
 
 **Reference:** See `DYNAMIXEL_WIRING_DIAGRAM.txt` for complete ASCII diagram
 
