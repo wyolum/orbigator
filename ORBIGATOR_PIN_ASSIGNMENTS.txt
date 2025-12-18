@@ -1,0 +1,197 @@
+ORBIGATOR COMPLETE PIN ASSIGNMENTS
+Raspberry Pi Pico 2 with DYNAMIXEL XL330-M288-T Motors
+========================================================
+
+COMPONENT OVERVIEW
+==================
+- Raspberry Pi Pico 2 (main controller)
+- 2x DYNAMIXEL XL330-M288-T servos (LAN and AoV motors)
+- SN74HC126N quad tri-state buffer (half-duplex UART)
+- SH1106/SSD1306 OLED display (128x64)
+- DS3231 RTC (ChronoDot)
+- Rotary encoder with push button
+- 10kΩ pull-up resistor (DYNAMIXEL DATA line)
+
+========================================================
+RASPBERRY PI PICO 2 PIN ASSIGNMENTS
+========================================================
+
+DYNAMIXEL COMMUNICATION (UART0 + 74HC126 Buffer)
+-------------------------------------------------
+GP0  (Pin 1)  → UART0 TX → 74HC126 Pin 2 (1A - Input)
+GP1  (Pin 2)  → UART0 RX → DYNAMIXEL DATA line (shared)
+GP2  (Pin 4)  → Direction Control → 74HC126 Pin 1 (1OE - Output Enable)
+
+I2C0 (OLED Display + RTC)
+--------------------------
+GP4  (Pin 6)  → I2C0 SDA → OLED SDA + DS3231 SDA
+GP5  (Pin 7)  → I2C0 SCL → OLED SCL + DS3231 SCL
+
+ROTARY ENCODER
+--------------
+GP6  (Pin 9)  → Encoder A (with internal pull-up)
+GP7  (Pin 10) → Encoder B (with internal pull-up)
+GP8  (Pin 11) → Encoder Switch (with internal pull-up)
+
+POWER
+-----
+3V3(OUT) (Pin 36) → 74HC126 VCC (Pin 14)
+GND      (Pin 3, 8, 13, 18, 23, 28, 33, 38) → Common ground
+
+UNUSED PINS (Available for Future Expansion)
+---------------------------------------------
+GP3, GP9-GP22, GP26-GP28
+
+========================================================
+SN74HC126N TRI-STATE BUFFER CONNECTIONS
+========================================================
+Pin 1  (1OE)  ← GP2 (Direction Control)
+Pin 2  (1A)   ← GP0 (UART TX)
+Pin 3  (1Y)   → DYNAMIXEL DATA BUS
+Pin 4  (2OE)  - Not used
+Pin 5  (2A)   - Not used
+Pin 6  (2Y)   - Not used
+Pin 7  (GND)  ← Common ground
+Pin 8  (3Y)   - Not used
+Pin 9  (3A)   - Not used
+Pin 10 (3OE)  - Not used
+Pin 11 (4Y)   - Not used
+Pin 12 (4A)   - Not used
+Pin 13 (4OE)  - Not used
+Pin 14 (VCC)  ← Pico 3.3V
+
+========================================================
+DYNAMIXEL DATA BUS (Shared Half-Duplex)
+========================================================
+74HC126 Pin 3 (1Y) ──┬── DYNAMIXEL DATA
+GP1 (UART RX)        ┤
+10kΩ pull-up to 5V  ─┘
+
+DYNAMIXEL MOTOR 1 (AoV - ID 1)
+------------------------------
+Pin 1 (GND)   → Common ground
+Pin 2 (VDD)   → 5V power supply
+Pin 3 (DATA)  → DATA BUS
+
+DYNAMIXEL MOTOR 2 (LAN - ID 2)
+------------------------------
+Pin 1 (GND)   → Common ground
+Pin 2 (VDD)   → 5V power supply
+Pin 3 (DATA)  → DATA BUS
+
+========================================================
+OLED DISPLAY (SH1106 or SSD1306)
+========================================================
+VCC → Pico 3.3V
+GND → Common ground
+SDA → GP4 (I2C0 SDA)
+SCL → GP5 (I2C0 SCL)
+
+I2C Address: 0x3C (default)
+Frequency: 100 kHz
+
+========================================================
+DS3231 RTC (ChronoDot)
+========================================================
+VCC → Pico 3.3V (or 5V if available)
+GND → Common ground
+SDA → GP4 (I2C0 SDA, shared with OLED)
+SCL → GP5 (I2C0 SCL, shared with OLED)
+
+I2C Address: 0x68 (default)
+Frequency: 100 kHz
+
+========================================================
+ROTARY ENCODER
+========================================================
+A   → GP6 (with internal pull-up enabled)
+B   → GP7 (with internal pull-up enabled)
+SW  → GP8 (with internal pull-up enabled)
+GND → Common ground
+VCC → Not connected (using internal pull-ups)
+
+========================================================
+POWER DISTRIBUTION
+========================================================
+
+3.3V RAIL (from Pico)
+---------------------
+- 74HC126 VCC (Pin 14)
+- OLED VCC
+- DS3231 VCC (can also use 5V)
+
+5V RAIL (External Power Supply)
+--------------------------------
+- DYNAMIXEL Motor 1 VDD
+- DYNAMIXEL Motor 2 VDD
+- 10kΩ pull-up resistor (top side)
+
+GROUND (Common)
+---------------
+- Pico GND (multiple pins)
+- 74HC126 GND (Pin 7)
+- DYNAMIXEL Motor 1 GND
+- DYNAMIXEL Motor 2 GND
+- OLED GND
+- DS3231 GND
+- Rotary encoder GND
+- External 5V supply GND
+
+========================================================
+CRITICAL NOTES
+========================================================
+
+1. DYNAMIXEL PINOUT (JST 3-Pin)
+   - Pin 1 (GND) is always on the OUTER edge when looking at connector
+   - Connectors on both sides of motor are MIRRORED
+   - Use multimeter continuity test to verify GND (beeps to motor case)
+
+2. HALF-DUPLEX UART
+   - GP2 HIGH = Pico transmits (buffer enabled)
+   - GP2 LOW  = Motor transmits (buffer tri-stated)
+   - GP1 always listens on DATA line
+
+3. I2C BUS
+   - Shared between OLED and RTC
+   - Both devices have different addresses (no conflict)
+   - 100 kHz frequency for reliability
+
+4. POWER REQUIREMENTS
+   - Pico: USB 5V or VSYS
+   - Motors: External 5V 4-5A supply (NOT from Pico!)
+   - Common ground between Pico and motor supply is CRITICAL
+
+5. GEAR RATIOS
+   - LAN Motor: 11T drive gear → 120T ring gear (10.909:1)
+   - AoV Motor: Direct drive (1:1)
+
+========================================================
+FIRMWARE CONFIGURATION
+========================================================
+
+File: orbigator.py
+
+UART Configuration:
+- Baud rate: 57600
+- Data bits: 8
+- Parity: None
+- Stop bits: 1
+
+Motor IDs:
+- AoV Motor: ID 1
+- LAN Motor: ID 2
+
+Operating Mode:
+- Extended Position Control Mode (Mode 4)
+
+Encoder:
+- DETENT_DIV: 2 (counts per detent)
+- Direction: Reversed in ISR
+
+I2C:
+- Frequency: 100 kHz
+- Auto-detect OLED type (SH1106/SSD1306)
+
+========================================================
+END OF PIN ASSIGNMENTS
+========================================================

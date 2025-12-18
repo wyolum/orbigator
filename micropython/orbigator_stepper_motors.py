@@ -1,8 +1,7 @@
 # Orbigator - Orbital Mechanics Simulator
-# Pico 2 | DYNAMIXEL XL330-M288-T motors with orbital parameter computation
-# LAN Motor (ID 1): Connected via 11T drive gear to 120T ring gear on globe
-# AoV Motor (ID 2): Direct drive
-# DYNAMIXEL: UART0 TX=GP0, RX=GP1, DIR=GP2 (via 74HC126 buffer)
+# Pico 2 | LAN & AOV motors with orbital parameter computation
+# LAN Motor (DRV8834): STEP=GP14, DIR=GP15, nSLEEP=GP12, nENBL=GP13, M0=GP10, M1=GP11
+# AOV Motor (ULN2003): IN1=GP2, IN2=GP3, IN3=GP22, IN4=GP26
 # Encoder: A=GP6, B=GP7, SW=GP8 (pull-ups)
 # OLED (SH1106/SSD1306 auto): I2C0 SDA=GP4, SCL=GP5
 
@@ -10,7 +9,6 @@ import machine, time, math, json
 from machine import Pin, I2C
 import framebuf
 from ds3231 import DS3231
-from dynamixel_motor import DynamixelMotor
 
 # ---------------- Constants ----------------
 CONFIG_FILE = "orbigator_config.json"
@@ -22,12 +20,15 @@ EARTH_J2 = 0.00108263    # J2 perturbation coefficient
 SIDEREAL_DAY_SEC = 86164.0905  # seconds (23.934 hours)
 EARTH_ROTATION_DEG_DAY = 360.0  # Earth rotates 360° per sidereal day
 
-# Motor gear ratios
-LAN_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear (TBR: verify tooth count)
-AOV_GEAR_RATIO = 1.0  # Direct drive
+# Motor settings
+LAN_STEPS_PER_REV = 200
+LAN_MICROSTEP = 1
+LAN_STEP_US = 1500
+AOV_STEPS_PER_REV = 4096
+AOV_STEP_MS = 10
 
 # Encoder settings
-DETENT_DIV = 2  # Changed from 4 - makes encoder more responsive
+DETENT_DIV = 4
 DEBOUNCE_MS = 200
 
 # Altitude range: 200 km to 2000 km
@@ -150,17 +151,6 @@ def setup_datetime():
         return
 
     print("Entering Date/Time Setup...")
-    print("Press button immediately to skip...")
-    
-    # Give user 2 seconds to skip
-    skip_start = time.ticks_ms()
-    while time.ticks_diff(time.ticks_ms(), skip_start) < 2000:
-        if SW.value() == 0:  # Button pressed
-            print("Skipping date/time setup")
-            time.sleep_ms(200)
-            while SW.value() == 0: time.sleep_ms(10)  # Wait for release
-            return
-        time.sleep_ms(50)
     
     # Get current time or default
     t = rtc.datetime()
@@ -201,15 +191,11 @@ def setup_datetime():
                 current_val = max(min_val, min(max_val, current_val))
             
             # Display
-            try:
-                disp.fill(0)
-                disp.text("Set " + name + ":", 0, 0)
-                disp.text("{}".format(current_val), 0, 16)
-                disp.text("Click to Next", 0, 50)
-                disp.show()
-            except OSError as e:
-                # OLED timeout - continue without display
-                print(f"Display error (continuing): {e}")
+            disp.fill(0)
+            disp.text("Set " + name + ":", 0, 0)
+            disp.text("{}".format(current_val), 0, 16)
+            disp.text("Click to Next", 0, 50)
+            disp.show()
             
             # Button handling
             if SW.value() == 0: # Pressed
@@ -230,139 +216,191 @@ def setup_datetime():
     print("Time set to:", get_time_string())
     
     # Clear display
-    try:
-        disp.fill(0)
-        disp.show()
-    except OSError:
-        pass  # Ignore display errors
+    disp.fill(0); disp.show()
 
-# ---------------- Motor Initialization ----------------
-print("="*60)
-print("Initializing DYNAMIXEL motors...")
-print("="*60)
+# ---------------- LAN Motor (DRV8834) ----------------
+LAN_STEP  = Pin(14, Pin.OUT, value=0)
+LAN_DIR   = Pin(15, Pin.OUT, value=0)
+LAN_SLEEP = Pin(12, Pin.OUT, value=0)
+LAN_ENBL  = Pin(13, Pin.OUT, value=1)
+LAN_M0 = Pin(10, Pin.OUT, value=0)
+LAN_M1 = Pin(11, Pin.OUT, value=0)
 
-try:
-    print("\n1. Initializing AoV motor (ID 1)...")
-    aov_motor = DynamixelMotor(1, "AoV", gear_ratio=AOV_GEAR_RATIO)
-    print("   ✓ AoV motor ready")
+lan_enabled = False
+lan_last_step_time = time.ticks_ms()
+
+def lan_enable(on=True):
+    global lan_enabled
+    if on and not lan_enabled:
+        LAN_SLEEP.value(1)
+        time.sleep_ms(2)
+        LAN_ENBL.value(0)
+        lan_enabled = True
+    elif (not on) and lan_enabled:
+        LAN_ENBL.value(1)
+        LAN_SLEEP.value(0)
+        lan_enabled = False
+
+def lan_step_pulse(us=LAN_STEP_US):
+    global lan_last_step_time
+    hi = max(2, us//2); lo = max(2, us - hi)
+    LAN_STEP.value(1); time.sleep_us(hi)
+    LAN_STEP.value(0); time.sleep_us(lo)
+    lan_last_step_time = time.ticks_ms()
+
+def lan_move_steps(steps):
+    if steps == 0: return
+    lan_enable(True)
+    LAN_DIR.value(1 if steps > 0 else 0)
+    for _ in range(abs(steps)):
+        lan_step_pulse()
+
+def get_delay(step_in_phase, phase_steps, v_start, v_end):
+    """
+    Get delay for a step within accel/decel phase.
+    Uses smoothstep: v = v_start + (v_end - v_start) * (3p² - 2p³)
+    """
+    p = (step_in_phase + 0.5) / phase_steps
+    blend = p * p * (3.0 - 2.0 * p)
+    v = v_start + (v_end - v_start) * blend
+    return int(1_000_000 / v)
+
+def lan_move_smooth(steps, max_speed_hz=500, min_speed_hz=50, jerk=10000):
+    """Rotate LAN motor with S-curve profile."""
+    if steps == 0: return
+    lan_enable(True)
+    LAN_DIR.value(1 if steps > 0 else 0)
+    steps = abs(steps)
     
-    print("\n2. Initializing LAN motor (ID 2)...")
-    lan_motor = DynamixelMotor(2, "LAN", gear_ratio=LAN_GEAR_RATIO)
-    print("   ✓ LAN motor ready")
+    # Calculate accel distance
+    delta_v = max_speed_hz - min_speed_hz
+    accel_steps = int((min_speed_hz + max_speed_hz) * math.sqrt(delta_v / jerk))
+    accel_steps = max(accel_steps, 10)
+    decel_steps = accel_steps
     
-    print("\n✓ Motors initialized successfully\n")
+    if accel_steps + decel_steps > steps:
+        accel_steps = steps // 2
+        decel_steps = steps - accel_steps
     
-    # Debug: Test motors with half-turn rotation
-    print("="*60)
-    print("MOTOR TEST - 180° Rotation")
-    print("="*60)
-    disp.fill(0)
-    disp.text("MOTOR TEST", 0, 0)
-    disp.text("Testing...", 0, 16)
-    disp.show()
+    cruise_steps = steps - accel_steps - decel_steps
+    cruise_delay = int(1_000_000 / max_speed_hz)
     
-    # Get starting positions (already read during init, but read again to verify)
-    print("\nReading starting positions...")
-    lan_start = lan_motor.get_angle_degrees()
-    aov_start = aov_motor.get_angle_degrees()
+    last_time_us = time.ticks_us()
     
-    if lan_start is None or aov_start is None:
-        print("✗ Failed to read starting positions!")
-        raise RuntimeError("Cannot read motor positions")
+    # Accel
+    for i in range(accel_steps):
+        delay_us = get_delay(i, accel_steps, min_speed_hz, max_speed_hz)
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
+    # Cruise
+    for _ in range(cruise_steps):
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < cruise_delay: pass
+        last_time_us = time.ticks_us()
+        
+    # Decel
+    for i in range(decel_steps - 1, -1, -1):
+        delay_us = get_delay(i, decel_steps, min_speed_hz, max_speed_hz)
+        lan_step_pulse()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+
+
+
+# ---------------- AOV Motor (ULN2003) ----------------
+AOV_IN1 = Pin(2, Pin.OUT)
+AOV_IN2 = Pin(3, Pin.OUT)
+AOV_IN3 = Pin(22, Pin.OUT)
+AOV_IN4 = Pin(26, Pin.OUT)
+
+aov_half_step = [
+    (1,0,0,0), (1,1,0,0), (0,1,0,0), (0,1,1,0),
+    (0,0,1,0), (0,0,1,1), (0,0,0,1), (1,0,0,1),
+]
+aov_step_index = 0
+aov_last_step_time = time.ticks_ms()
+
+def aov_output_step(seq):
+    AOV_IN1.value(seq[0])
+    AOV_IN2.value(seq[1])
+    AOV_IN3.value(seq[2])
+    AOV_IN4.value(seq[3])
+
+def aov_move_steps(steps):
+    global aov_step_index, aov_last_step_time
+    if steps == 0: return
+    steps = -steps  # Reverse direction
+    direction = 1 if steps > 0 else -1
+    n = len(aov_half_step)
+    for _ in range(abs(steps)):
+        aov_output_step(aov_half_step[aov_step_index])
+        time.sleep_ms(AOV_STEP_MS)
+        aov_step_index = (aov_step_index - 1 + n) % n
+    aov_last_step_time = time.ticks_ms()
+
+def aov_move_smooth(steps, max_speed_hz=500, min_speed_hz=50, jerk=10000):
+    """Rotate AOV motor with S-curve profile."""
+    global aov_step_index, aov_last_step_time
+    if steps == 0: return
     
-    print(f"  LAN start: {lan_start:.1f}°")
-    print(f"  AoV start: {aov_start:.1f}°")
+    # Direction logic (same as move_steps)
+    steps = -steps # Reverse direction as per user request
+    direction = 1 if steps > 0 else -1
+    steps = abs(steps)
+    n = len(aov_half_step)
     
-    # Test LAN motor
-    lan_target = lan_start + 10  # Changed from 180° to 10° (motor will rotate ~109° due to gear ratio)
-    print(f"\nTesting LAN motor:")
-    print(f"  Current: {lan_start:.1f}°")
-    print(f"  Target:  {lan_target:.1f}°")
-    print(f"  Command: set_angle_degrees({lan_target:.1f})")
-    print(f"  (Motor will rotate ~{10 * 10.909:.0f}° due to gear ratio)")
+    # Calculate accel distance
+    delta_v = max_speed_hz - min_speed_hz
+    accel_steps = int((min_speed_hz + max_speed_hz) * math.sqrt(delta_v / jerk))
+    accel_steps = max(accel_steps, 10)
+    decel_steps = accel_steps
     
-    disp.fill(0)
-    disp.text("MOTOR TEST", 0, 0)
-    disp.text("LAN +10deg", 0, 16)
-    disp.text(f"{lan_start:.0f} -> {lan_target:.0f}", 0, 32)
-    disp.show()
+    if accel_steps + decel_steps > steps:
+        accel_steps = steps // 2
+        decel_steps = steps - accel_steps
     
-    success = lan_motor.set_angle_degrees(lan_target)
-    print(f"  Result: {'SUCCESS' if success else 'FAILED'}")
-    if not success:
-        print("  ✗ LAN motor command failed!")
-    time.sleep(3)  # Longer delay to see movement
+    cruise_steps = steps - accel_steps - decel_steps
+    cruise_delay = int(1_000_000 / max_speed_hz)
     
-    # Test AoV motor
-    aov_target = aov_start + 180
-    print(f"\nTesting AoV motor:")
-    print(f"  Current: {aov_start:.1f}°")
-    print(f"  Target:  {aov_target:.1f}°")
-    print(f"  Command: set_angle_degrees({aov_target:.1f})")
+    last_time_us = time.ticks_us()
     
-    disp.fill(0)
-    disp.text("MOTOR TEST", 0, 0)
-    disp.text("AoV +180deg", 0, 16)
-    disp.text(f"{aov_start:.0f} -> {aov_target:.0f}", 0, 32)
-    disp.show()
-    
-    success = aov_motor.set_angle_degrees(aov_target)
-    print(f"  Result: {'SUCCESS' if success else 'FAILED'}")
-    if not success:
-        print("  ✗ AoV motor command failed!")
-    time.sleep(3)  # Longer delay to see movement
-    
-    # Return to start positions
-    print("\nReturning to start positions...")
-    print(f"  LAN: {lan_target:.1f}° → {lan_start:.1f}°")
-    print(f"  AoV: {aov_target:.1f}° → {aov_start:.1f}°")
-    
-    disp.fill(0)
-    disp.text("MOTOR TEST", 0, 0)
-    disp.text("Returning...", 0, 16)
-    disp.show()
-    
-    lan_motor.set_angle_degrees(lan_start)
-    aov_motor.set_angle_degrees(aov_start)
-    time.sleep(3)
-    
-    print("✓ Motor test complete\n")
-    print("="*60)
-    disp.fill(0)
-    disp.text("MOTOR TEST", 0, 0)
-    disp.text("Complete!", 0, 16)
-    disp.show()
-    time.sleep(1)
-    
-except RuntimeError as e:
-    print(f"\n✗ Motor initialization failed: {e}")
-    print("Cannot proceed without motors. Halting.")
-    print("\nTroubleshooting:")
-    print("  1. Check UART connections (GP0=TX, GP1=RX, GP2=DIR)")
-    print("  2. Verify 74HC126 buffer wiring")
-    print("  3. Check motor power (5V supply)")
-    print("  4. Verify motor IDs (should be 1 and 2)")
-    print("  5. Run test_two_motors.py to verify communication")
-    while True:
-        disp.fill(0)
-        disp.text("MOTOR ERROR", 0, 0)
-        disp.text("Check wiring", 0, 16)
-        disp.text(str(e)[:16], 0, 32)
-        disp.text("See console", 0, 48)
-        disp.show()
-        time.sleep(1)
-except Exception as e:
-    print(f"\n✗ Unexpected error: {e}")
-    print(f"   Type: {type(e).__name__}")
-    import sys
-    sys.print_exception(e)
-    while True:
-        disp.fill(0)
-        disp.text("ERROR", 0, 0)
-        disp.text(str(e)[:16], 0, 16)
-        disp.text("See console", 0, 32)
-        disp.show()
-        time.sleep(1)
+    def do_step():
+        global aov_step_index
+        aov_output_step(aov_half_step[aov_step_index])
+        if direction > 0:
+            aov_step_index = (aov_step_index + 1) % n
+        else:
+            aov_step_index = (aov_step_index - 1 + n) % n
+
+    # Accel
+    for i in range(accel_steps):
+        delay_us = get_delay(i, accel_steps, min_speed_hz, max_speed_hz)
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
+    # Cruise
+    for _ in range(cruise_steps):
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < cruise_delay: pass
+        last_time_us = time.ticks_us()
+        
+    # Decel
+    for i in range(decel_steps - 1, -1, -1):
+        delay_us = get_delay(i, decel_steps, min_speed_hz, max_speed_hz)
+        do_step()
+        while time.ticks_diff(time.ticks_us(), last_time_us) < delay_us: pass
+        last_time_us = time.ticks_us()
+        
+    aov_last_step_time = time.ticks_ms()
+
+
+
+def aov_release():
+    AOV_IN1.value(0); AOV_IN2.value(0)
+    AOV_IN3.value(0); AOV_IN4.value(0)
 
 # ---------------- Encoder ----------------
 A  = Pin(6, Pin.IN, Pin.PULL_UP)
@@ -422,18 +460,19 @@ def compute_lan_rate_j2(altitude_km, inclination_deg=51.6):
     return lan_total_deg_day
 
 def compute_motor_rates(altitude_km):
-    """Compute motor rotation rates for given altitude."""
+    """Compute motor step rates for given altitude."""
     # Compute period from altitude
     period_min = compute_period_from_altitude(altitude_km)
     
-    # AOV: 1 revolution per orbital period (in degrees per second)
-    aov_deg_per_sec = 360.0 / (period_min * 60.0)
+    # AOV: 1 revolution per orbital period
+    aov_steps_per_sec = AOV_STEPS_PER_REV / (period_min * 60.0)
     
-    # LAN: rate from J2 effect + Earth rotation (in degrees per second)
+    # LAN: rate from J2 effect + Earth rotation
     lan_rate_deg_day = compute_lan_rate_j2(altitude_km)
     lan_deg_per_sec = lan_rate_deg_day / 86400.0
+    lan_steps_per_sec = (lan_deg_per_sec / 360.0) * LAN_STEPS_PER_REV
     
-    return aov_deg_per_sec, lan_deg_per_sec, lan_rate_deg_day, period_min
+    return aov_steps_per_sec, lan_steps_per_sec, lan_rate_deg_day, period_min
 
 # ---------------- Persistence ----------------
 def save_state():
@@ -454,24 +493,7 @@ def save_state():
 def load_state():
     """Load orbital parameters from config file."""
     global orbital_altitude_km, lan_position_deg, aov_position_deg
-    global orbital_period_min
-    
-    # CRITICAL: Read current motor positions BEFORE any commands
-    # This prevents motors from jumping on startup
-    print("\nReading current motor positions...")
-    current_lan_deg = lan_motor.get_angle_degrees()
-    current_aov_deg = aov_motor.get_angle_degrees()
-    
-    if current_lan_deg is None or current_aov_deg is None:
-        print("✗ Failed to read motor positions!")
-        # Use defaults if we can't read
-        lan_position_deg = 0.0
-        aov_position_deg = 0.0
-        orbital_period_min = compute_period_from_altitude(orbital_altitude_km)
-        return
-    
-    print(f"  Current LAN: {current_lan_deg:.2f}°")
-    print(f"  Current AoV: {current_aov_deg:.2f}°")
+    global lan_position, aov_position, orbital_period_min
     
     try:
         with open(CONFIG_FILE, "r") as f:
@@ -485,6 +507,11 @@ def load_state():
         # Update computed values
         orbital_period_min = compute_period_from_altitude(orbital_altitude_km)
         
+        # Restore logical motor positions (assuming motors are at the stored angles)
+        # This sets the "zero point" for the catch-up move
+        lan_position = int((lan_position_deg / 360.0) * LAN_STEPS_PER_REV)
+        aov_position = int((aov_position_deg / 360.0) * AOV_STEPS_PER_REV)
+        
         # Calculate catch-up if we have a valid timestamp
         current_timestamp = get_timestamp()
         delta_t = current_timestamp - saved_timestamp
@@ -495,59 +522,46 @@ def load_state():
             # Compute rates for catch-up
             _, _, lan_rate_deg_day, period_min = compute_motor_rates(orbital_altitude_km)
             
-            # LAN catch-up (can be any amount - continuous rotation)
+            # LAN catch-up
             lan_rate_deg_sec = lan_rate_deg_day / 86400.0
             lan_delta = lan_rate_deg_sec * delta_t
-            target_lan_deg = lan_position_deg + lan_delta
+            target_lan_deg = (lan_position_deg + lan_delta) % 360.0
             
+            # Move LAN
+            target_lan_steps = int((target_lan_deg / 360.0) * LAN_STEPS_PER_REV)
+            diff_lan = target_lan_steps - lan_position
+            # Shortest path
+            if diff_lan > LAN_STEPS_PER_REV // 2: diff_lan -= LAN_STEPS_PER_REV
+            elif diff_lan < -(LAN_STEPS_PER_REV // 2): diff_lan += LAN_STEPS_PER_REV
+            
+            if diff_lan != 0:
+                lan_move_smooth(diff_lan)
+                lan_position = target_lan_steps
+                lan_position_deg = target_lan_deg
+
             # AOV catch-up
             aov_rate_deg_sec = 360.0 / (period_min * 60.0)
             aov_delta = aov_rate_deg_sec * delta_t
-            target_aov_deg = aov_position_deg + aov_delta
+            target_aov_deg = (aov_position_deg + aov_delta) % 360.0
             
-            # CRITICAL: Limit AoV movement to 180° max
-            # Calculate shortest path from current to target
-            aov_diff = target_aov_deg - current_aov_deg
+            # Move AOV
+            target_aov_steps = int((target_aov_deg / 360.0) * AOV_STEPS_PER_REV)
+            diff_aov = target_aov_steps - aov_position
+            # Shortest path
+            if diff_aov > AOV_STEPS_PER_REV // 2: diff_aov -= AOV_STEPS_PER_REV
+            elif diff_aov < -(AOV_STEPS_PER_REV // 2): diff_aov += AOV_STEPS_PER_REV
             
-            # Normalize to -180 to +180 range
-            while aov_diff > 180:
-                aov_diff -= 360
-            while aov_diff < -180:
-                aov_diff += 360
+            if diff_aov != 0:
+                # Let's correct the call to pass diff_aov.
+                aov_move_smooth(diff_aov)
+                aov_position = target_aov_steps
+                aov_position_deg = target_aov_deg
             
-            # If catch-up is more than 180°, just move to target modulo 360
-            if abs(aov_diff) > 180:
-                print(f"⚠ AoV catch-up would be {aov_diff:.1f}° (> 180°)")
-                print(f"  Moving to equivalent position within 180°")
-                # Use current position + shortest path
-                target_aov_deg = current_aov_deg + aov_diff
-            
-            # Move motors to catch-up positions
-            print(f"Moving LAN: {current_lan_deg:.2f}° → {target_lan_deg:.2f}° (Δ{lan_delta:.2f}°)")
-            lan_motor.set_angle_degrees(target_lan_deg)
-            time.sleep(0.5)
-            
-            print(f"Moving AoV: {current_aov_deg:.2f}° → {target_aov_deg:.2f}° (Δ{aov_diff:.2f}°)")
-            aov_motor.set_angle_degrees(target_aov_deg)
-            time.sleep(0.5)
-            
-            # Update positions
-            lan_position_deg = target_lan_deg
-            aov_position_deg = target_aov_deg
-            
-            print("✓ Catch-up complete")
-        else:
-            # No catch-up needed - use current motor positions as baseline
-            print("No catch-up needed (no saved timestamp or delta_t <= 0)")
-            lan_position_deg = current_lan_deg
-            aov_position_deg = current_aov_deg
+            print("Moved LAN: {:.2f} deg, AOV: {:.2f} deg".format(lan_delta, aov_delta))
         
         print("State loaded:", config)
     except OSError:
         print("No config file found, using defaults.")
-        # Use current motor positions as baseline
-        lan_position_deg = current_lan_deg
-        aov_position_deg = current_aov_deg
     except Exception as e:
         print("Error loading state:", e)
 
@@ -564,6 +578,10 @@ orbital_altitude_km = 400.0  # Start at ISS altitude
 orbital_period_min = 0.0  # Computed from altitude
 lan_position_deg = 0.0
 aov_position_deg = 0.0
+
+# Motor positions (steps)
+lan_position = 0
+aov_position = 0
 
 # Computed rates
 aov_rate_deg_sec = 0.0
@@ -635,6 +653,7 @@ def poll_button():
 def update_from_encoder():
     """Update current parameter based on encoder and state."""
     global last_detent, orbital_altitude_km, lan_position_deg, aov_position_deg
+    global lan_position, aov_position
     
     irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
     d = rc // DETENT_DIV
@@ -652,17 +671,39 @@ def update_from_encoder():
             # Adjust LAN (1 degree per detent)
             lan_position_deg += delta * 1.0
             lan_position_deg = lan_position_deg % 360.0
-            # Update motor position
-            lan_motor.set_angle_degrees(lan_position_deg)
+            # Update motor position - take shortest path
+            target_steps = int((lan_position_deg / 360.0) * LAN_STEPS_PER_REV)
+            delta_steps = target_steps - lan_position
+            # Wrap to shortest path: if delta > half revolution, go the other way
+            if delta_steps > LAN_STEPS_PER_REV // 2:
+                delta_steps -= LAN_STEPS_PER_REV
+            elif delta_steps < -(LAN_STEPS_PER_REV // 2):
+                delta_steps += LAN_STEPS_PER_REV
+            if delta_steps != 0:
+                lan_move_steps(delta_steps)
+                lan_position = target_steps
         
         elif current_state == 2:
             # Adjust AOV (1 degree per detent)
             aov_position_deg += delta * 1.0
             aov_position_deg = aov_position_deg % 360.0
-            # Update motor position
-            aov_motor.set_angle_degrees(aov_position_deg)
+            # Update motor position - take shortest path
+            target_steps = int((aov_position_deg / 360.0) * AOV_STEPS_PER_REV)
+            delta_steps = target_steps - aov_position
+            # Wrap to shortest path: if delta > half revolution, go the other way
+            if delta_steps > AOV_STEPS_PER_REV // 2:
+                delta_steps -= AOV_STEPS_PER_REV
+            elif delta_steps < -(AOV_STEPS_PER_REV // 2):
+                delta_steps += AOV_STEPS_PER_REV
+            if delta_steps != 0:
+                aov_move_steps(delta_steps)
+                aov_position = target_steps
 
 # ---------------- Main Loop ----------------
+LAN_M0.value(0); LAN_M1.value(0)  # Full-step mode
+lan_enable(False)
+aov_release()
+
 # Setup Date/Time on startup
 setup_datetime()
 
@@ -672,6 +713,9 @@ load_state()
 print("Orbigator - Orbital Mechanics Simulator")
 print("State 0: Set Altitude | State 1: Set LAN")
 print("State 2: Set AOV | State 3: Run")
+
+# Motor idle timeout for running mode
+MOTOR_IDLE_TIMEOUT_MS = 250
 
 while True:
     time.sleep_ms(20)
@@ -684,34 +728,42 @@ while True:
         elapsed = now - run_start_time
         
         # Calculate target positions based on elapsed time
-        target_lan_deg = run_start_lan_deg + (lan_rate_deg_sec * elapsed)
-        target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
-        
-        # Check for encoder input to nudge AoV motor
-        irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
-        d = rc // DETENT_DIV
-        
-        if d != last_detent:
-            delta = d - last_detent
-            last_detent = d
-            
-            # Nudge AoV by 1 degree per detent
-            # This adjusts the baseline, so the nudge persists
-            run_start_aov_deg += delta * 1.0
-            target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
-            print(f"AoV nudged: {delta:+.0f}° (new baseline: {run_start_aov_deg:.1f}°)")
+        target_lan_deg = (run_start_lan_deg + (lan_rate_deg_sec * elapsed)) % 360.0
+        target_aov_deg = (run_start_aov_deg + (aov_rate_deg_sec * elapsed)) % 360.0
         
         # Update global positions for display/saving
+
         lan_position_deg = target_lan_deg
         aov_position_deg = target_aov_deg
         
-        # Only send motor commands if position changed significantly (> 0.5°)
-        # This prevents flooding the motors with commands
-        if abs(target_lan_deg - lan_motor.output_degrees) > 0.5:
-            lan_motor.set_angle_degrees(target_lan_deg)
+        # Move LAN motor
+        target_lan_steps = int((target_lan_deg / 360.0) * LAN_STEPS_PER_REV)
+        delta_lan = target_lan_steps - lan_position
+        # Handle wrap-around for shortest path
+        if delta_lan > LAN_STEPS_PER_REV // 2: delta_lan -= LAN_STEPS_PER_REV
+        elif delta_lan < -(LAN_STEPS_PER_REV // 2): delta_lan += LAN_STEPS_PER_REV
         
-        if abs(target_aov_deg - aov_motor.output_degrees) > 0.5:
-            aov_motor.set_angle_degrees(target_aov_deg)
+        if delta_lan != 0:
+            lan_move_steps(delta_lan)
+            lan_position = target_lan_steps
+            
+        # Move AOV motor
+        target_aov_steps = int((target_aov_deg / 360.0) * AOV_STEPS_PER_REV)
+        delta_aov = target_aov_steps - aov_position
+        # Handle wrap-around for shortest path
+        if delta_aov > AOV_STEPS_PER_REV // 2: delta_aov -= AOV_STEPS_PER_REV
+        elif delta_aov < -(AOV_STEPS_PER_REV // 2): delta_aov += AOV_STEPS_PER_REV
+        
+        if delta_aov != 0:
+            aov_move_steps(-delta_aov) # Negative to reverse direction (as per user request)
+            aov_position = target_aov_steps
+        
+        # Auto-disable motors after idle timeout to save power
+        now_ms = time.ticks_ms()
+        if lan_enabled and time.ticks_diff(now_ms, lan_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+            lan_enable(False)
+        if time.ticks_diff(now_ms, aov_last_step_time) > MOTOR_IDLE_TIMEOUT_MS:
+            aov_release()
     else:
         # States 0-2: Encoder control
         update_from_encoder()
@@ -739,7 +791,10 @@ while True:
     else:  # State 3: Running
         disp.text("RUNNING", 0, 12)
         disp.text("T:{:.0f}m".format(orbital_period_min), 0, 24)
-        disp.text("A:{:.0f} L:{:.0f}".format(aov_position_deg % 360, lan_position_deg % 360), 0, 36)
+        aov_deg = (aov_position / AOV_STEPS_PER_REV) * 360
+        lan_deg = (lan_position / LAN_STEPS_PER_REV) * 360
+        disp.text("A:{:.0f} L:{:.0f}".format(aov_deg, lan_deg), 0, 36)
         disp.text("dL:{:.2f}d/d".format(lan_rate_deg_day), 0, 48)
     
     disp.show()
+
