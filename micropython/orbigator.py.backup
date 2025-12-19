@@ -1,6 +1,6 @@
 # Orbigator - Orbital Mechanics Simulator
 # Pico 2 | DYNAMIXEL XL330-M288-T motors with orbital parameter computation
-# EQX Motor (ID 1): Connected via 11T drive gear to 120T ring gear on globe
+# LAN Motor (ID 1): Connected via 11T drive gear to 120T ring gear on globe
 # AoV Motor (ID 2): Direct drive
 # DYNAMIXEL: UART0 TX=GP0, RX=GP1, DIR=GP2 (via 74HC126 buffer)
 # Encoder: A=GP6, B=GP7, SW=GP8 (pull-ups)
@@ -24,10 +24,10 @@ EARTH_ROTATION_DEG_DAY = 360.0  # Earth rotates 360° per sidereal day
 
 # Motor IDs
 AOV_MOTOR_ID = 2  # Argument of Vehicle (direct drive)
-EQX_MOTOR_ID = 1  # Equator crossing (geared)
+LAN_MOTOR_ID = 1  # Longitude of Ascending Node (geared)
 
 # Motor gear ratios
-EQX_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear (TBR: verify tooth count)
+LAN_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear (TBR: verify tooth count)
 AOV_GEAR_RATIO = 1.0  # Direct drive
 
 # Encoder settings
@@ -38,8 +38,8 @@ DEBOUNCE_MS = 200
 MIN_ALTITUDE_KM = 200
 MAX_ALTITUDE_KM = 2000
 
-MAX_AOV_SPEED = 50
-MAX_EQX_SPEED = 50 ## unlimited
+MAX_AOV_SPEED = 100
+MAX_LAN_SPEED = 0 ## unlimited
 
 # ---------------- OLED init ----------------
 OLED_W, OLED_H = 128, 64
@@ -248,32 +248,14 @@ print("="*60)
 print("Initializing DYNAMIXEL motors...")
 print("="*60)
 
-# Import Extended Mode utilities
-from dynamixel_extended_utils import set_extended_mode
-
 try:
-    # Configure motors for Extended Position Mode (Mode 4)
-    # This must be done before creating DynamixelMotor instances
-    print("\nConfiguring motors for Extended Position Mode...")
-    
-    print(f"\n1. Configuring AoV motor (ID {AOV_MOTOR_ID})...")
-    if not set_extended_mode(AOV_MOTOR_ID):
-        raise RuntimeError(f"Failed to configure AoV motor (ID {AOV_MOTOR_ID}) for Extended Position Mode")
-    
-    print(f"\n2. Configuring EQX motor (ID {EQX_MOTOR_ID})...")
-    if not set_extended_mode(EQX_MOTOR_ID):
-        raise RuntimeError(f"Failed to configure EQX motor (ID {EQX_MOTOR_ID}) for Extended Position Mode")
-    
-    print("\n✓ Motors configured for Extended Position Mode\n")
-    
-    # Now initialize motor objects
-    print(f"3. Initializing AoV motor object...")
+    print(f"\n1. Initializing AoV motor (ID {AOV_MOTOR_ID})...")
     aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
     print("   ✓ AoV motor ready")
     
-    print(f"\n4. Initializing EQX motor object...")
-    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
-    print("   ✓ EQX motor ready")
+    print(f"\n2. Initializing LAN motor (ID {LAN_MOTOR_ID})...")
+    lan_motor = DynamixelMotor(LAN_MOTOR_ID, "LAN", gear_ratio=LAN_GEAR_RATIO)
+    print("   ✓ LAN motor ready")
     
     print("\n✓ Motors initialized successfully\n")
     
@@ -281,7 +263,7 @@ try:
     print("Setting speed limits...")
     print("  (Higher values = slower, safer movement)")
     aov_motor.set_speed_limit(velocity=MAX_AOV_SPEED)  # Slower for AoV (visible pointer)
-    eqx_motor.set_speed_limit(velocity=MAX_EQX_SPEED)  # Moderate for EQX (geared, slower anyway)
+    lan_motor.set_speed_limit(velocity=MAX_LAN_SPEED)  # Moderate for LAN (geared, slower anyway)
     print()
     
     # LED Flash Test - Visual motor identification without movement
@@ -294,21 +276,21 @@ try:
     disp.show()
     
     print("\nFlashing LEDs for motor identification...")
-    print(f"  EQX Motor (ID {EQX_MOTOR_ID}): 1 flash")
+    print(f"  LAN Motor (ID {LAN_MOTOR_ID}): 1 flash")
     print(f"  AoV Motor (ID {AOV_MOTOR_ID}): 2 flashes")
     
-    # Flash EQX motor LED once
+    # Flash LAN motor LED once
     disp.fill(0)
     disp.text("MOTOR TEST", 0, 0)
-    disp.text(f"EQX (ID {EQX_MOTOR_ID})", 0, 16)
+    disp.text(f"LAN (ID {LAN_MOTOR_ID})", 0, 16)
     disp.text("Flash x1", 0, 32)
     disp.show()
     
-    success = eqx_motor.flash_led(count=1, on_time_ms=300, off_time_ms=200)
+    success = lan_motor.flash_led(count=1, on_time_ms=300, off_time_ms=200)
     if success:
-        print(f"  ✓ EQX motor LED flashed")
+        print(f"  ✓ LAN motor LED flashed")
     else:
-        print(f"  ✗ EQX motor LED flash failed")
+        print(f"  ✗ LAN motor LED flash failed")
     
     time.sleep_ms(500)  # Pause between motors
     
@@ -342,7 +324,7 @@ except RuntimeError as e:
     print("  1. Check UART connections (GP0=TX, GP1=RX, GP2=DIR)")
     print("  2. Verify 74HC126 buffer wiring")
     print("  3. Check motor power (5V supply)")
-    print(f"  4. Verify motor IDs (should be {AOV_MOTOR_ID} and {EQX_MOTOR_ID})")
+    print(f"  4. Verify motor IDs (should be {AOV_MOTOR_ID} and {LAN_MOTOR_ID})")
     print("  5. Run test_two_motors.py to verify communication")
     while True:
         disp.fill(0)
@@ -401,8 +383,8 @@ def compute_altitude_from_period(period_min):
     altitude = a - EARTH_RADIUS
     return altitude, a
 
-def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
-    """Compute EQX rate including J2 precession and Earth rotation (deg/day)."""
+def compute_lan_rate_j2(altitude_km, inclination_deg=51.6):
+    """Compute LAN rate including J2 precession and Earth rotation (deg/day)."""
     a = altitude_km + EARTH_RADIUS
     inc_rad = math.radians(inclination_deg)
     
@@ -411,16 +393,16 @@ def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
     
     # J2 precession rate (rad/s) in inertial frame
     # dΩ/dt = -1.5 * n * J2 * (Re/a)² * cos(i)
-    eqx_rate_rad_s = -1.5 * n * EARTH_J2 * (EARTH_RADIUS / a)**2 * math.cos(inc_rad)
+    lan_rate_rad_s = -1.5 * n * EARTH_J2 * (EARTH_RADIUS / a)**2 * math.cos(inc_rad)
     
     # Convert to deg/day
-    eqx_j2_deg_day = math.degrees(eqx_rate_rad_s) * 86400
+    lan_j2_deg_day = math.degrees(lan_rate_rad_s) * 86400
     
     # Add Earth's rotation (360° per sidereal day)
     # Total apparent rate in Earth-fixed frame
-    eqx_total_deg_day = eqx_j2_deg_day + EARTH_ROTATION_DEG_DAY
+    lan_total_deg_day = lan_j2_deg_day + EARTH_ROTATION_DEG_DAY
     
-    return eqx_total_deg_day
+    return lan_total_deg_day
 
 def compute_motor_rates(altitude_km):
     """Compute motor rotation rates for given altitude."""
@@ -430,11 +412,11 @@ def compute_motor_rates(altitude_km):
     # AOV: 1 revolution per orbital period (in degrees per second)
     aov_deg_per_sec = 360.0 / (period_min * 60.0)
     
-    # EQX: rate from J2 effect + Earth rotation (in degrees per second)
-    eqx_rate_deg_day = compute_eqx_rate_j2(altitude_km)
-    eqx_deg_per_sec = eqx_rate_deg_day / 86400.0
+    # LAN: rate from J2 effect + Earth rotation (in degrees per second)
+    lan_rate_deg_day = compute_lan_rate_j2(altitude_km)
+    lan_deg_per_sec = lan_rate_deg_day / 86400.0
     
-    return aov_deg_per_sec, eqx_deg_per_sec, eqx_rate_deg_day, period_min
+    return aov_deg_per_sec, lan_deg_per_sec, lan_rate_deg_day, period_min
 
 def wrap_aov_position(current_deg, target_deg):
     """
@@ -472,7 +454,7 @@ def save_state():
     try:
         config = {
             "altitude_km": orbital_altitude_km,
-            "eqx_deg": eqx_position_deg,
+            "lan_deg": lan_position_deg,
             "aov_deg": aov_position_deg,
             "timestamp": get_timestamp()
         }
@@ -484,24 +466,24 @@ def save_state():
 
 def load_state():
     """Load orbital parameters from config file."""
-    global orbital_altitude_km, eqx_position_deg, aov_position_deg
+    global orbital_altitude_km, lan_position_deg, aov_position_deg
     global orbital_period_min
     
     # CRITICAL: Read current motor positions BEFORE any commands
     # This prevents motors from jumping on startup
     print("\nReading current motor positions...")
-    current_eqx_deg = eqx_motor.get_angle_degrees()
+    current_lan_deg = lan_motor.get_angle_degrees()
     current_aov_deg = aov_motor.get_angle_degrees()
     
-    if current_eqx_deg is None or current_aov_deg is None:
+    if current_lan_deg is None or current_aov_deg is None:
         print("✗ Failed to read motor positions!")
         # Use defaults if we can't read
-        eqx_position_deg = 0.0
+        lan_position_deg = 0.0
         aov_position_deg = 0.0
         orbital_period_min = compute_period_from_altitude(orbital_altitude_km)
         return
     
-    print(f"  Current EQX: {current_eqx_deg:.2f}°")
+    print(f"  Current LAN: {current_lan_deg:.2f}°")
     print(f"  Current AoV: {current_aov_deg:.2f}°")
     
     try:
@@ -509,7 +491,7 @@ def load_state():
             config = json.load(f)
             
         orbital_altitude_km = config.get("altitude_km", 400.0)
-        eqx_position_deg = config.get("eqx_deg", 0.0)
+        lan_position_deg = config.get("lan_deg", 0.0)
         aov_position_deg = config.get("aov_deg", 0.0)
         saved_timestamp = config.get("timestamp", 0)
         
@@ -524,12 +506,12 @@ def load_state():
             print("Catching up {} seconds...".format(delta_t))
             
             # Compute rates for catch-up
-            _, _, eqx_rate_deg_day, period_min = compute_motor_rates(orbital_altitude_km)
+            _, _, lan_rate_deg_day, period_min = compute_motor_rates(orbital_altitude_km)
             
-            # EQX catch-up (can be any amount - continuous rotation)
-            eqx_rate_deg_sec = eqx_rate_deg_day / 86400.0
-            eqx_delta = eqx_rate_deg_sec * delta_t
-            target_eqx_deg = eqx_position_deg + eqx_delta
+            # LAN catch-up (can be any amount - continuous rotation)
+            lan_rate_deg_sec = lan_rate_deg_day / 86400.0
+            lan_delta = lan_rate_deg_sec * delta_t
+            target_lan_deg = lan_position_deg + lan_delta
             
             # AOV catch-up
             aov_rate_deg_sec = 360.0 / (period_min * 60.0)
@@ -542,8 +524,8 @@ def load_state():
             aov_diff = target_aov_deg - current_aov_deg
             
             # Move motors to catch-up positions
-            print(f"Moving EQX: {current_eqx_deg:.2f}° → {target_eqx_deg:.2f}° (Δ{eqx_delta:.2f}°)")
-            eqx_motor.set_angle_degrees(target_eqx_deg)
+            print(f"Moving LAN: {current_lan_deg:.2f}° → {target_lan_deg:.2f}° (Δ{lan_delta:.2f}°)")
+            lan_motor.set_angle_degrees(target_lan_deg)
             time.sleep(0.5)
             
             print(f"Moving AoV: {current_aov_deg:.2f}° → {target_aov_deg:.2f}° (Δ{aov_diff:.2f}°)")
@@ -551,52 +533,49 @@ def load_state():
             time.sleep(0.5)
             
             # Update positions
-            eqx_position_deg = target_eqx_deg
+            lan_position_deg = target_lan_deg
             aov_position_deg = target_aov_deg
             
             print("✓ Catch-up complete")
         else:
             # No catch-up needed - use current motor positions as baseline
             print("No catch-up needed (no saved timestamp or delta_t <= 0)")
-            eqx_position_deg = current_eqx_deg
+            lan_position_deg = current_lan_deg
             aov_position_deg = current_aov_deg
         
         print("State loaded:", config)
     except OSError:
         print("No config file found, using defaults.")
         # Use current motor positions as baseline
-        eqx_position_deg = current_eqx_deg
+        lan_position_deg = current_lan_deg
         aov_position_deg = current_aov_deg
     except Exception as e:
         print("Error loading state:", e)
 
 # ---------------- State Machine ----------------
 # State 0: Set altitude
-# State 1: Set EQX position
+# State 1: Set LAN position
 # State 2: Set AOV position
 # State 3: Run simulation
-current_state = 3  # Start in running state for debugging (normally 0)
+current_state = 0
 last_button_time = 0
 
 # Orbital parameters
 orbital_altitude_km = 400.0  # Start at ISS altitude
 orbital_period_min = 0.0  # Computed from altitude
-eqx_position_deg = 0.0
+lan_position_deg = 0.0
 aov_position_deg = 0.0
 
 # Computed rates
 aov_rate_deg_sec = 0.0
-eqx_rate_deg_sec = 0.0
-eqx_rate_deg_day = 0.0
+lan_rate_deg_sec = 0.0
+lan_rate_deg_day = 0.0
 orbital_period_min = 0.0
 
 # RTC motion tracking
 run_start_time = 0
-run_start_eqx_deg = 0.0
+run_start_lan_deg = 0.0
 run_start_aov_deg = 0.0
-
-# Run mode sub-state (0 = nudge AoV, 1 = nudge EQX)
-run_sub_mode = 0
 
 # Encoder tracking
 last_detent = 0
@@ -608,9 +587,9 @@ button_press_start = 0
 def poll_button():
     """Check for button press and advance state (non-blocking state machine)."""
     global current_state, last_button_time
-    global run_start_time, run_start_eqx_deg, run_start_aov_deg
-    global aov_rate_deg_sec, eqx_rate_deg_sec, eqx_rate_deg_day, orbital_period_min
-    global button_down, button_press_start, run_sub_mode
+    global run_start_time, run_start_lan_deg, run_start_aov_deg
+    global aov_rate_deg_sec, lan_rate_deg_sec, lan_rate_deg_day, orbital_period_min
+    global button_down, button_press_start
     
     now = time.ticks_ms()
     
@@ -634,38 +613,29 @@ def poll_button():
             setup_datetime()
             return
         
-        # Short press behavior depends on current state
+        # Short press - advance state
+        # Save state before changing (persists user adjustments)
+        save_state()
+        
+        # Advance to next state
+        current_state = (current_state + 1) % 4
+        
         if current_state == 3:
-            # In run state - toggle sub-mode (don't advance state)
-            run_sub_mode = (run_sub_mode + 1) % 2
-            print(f"Run sub-mode: {'Nudge EQX' if run_sub_mode == 1 else 'Nudge AoV'}")
-        else:
-            # In setup states (0-2) - advance state
-            # Save state before changing (persists user adjustments)
-            save_state()
+            # Entering run state - compute motor rates
+            _, _, lan_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
             
-            # Advance to next state
-            current_state = (current_state + 1) % 4
+            # Calculate rates in deg/sec for RTC loop
+            lan_rate_deg_sec = lan_rate_deg_day / 86400.0
+            aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
             
-            if current_state == 3:
-                # Entering run state - compute motor rates
-                _, _, eqx_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
-                
-                # Calculate rates in deg/sec for RTC loop
-                eqx_rate_deg_sec = eqx_rate_deg_day / 86400.0
-                aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
-                
-                # Initialize RTC tracking
-                run_start_time = get_timestamp()
-                run_start_eqx_deg = eqx_position_deg
-                run_start_aov_deg = aov_position_deg
-                
-                # Initialize sub-mode to nudge AoV
-                run_sub_mode = 0
+            # Initialize RTC tracking
+            run_start_time = get_timestamp()
+            run_start_lan_deg = lan_position_deg
+            run_start_aov_deg = aov_position_deg
 
 def update_from_encoder():
     """Update current parameter based on encoder and state."""
-    global last_detent, orbital_altitude_km, eqx_position_deg, aov_position_deg
+    global last_detent, orbital_altitude_km, lan_position_deg, aov_position_deg
     
     irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
     d = rc // DETENT_DIV
@@ -680,11 +650,11 @@ def update_from_encoder():
             orbital_altitude_km = max(MIN_ALTITUDE_KM, min(MAX_ALTITUDE_KM, orbital_altitude_km))
         
         elif current_state == 1:
-            # Adjust EQX (1 degree per detent)
-            eqx_position_deg += delta * 1.0
-            eqx_position_deg = eqx_position_deg % 360.0
+            # Adjust LAN (1 degree per detent)
+            lan_position_deg += delta * 1.0
+            lan_position_deg = lan_position_deg % 360.0
             # Update motor position
-            eqx_motor.set_angle_degrees(eqx_position_deg)
+            lan_motor.set_angle_degrees(lan_position_deg)
         
         elif current_state == 2:
             # Adjust AOV (1 degree per detent)
@@ -700,14 +670,14 @@ def update_from_encoder():
                 aov_motor.set_angle_degrees(aov_position_deg)
 
 # ---------------- Main Loop ----------------
-# Setup Date/Time on startup (commented out for debugging)
-# setup_datetime()
+# Setup Date/Time on startup
+setup_datetime()
 
 # Load saved state on startup
 load_state()
 
 print("Orbigator - Orbital Mechanics Simulator")
-print("State 0: Set Altitude | State 1: Set EQX")
+print("State 0: Set Altitude | State 1: Set LAN")
 print("State 2: Set AOV | State 3: Run")
 
 while True:
@@ -720,7 +690,11 @@ while True:
         now = get_timestamp()
         elapsed = now - run_start_time
         
-        # Check for encoder input to nudge motor (based on sub-mode)
+        # Calculate target positions based on elapsed time
+        target_lan_deg = run_start_lan_deg + (lan_rate_deg_sec * elapsed)
+        target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
+        
+        # Check for encoder input to nudge AoV motor
         irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
         d = rc // DETENT_DIV
         
@@ -728,29 +702,20 @@ while True:
             delta = d - last_detent
             last_detent = d
             
-            if run_sub_mode == 0:
-                # Nudge AoV by 1 degree per detent
-                # This adjusts the baseline, so the nudge persists
-                run_start_aov_deg += delta * 1.0
-                print(f"AoV nudged: {delta:+.0f}° (new baseline: {run_start_aov_deg:.1f}°)")
-            else:
-                # Nudge EQX by 1 degree per detent
-                # This adjusts the baseline, so the nudge persists
-                run_start_eqx_deg += delta * 1.0
-                print(f"EQX nudged: {delta:+.0f}° (new baseline: {run_start_eqx_deg:.1f}°)")
-        
-        # Calculate target positions based on elapsed time (AFTER nudging)
-        target_eqx_deg = run_start_eqx_deg + (eqx_rate_deg_sec * elapsed)
-        target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
+            # Nudge AoV by 1 degree per detent
+            # This adjusts the baseline, so the nudge persists
+            run_start_aov_deg += delta * 1.0
+            target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
+            print(f"AoV nudged: {delta:+.0f}° (new baseline: {run_start_aov_deg:.1f}°)")
         
         # Update global positions for display/saving
-        eqx_position_deg = target_eqx_deg
+        lan_position_deg = target_lan_deg
         aov_position_deg = target_aov_deg % 360.0  # Keep in 0-360 for display
         
         # Only send motor commands if position changed significantly (> 0.5°)
         # This prevents flooding the motors with commands
-        if abs(target_eqx_deg - eqx_motor.output_degrees) > 0.5:
-            eqx_motor.set_angle_degrees(target_eqx_deg)
+        if abs(target_lan_deg - lan_motor.output_degrees) > 0.5:
+            lan_motor.set_angle_degrees(target_lan_deg)
         
         # CRITICAL: Wrap AoV position before sending to motor
         current_aov = aov_motor.output_degrees
@@ -758,39 +723,33 @@ while True:
         if abs(wrapped_aov_target - current_aov) > 0.5:
             aov_motor.set_angle_degrees(wrapped_aov_target)
     else:
-        # States 0-2: Encoder control (commented out for debugging)
-        # update_from_encoder()
-        pass
+        # States 0-2: Encoder control
+        update_from_encoder()
     
     # Display
     disp.fill(0)
     disp.text(get_time_string(), 0, 0)
     
+    if current_state == 0:
+        disp.text("Set Altitude:", 0, 12)
+        disp.text("{:.0f} km".format(orbital_altitude_km), 0, 24)
+        period = compute_period_from_altitude(orbital_altitude_km)
+        disp.text("T: {:.1f}min".format(period), 0, 36)
     
-    # States 0-2 display (commented out for debugging)
-    # if current_state == 0:
-    #     disp.text("Set Altitude:", 0, 12)
-    #     disp.text("{:.0f} km".format(orbital_altitude_km), 0, 24)
-    #     period = compute_period_from_altitude(orbital_altitude_km)
-    #     disp.text("T: {:.1f}min".format(period), 0, 36)
-    # 
-    # elif current_state == 1:
-    #     disp.text("Set EQX:", 0, 12)
-    #     disp.text("{:.1f} deg".format(eqx_position_deg), 0, 24)
-    #     disp.text("Alt: {:.0f}km".format(orbital_altitude_km), 0, 36)
-    # 
-    # elif current_state == 2:
-    #     disp.text("Set AOV:", 0, 12)
-    #     disp.text("{:.1f} deg".format(aov_position_deg), 0, 24)
-    #     disp.text("EQX: {:.1f}d".format(eqx_position_deg), 0, 36)
-    # 
-    # else:  # State 3: Running
+    elif current_state == 1:
+        disp.text("Set LAN:", 0, 12)
+        disp.text("{:.1f} deg".format(lan_position_deg), 0, 24)
+        disp.text("Alt: {:.0f}km".format(orbital_altitude_km), 0, 36)
     
-    if current_state == 3:  # Running (always active for debugging)
-        sub_mode_indicator = "A>" if run_sub_mode == 0 else "X>"
-        disp.text("RUN " + sub_mode_indicator, 0, 12)
+    elif current_state == 2:
+        disp.text("Set AOV:", 0, 12)
+        disp.text("{:.1f} deg".format(aov_position_deg), 0, 24)
+        disp.text("LAN: {:.1f}d".format(lan_position_deg), 0, 36)
+    
+    else:  # State 3: Running
+        disp.text("RUNNING", 0, 12)
         disp.text("T:{:.0f}m".format(orbital_period_min), 0, 24)
-        disp.text("A:{:.1f} X:{:.1f}".format(aov_position_deg % 360, eqx_position_deg % 360), 0, 36)
-        disp.text("dL:{:.2f}d/d".format(eqx_rate_deg_day), 0, 48)
+        disp.text("A:{:.1f} L:{:.1f}".format(aov_position_deg % 360, lan_position_deg % 360), 0, 36)
+        disp.text("dL:{:.2f}d/d".format(lan_rate_deg_day), 0, 48)
     
     disp.show()

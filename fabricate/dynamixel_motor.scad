@@ -21,6 +21,7 @@ horn_screw_diameter = 2;    // Center screw hole
 horn_mount_holes = 4;       // Number of mounting holes in horn
 horn_mount_radius = 6;      // Radius of mounting holes from center
 horn_mount_hole_dia = 2;    // Diameter of mounting holes
+horn_mount_hole_xtra = 0.4;  // extra diameter for mounting screws
 horn_mount_head_dia = 5;    // Diameter of mounting holes
 
 // Side mounting bracket parameters
@@ -177,7 +178,7 @@ module dynamixel_drive_shaft(){
         // Through holes for screw shafts
 	rotate([0, 0, i * 360/horn_mount_holes])
 	  translate([horn_mount_radius, 0, -1])
-	  cylinder(h=screw_depth, d=horn_mount_hole_dia);
+	  cylinder(h=screw_depth, d=horn_mount_hole_dia+horn_mount_hole_xtra);
         // Countersink for screw heads
 	rotate([0, 0, i * 360/horn_mount_holes])
 	  translate([horn_mount_radius, 0, adapter_base_height])

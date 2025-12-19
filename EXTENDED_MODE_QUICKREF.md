@@ -6,7 +6,7 @@
 ```python
 from dynamixel_extended_utils import set_extended_mode
 
-set_extended_mode(1)  # LAN motor
+set_extended_mode(1)  # EQX motor
 set_extended_mode(2)  # AoV motor
 ```
 
@@ -18,7 +18,7 @@ from dynamixel_extended_utils import orbigator_init, write_dword
 lan_pos, aov_pos = orbigator_init()
 
 # Now safe to move motors
-write_dword(1, 116, lan_pos + 1000)  # Move LAN forward
+write_dword(1, 116, lan_pos + 1000)  # Move EQX forward
 write_dword(2, 116, aov_pos + 2000)  # Move AoV forward
 ```
 

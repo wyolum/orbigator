@@ -39,7 +39,7 @@ components = {
         }
     },
     'M1': {
-        'name': 'DYNAMIXEL XL330-M288-T (AoV)',
+        'name': 'DYNAMIXEL XL330-M288-T (LAN)',
         'type': 'Servo',
         'id': 1,
         'pins': {
@@ -49,7 +49,7 @@ components = {
         }
     },
     'M2': {
-        'name': 'DYNAMIXEL XL330-M288-T (LAN)',
+        'name': 'DYNAMIXEL XL330-M288-T (AoV)',
         'type': 'Servo',
         'id': 2,
         'pins': {
@@ -228,15 +228,15 @@ config = {
     'dynamixel': {
         'motor_1': {
             'id': 1,
-            'name': 'AoV',
+            'name': 'EQX',
             'operating_mode': 4,  # Extended Position Control
-            'gear_ratio': 1.0,  # Direct drive
+            'gear_ratio': 120.0 / 11.0,  # Ring gear / Drive gear
         },
         'motor_2': {
             'id': 2,
-            'name': 'LAN',
+            'name': 'AoV',
             'operating_mode': 4,  # Extended Position Control
-            'gear_ratio': 120.0 / 11.0,  # Ring gear / Drive gear
+            'gear_ratio': 1.0,  # Direct drive
         },
     },
     'encoder': {
@@ -252,8 +252,8 @@ config = {
 bom = [
     {'ref': 'U1', 'value': 'Raspberry Pi Pico 2', 'qty': 1},
     {'ref': 'U2', 'value': 'SN74HC126N', 'qty': 1},
-    {'ref': 'M1', 'value': 'DYNAMIXEL XL330-M288-T', 'qty': 1, 'notes': 'AoV Motor, ID=1'},
-    {'ref': 'M2', 'value': 'DYNAMIXEL XL330-M288-T', 'qty': 1, 'notes': 'LAN Motor, ID=2'},
+    {'ref': 'M1', 'value': 'DYNAMIXEL XL330-M288-T', 'qty': 1, 'notes': 'EQX Motor, ID=1'},
+    {'ref': 'M2', 'value': 'DYNAMIXEL XL330-M288-T', 'qty': 1, 'notes': 'AoV Motor, ID=2'},
     {'ref': 'DISP1', 'value': 'OLED 128x64 (SH1106/SSD1306)', 'qty': 1},
     {'ref': 'RTC1', 'value': 'DS3231 RTC (ChronoDot)', 'qty': 1},
     {'ref': 'ENC1', 'value': 'Rotary Encoder with Switch', 'qty': 1},

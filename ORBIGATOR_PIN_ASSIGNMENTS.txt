@@ -5,7 +5,7 @@ Raspberry Pi Pico 2 with DYNAMIXEL XL330-M288-T Motors
 COMPONENT OVERVIEW
 ==================
 - Raspberry Pi Pico 2 (main controller)
-- 2x DYNAMIXEL XL330-M288-T servos (LAN and AoV motors)
+- 2x DYNAMIXEL XL330-M288-T servos (EQX and AoV motors)
 - SN74HC126N quad tri-state buffer (half-duplex UART)
 - SH1106/SSD1306 OLED display (128x64)
 - DS3231 RTC (ChronoDot)
@@ -67,13 +67,13 @@ DYNAMIXEL DATA BUS (Shared Half-Duplex)
 GP1 (UART RX)        ┤
 10kΩ pull-up to 5V  ─┘
 
-DYNAMIXEL MOTOR 1 (AoV - ID 1)
+DYNAMIXEL MOTOR 1 (EQX - ID 1)
 ------------------------------
 Pin 1 (GND)   → Common ground
 Pin 2 (VDD)   → 5V power supply
 Pin 3 (DATA)  → DATA BUS
 
-DYNAMIXEL MOTOR 2 (LAN - ID 2)
+DYNAMIXEL MOTOR 2 (AoV - ID 2)
 ------------------------------
 Pin 1 (GND)   → Common ground
 Pin 2 (VDD)   → 5V power supply
@@ -162,7 +162,7 @@ CRITICAL NOTES
    - Common ground between Pico and motor supply is CRITICAL
 
 5. GEAR RATIOS
-   - LAN Motor: 11T drive gear → 120T ring gear (10.909:1)
+   - EQX Motor: 11T drive gear → 120T ring gear (10.909:1)
    - AoV Motor: Direct drive (1:1)
 
 ========================================================
@@ -178,8 +178,8 @@ UART Configuration:
 - Stop bits: 1
 
 Motor IDs:
-- AoV Motor: ID 1
-- LAN Motor: ID 2
+- AoV Motor: ID 2
+- EQX Motor: ID 1
 
 Operating Mode:
 - Extended Position Control Mode (Mode 4)

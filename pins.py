@@ -1,82 +1,74 @@
-
 # pins.py - Orbigator GPIO Assignment Module
-# Version aligned with Orbigator Spec v1.6
-# Provides a single source of truth for all GPIO pin definitions.
+# Raspberry Pi Pico 2 with DYNAMIXEL XL330-M288-T Motors
+# Aligned with orbigator.py and ORBIGATOR_PIN_ASSIGNMENTS.txt
 
 from machine import Pin
 
 # ---------------------------
+# DYNAMIXEL Communication (UART0 + 74HC126 Buffer)
+# ---------------------------
+UART_TX = 0      # GP0 - UART0 TX → 74HC126 Pin 2 (1A)
+UART_RX = 1      # GP1 - UART0 RX → DYNAMIXEL DATA line
+UART_DIR = 2     # GP2 - Direction Control → 74HC126 Pin 1 (1OE)
+
+# ---------------------------
 # I2C Bus (OLED + DS3231 RTC)
 # ---------------------------
-I2C_SDA = 4
-I2C_SCL = 5
+I2C_SDA = 4      # GP4 - I2C0 SDA (shared: OLED + RTC)
+I2C_SCL = 5      # GP5 - I2C0 SCL (shared: OLED + RTC)
 
 # ---------------------------
-# Encoder + UI Buttons
+# Rotary Encoder
 # ---------------------------
-ENC_A     = 16     # Encoder A (TRA)
-ENC_B     = 17     # Encoder B (TRB)
-ENC_PUSH  = 18     # Encoder push button (PSH) - Active LOW
-CONFIRM   = 26     # Confirm button - Active LOW
-BACK      = 27     # Back/Cancel button - Active LOW
-
-# Helper constructors (optional)
-confirm_btn = Pin(CONFIRM, Pin.IN, Pin.PULL_UP)
-back_btn    = Pin(BACK, Pin.IN, Pin.PULL_UP)
-enc_push    = Pin(ENC_PUSH, Pin.IN, Pin.PULL_UP)
-enc_a       = Pin(ENC_A, Pin.IN, Pin.PULL_UP)
-enc_b       = Pin(ENC_B, Pin.IN, Pin.PULL_UP)
+ENC_A = 6        # GP6 - Encoder Phase A (with internal pull-up)
+ENC_B = 7        # GP7 - Encoder Phase B (with internal pull-up)
+ENC_SW = 8       # GP8 - Encoder Switch (with internal pull-up)
 
 # ---------------------------
-# ULN2003 Stepper Drivers
+# Helper Pin Constructors
 # ---------------------------
+# UART pins (managed by UART peripheral, typically not constructed manually)
+uart_dir_pin = Pin(UART_DIR, Pin.OUT)
 
-# ULN2003 #1 – AOV Stepper
-AOV_IN1 = 8
-AOV_IN2 = 9
-AOV_IN3 = 10
-AOV_IN4 = 11
+# I2C pins (managed by I2C peripheral)
+# i2c_sda_pin = Pin(I2C_SDA, Pin.OUT, Pin.OPEN_DRAIN)
+# i2c_scl_pin = Pin(I2C_SCL, Pin.OUT, Pin.OPEN_DRAIN)
 
-# ULN2003 #2 – Spare Stepper
-ULN2_IN1 = 19
-ULN2_IN2 = 20
-ULN2_IN3 = 21
-ULN2_IN4 = 22
-
-# Grouped lists for ease of use
-AOV_COILS = [AOV_IN1, AOV_IN2, AOV_IN3, AOV_IN4]
-ULN2_COILS = [ULN2_IN1, ULN2_IN2, ULN2_IN3, ULN2_IN4]
+# Encoder pins
+enc_a_pin = Pin(ENC_A, Pin.IN, Pin.PULL_UP)
+enc_b_pin = Pin(ENC_B, Pin.IN, Pin.PULL_UP)
+enc_sw_pin = Pin(ENC_SW, Pin.IN, Pin.PULL_UP)
 
 # ---------------------------
-# Pololu Step/Dir Drivers
+# Motor Configuration
 # ---------------------------
+# DYNAMIXEL Motor IDs
+MOTOR_ID_AOV = 1  # Argument of Vehicle (direct drive)
+MOTOR_ID_EQX = 2  # Equator crossing (11T → 120T gearing)
 
-# Pololu #1 – LAN Stepper
-LAN_STEP = 14
-LAN_DIR  = 15
-LAN_M0   = 2
-LAN_M1   = 3
-
-# Pololu #2 – Spare Bipolar Motor
-M2_STEP = 0
-M2_DIR  = 1
-M2_M0   = 6
-M2_M1   = 7
-
-# Shared Pololu enable/sleep pin
-POLOLU_EN = 13
+# Gear Ratios
+EQX_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear
+AOV_GEAR_RATIO = 1.0            # Direct drive
 
 # ---------------------------
-# Helper constructors for Pololu pins
+# UART Configuration
 # ---------------------------
-lan_step_pin = Pin(LAN_STEP, Pin.OUT)
-lan_dir_pin  = Pin(LAN_DIR, Pin.OUT)
-lan_m0_pin   = Pin(LAN_M0, Pin.OUT)
-lan_m1_pin   = Pin(LAN_M1, Pin.OUT)
+UART_BAUD = 57600
+UART_BITS = 8
+UART_PARITY = None
+UART_STOP = 1
 
-m2_step_pin = Pin(M2_STEP, Pin.OUT)
-m2_dir_pin  = Pin(M2_DIR, Pin.OUT)
-m2_m0_pin   = Pin(M2_M0, Pin.OUT)
-m2_m1_pin   = Pin(M2_M1, Pin.OUT)
+# ---------------------------
+# I2C Configuration
+# ---------------------------
+I2C_FREQ = 100_000  # 100 kHz for reliability with ChronoDot/DS3231
 
-pololu_en_pin = Pin(POLOLU_EN, Pin.OUT, value=1)  # shared EN/SLEEP
+# I2C Addresses
+OLED_ADDR = 0x3C    # OLED Display (SH1106/SSD1306)
+RTC_ADDR = 0x68     # DS3231 RTC (ChronoDot)
+
+# ---------------------------
+# Encoder Configuration
+# ---------------------------
+DETENT_DIV = 2      # Encoder counts per detent (for responsiveness)
+DEBOUNCE_MS = 200   # Button debounce time in milliseconds

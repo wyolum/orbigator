@@ -12,7 +12,7 @@
 2. **`test_dynamixel_motor.py`** (189 lines)
    - Comprehensive unit test suite
    - Tests initialization, absolute positioning, relative movement, continuous rotation
-   - Verifies gear ratio calculations for LAN motor
+   - Verifies gear ratio calculations for EQX motor
 
 3. **`orbigator_stepper_motors.py`** (800 lines)
    - Backup of original stepper motor version
@@ -49,7 +49,7 @@ aov_motor.set_angle_degrees(angle)
 
 ### Gear Ratio Handling
 
-**LAN Motor:**
+**EQX Motor:**
 - 11T drive gear → 120T ring gear (ratio ≈ 10.909:1)
 - When you set globe to 45°, motor rotates to ~490.9°
 - All position tracking is in **globe degrees**, not motor degrees

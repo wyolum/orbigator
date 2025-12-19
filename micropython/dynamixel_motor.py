@@ -2,10 +2,14 @@
 DYNAMIXEL Motor Abstraction Layer for Orbigator
 
 Provides a clean interface for controlling Dynamixel motors with optional gear ratios.
-Handles position tracking in output degrees (e.g., globe position for LAN motor).
+Handles position tracking in output degrees (e.g., globe position for EQX motor).
+
+IMPORTANT: When you edit this file, remember to upload the updated file to the Pico 2
+           for changes to take effect! Use Thonny or mpremote to transfer the file.
 """
 
-from dynamixel_extended_utils import read_present_position, write_dword
+from dynamixel_extended_utils import read_present_position, write_dword, write_byte
+import time
 
 class DynamixelMotor:
     """
@@ -18,15 +22,17 @@ class DynamixelMotor:
     # Constants
     TICKS_PER_MOTOR_DEGREE = 4096.0 / 360.0  # Motor encoder resolution
     ADDR_GOAL_POSITION = 116
+    ADDR_LED = 65  # LED control register
+    ADDR_PROFILE_VELOCITY = 112  # Speed limit (0=unlimited, higher=slower)
     
     def __init__(self, motor_id, name, gear_ratio=1.0):
         """
         Initialize motor.
         
         Args:
-            motor_id: Dynamixel ID (1 for LAN, 2 for AoV)
+            motor_id: Dynamixel ID (1 for EQX, 2 for AoV)
             name: Human-readable name for debugging
-            gear_ratio: Output rotation / Motor rotation (e.g., 120/11 for LAN ring gear)
+            gear_ratio: Output rotation / Motor rotation (e.g., 120/11 for EQX ring gear)
         """
         self.motor_id = motor_id
         self.name = name
@@ -49,11 +55,34 @@ class DynamixelMotor:
         print(f"  Output position: {self.output_degrees:.2f}°")
         print(f"  Gear ratio: {gear_ratio:.3f}:1")
     
+    def set_speed_limit(self, velocity=100):
+        """
+        Set maximum speed limit for the motor.
+        
+        This prevents the satellite pointer from moving too fast.
+        Lower values = faster movement, higher values = slower movement.
+        
+        Args:
+            velocity: Profile velocity (0-32767)
+                     0 = no limit (FAST, not recommended!)
+                     50-100 = moderate speed (good for testing)
+                     100-200 = slow, safe speed (recommended for display)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        success = write_dword(self.motor_id, self.ADDR_PROFILE_VELOCITY, velocity)
+        if success:
+            print(f"  Speed limit set: velocity={velocity} (higher=slower)")
+        else:
+            print(f"Warning: Failed to set speed limit for motor {self.motor_id}")
+        return success
+    
     def set_angle_degrees(self, output_degrees):
         """
         Set the output angle in degrees.
         
-        For geared motors (LAN), this is the globe position.
+        For geared motors (EQX), this is the globe position.
         For direct drive (AoV), this is the motor position.
         
         Args:
@@ -110,6 +139,36 @@ class DynamixelMotor:
         """
         new_output_degrees = self.output_degrees + delta_output_degrees
         return self.set_angle_degrees(new_output_degrees)
+    
+    def flash_led(self, count=1, on_time_ms=200, off_time_ms=200):
+        """
+        Flash the motor's LED for visual identification.
+        
+        Args:
+            count: Number of times to flash (default=1)
+            on_time_ms: Time LED stays on in milliseconds (default=200)
+            off_time_ms: Time LED stays off between flashes (default=200)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        for i in range(count):
+            # Turn LED on
+            if not write_byte(self.motor_id, self.ADDR_LED, 1):
+                print(f"Warning: Failed to turn on LED for motor {self.motor_id}")
+                return False
+            time.sleep_ms(on_time_ms)
+            
+            # Turn LED off
+            if not write_byte(self.motor_id, self.ADDR_LED, 0):
+                print(f"Warning: Failed to turn off LED for motor {self.motor_id}")
+                return False
+            
+            # Wait before next flash (except after last flash)
+            if i < count - 1:
+                time.sleep_ms(off_time_ms)
+        
+        return True
     
     def __repr__(self):
         return f"DynamixelMotor(id={self.motor_id}, name='{self.name}', output={self.output_degrees:.1f}°, gear_ratio={self.gear_ratio:.3f})"

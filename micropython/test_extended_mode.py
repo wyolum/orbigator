@@ -121,26 +121,29 @@ def set_extended_mode(servo_id):
     print(f"  ✓ Motor {servo_id} configured for Extended Position Mode")
     return True
 
-def main():
+def main(motor_id=1):
+    """Test Extended Position Mode on specified motor.
+    
+    Args:
+        motor_id: Motor ID to test (1 for AoV, 2 for LAN). Default is 1.
+    """
+    motor_name = "AoV" if motor_id == 1 else "LAN"
+    
     print("="*60)
     print("🚀 EXTENDED POSITION MODE TEST 🚀")
     print("="*60)
     print()
+    print(f"Testing Motor {motor_id} ({motor_name})")
+    print()
     print("This script will:")
-    print("  1. Set both motors to Extended Position Mode")
+    print(f"  1. Set Motor {motor_id} to Extended Position Mode")
     print("  2. Demonstrate continuous forward rotation")
     print("  3. Show positions beyond 4095 (multi-turn)")
     print()
     
-    # Configure both motors
-    if not set_extended_mode(1):
-        print("Failed to configure Motor 1 (LAN)")
-        return
-    
-    print()
-    
-    if not set_extended_mode(2):
-        print("Failed to configure Motor 2 (AoV)")
+    # Configure specified motor
+    if not set_extended_mode(motor_id):
+        print(f"Failed to configure Motor {motor_id} ({motor_name})")
         return
     
     print()
@@ -148,43 +151,38 @@ def main():
     print("CONTINUOUS FORWARD ROTATION TEST")
     print("="*60)
     print()
-    print("Both motors will rotate forward continuously.")
-    print("Positions will increment beyond 4095 (one full rotation).")
+    print(f"Motor {motor_id} ({motor_name}) will rotate forward continuously.")
+    print("Position will increment beyond 4095 (one full rotation).")
     print("Press Ctrl+C to stop.")
     print()
     
     # Starting position
-    lan_position = 0
-    aov_position = 0
+    position = 0
     
     # Increment per step (approximately 1 degree = 11 ticks)
-    increment = 300
+    increment = 30
     
     try:
         step = 0
         while True:
             step += 1
             
-            # Increment positions
-            lan_position += increment
-            aov_position += increment
+            # Increment position
+            position += increment
             
-            # Send commands
-            write_dword(1, 116, lan_position)  # ADDR_GOAL_POSITION = 116
-            #write_dword(2, 116, aov_position)
+            # Send command to specified motor
+            write_dword(motor_id, 116, position)  # ADDR_GOAL_POSITION = 116
             
             # Calculate degrees and rotations
-            lan_degrees = (lan_position / 4096.0) * 360.0
-            aov_degrees = (aov_position / 4096.0) * 360.0
-            lan_rotations = lan_position / 4096.0
-            aov_rotations = aov_position / 4096.0
+            degrees = (position / 4096.0) * 360.0
+            rotations = position / 4096.0
             
             # Display progress
-            print(f"Step {step:4d} | LAN: {lan_position:6d} ({lan_rotations:5.2f} rot, {lan_degrees:6.1f}°) | "
-                  f"AoV: {aov_position:6d} ({aov_rotations:5.2f} rot, {aov_degrees:6.1f}°)")
+            print(f"Step {step:4d} | Motor {motor_id} ({motor_name}): {position:6d} "
+                  f"({rotations:5.2f} rot, {degrees:6.1f}°)")
             
             # Wait before next increment
-            time.sleep(0)  # 2 seconds per step for demo (adjust as needed)
+            time.sleep(0)  # Adjust as needed
             
     except KeyboardInterrupt:
         print()
@@ -192,14 +190,12 @@ def main():
         print("✓ TEST STOPPED BY USER")
         print("="*60)
         print()
-        print(f"Final positions:")
-        print(f"  LAN Motor: {lan_position} ({lan_position/4096.0:.2f} rotations)")
-        print(f"  AoV Motor: {aov_position} ({aov_position/4096.0:.2f} rotations)")
+        print(f"Final position:")
+        print(f"  Motor {motor_id} ({motor_name}): {position} ({position/4096.0:.2f} rotations)")
         print()
-        print("Motors will maintain their current position.")
+        print("Motor will maintain its current position.")
         print("To disable torque, run:")
-        print("  write_byte(1, 64, 0)  # LAN")
-        print("  write_byte(2, 64, 0)  # AoV")
+        print(f"  write_byte({motor_id}, 64, 0)  # {motor_name}")
 
 if __name__ == "__main__":
-    main()
+    main(1)

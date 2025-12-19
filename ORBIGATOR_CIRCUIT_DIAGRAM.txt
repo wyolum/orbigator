@@ -17,8 +17,8 @@ Raspberry Pi Pico 2 with DYNAMIXEL Motors
                     │                  │                │                  │
     ┌───────────────┴────────┐         │                │      ┌───────────┴────────┐
     │  DYNAMIXEL XL330 (M1)  │         │                │      │  DYNAMIXEL XL330 (M2)│
-    │  AoV Motor (ID 1)      │         │                │      │  LAN Motor (ID 2)    │
-    │  Direct Drive          │         │                │      │  11T → 120T Gearing  │
+    │  EQX Motor (ID 1)      │         │                │      │  AoV Motor (ID 2)    │
+    │  11T → 120T Gearing    │         │                │      │  Direct Drive        │
     ├────────────────────────┤         │                │      ├──────────────────────┤
     │ 1: GND ────────────────┼─────────┼────────────────┼──────┼─────────── GND :1    │
     │ 2: VDD (5V) ───────────┼─────────┘                └──────┼─────────── VDD :2    │

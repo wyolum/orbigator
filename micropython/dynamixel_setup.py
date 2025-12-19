@@ -180,8 +180,13 @@ def send_packet(packet):
     time.sleep_ms(2)
     set_rx_mode()
 
-def receive_response(timeout_ms=100):
-    """Receive response from DYNAMIXEL"""
+def receive_response(timeout_ms=100, sent_packet=None):
+    """Receive response from DYNAMIXEL
+    
+    Args:
+        timeout_ms: Maximum time to wait for response
+        sent_packet: The packet that was sent (to filter out TX echo)
+    """
     set_rx_mode()
     start = time.ticks_ms()
     response = bytearray()
@@ -189,13 +194,27 @@ def receive_response(timeout_ms=100):
     while time.ticks_diff(time.ticks_ms(), start) < timeout_ms:
         if uart.any():
             response.extend(uart.read())
-            # Check if we have minimum packet
+            
+            # Look for status packet (instruction byte = 0x55)
+            # Skip TX echo if we know what was sent
             if len(response) >= 11:
-                # Check if we have complete packet
-                if len(response) >= 7:
-                    expected_len = response[5] + (response[6] << 8) + 7
-                    if len(response) >= expected_len:
-                        break
+                # Find all valid packet headers
+                for i in range(len(response) - 10):
+                    if (response[i:i+4] == b'\xFF\xFF\xFD\x00' and 
+                        len(response) >= i + 11):
+                        
+                        # Get packet length
+                        if len(response) >= i + 7:
+                            expected_len = response[i+5] + (response[i+6] << 8) + 7
+                            
+                            # Check if we have complete packet
+                            if len(response) >= i + expected_len:
+                                packet_data = response[i:i+expected_len]
+                                
+                                # CRITICAL: Only return STATUS packets (0x55), skip echoed commands
+                                if response[i+7] == 0x55:  # STATUS instruction
+                                    return bytes(packet_data)
+                                # If this is the echo, skip it and keep looking
         time.sleep_ms(1)
     
     return bytes(response)
@@ -207,7 +226,8 @@ def communicate(packet, timeout_ms=100):
         uart.read()
     
     send_packet(packet)
-    return receive_response(timeout_ms)
+    # Pass the sent packet so we can filter out the echo
+    return receive_response(timeout_ms, sent_packet=packet)
 
 def parse_response(response):
     """Parse DYNAMIXEL response packet"""
@@ -255,21 +275,29 @@ def ping(servo_id):
         print(f"Servo ID {servo_id}: NOT FOUND")
         return False
 
-def scan_servos(start_id=0, end_id=252):
+def scan_servos(start_id=0, end_id=5):
     """Scan for all connected servos"""
     print(f"Scanning for servos (ID {start_id} to {end_id})...")
     found = []
     
     for servo_id in range(start_id, end_id + 1):
+        # Show progress every 50 IDs
+        if servo_id % 50 == 0:
+            print(f"  Scanning ID {servo_id}...")
+        
         packet = make_packet(servo_id, INST_PING, [])
-        response = communicate(packet, timeout_ms=50)
+        response = communicate(packet, timeout_ms=100)  # Longer timeout for reliability
         result = parse_response(response)
         
-        if result:
-            found.append(servo_id)
-            print(f"  Found servo at ID {servo_id}")
+        if result and result['instruction'] == INST_STATUS:
+            # Verify the response ID matches what we pinged
+            if result['id'] == servo_id:
+                found.append(servo_id)
+                print(f"  ✓ Found servo at ID {servo_id}")
     
     print(f"\nTotal servos found: {len(found)}")
+    if len(found) == 0:
+        print("No servos detected. Check wiring and power.")
     return found
 
 def read_data(servo_id, address, length):
@@ -319,17 +347,41 @@ def change_id(old_id, new_id):
         print("Error: Servo not found at old ID")
         return False
     
+    # CRITICAL: Disable torque before writing to EEPROM
+    print("Disabling torque...")
+    torque_disabled = write_data(old_id, ADDR_TORQUE_ENABLE, 0)
+    if not torque_disabled:
+        print("Warning: Could not disable torque, trying anyway...")
+    
+    time.sleep_ms(100)
+    
     # Write new ID
+    print(f"Writing new ID {new_id} to EEPROM...")
     success = write_data(old_id, ADDR_ID, new_id)
     
     if success:
         print(f"Success! Servo ID changed to {new_id}")
-        # Verify
-        time.sleep_ms(100)
-        ping(new_id)
-        return True
+        print("Rebooting servo...")
+        time.sleep_ms(200)
+        
+        # Reboot to ensure ID change takes effect
+        reboot(new_id)
+        time.sleep_ms(500)
+        
+        # Verify new ID
+        print("Verifying new ID...")
+        if ping(new_id):
+            print(f"✓ Confirmed: Servo now responds at ID {new_id}")
+            return True
+        else:
+            print("⚠ Warning: Write succeeded but servo not responding at new ID")
+            return False
     else:
-        print("Error: Failed to change ID")
+        print("Error: Failed to write new ID to EEPROM")
+        print("Possible causes:")
+        print("  - Torque still enabled (shouldn't happen)")
+        print("  - EEPROM write protection")
+        print("  - Communication error")
         return False
 
 def read_position(servo_id):
@@ -425,9 +477,17 @@ def main():
             ping(servo_id)
         
         elif choice == '3':
-            old_id = int(input("Enter current ID: "))
-            new_id = int(input("Enter new ID (1-252): "))
-            change_id(old_id, new_id)
+            print("\n" + "="*60)
+            print("To change motor IDs, use the standalone script:")
+            print("  change_id_to_2.py")
+            print()
+            print("This script will:")
+            print("  - Find motor at ID 1")
+            print("  - Change it to ID 2")
+            print("  - Verify the change")
+            print()
+            print("Run it with only ONE motor connected at a time.")
+            print("="*60)
         
         elif choice == '4':
             servo_id = int(input("Enter servo ID: "))

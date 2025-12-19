@@ -1,22 +1,26 @@
-"""
-DYNAMIXEL Extended Position Mode Utilities
-
-Best practices for Extended Position Control Mode (Mode 4):
-1. Set Mode 4 once and leave it permanently
-2. Read Present Position on boot to avoid jumps
-3. Use Clear Multi-Turn if you need to reset (optional)
-4. Don't worry about overflow (62+ years at 1°/10sec)
-"""
+# EQX Motor Debug Script - Standalone Version
+# Direct UART communication with Dynamixel protocol
+# No external library dependencies
 
 from machine import UART, Pin
 import time
 
-# UART setup
+# UART setup for Dynamixel communication
 uart = UART(0, baudrate=57600, bits=8, parity=None, stop=1)
 uart.init(tx=Pin(0), rx=Pin(1))
 dir_pin = Pin(2, Pin.OUT, value=0)
 
-# CRC Table
+# Motor configuration
+EQX_MOTOR_ID = 1
+EQX_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear
+
+# Dynamixel addresses
+ADDR_TORQUE_ENABLE = 64
+ADDR_GOAL_POSITION = 116
+ADDR_PRESENT_POSITION = 132
+ADDR_PROFILE_VELOCITY = 112
+
+# CRC Table for Dynamixel Protocol 2.0
 CRC_TABLE = [
     0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
     0x8033, 0x0036, 0x003C, 0x8039, 0x0028, 0x802D, 0x8027, 0x0022,
@@ -53,6 +57,7 @@ CRC_TABLE = [
 ]
 
 def calc_crc(data):
+    """Calculate CRC for Dynamixel Protocol 2.0"""
     crc = 0
     for byte in data:
         i = ((crc >> 8) ^ byte) & 0xFF
@@ -60,20 +65,24 @@ def calc_crc(data):
     return crc
 
 def send_and_receive(packet, timeout_ms=150):
-    """Send packet and get response"""
+    """Send packet and receive response"""
+    # Clear any pending data
     while uart.any():
         uart.read()
     
+    # Send packet (TX mode)
     dir_pin.value(1)
     time.sleep_ms(10)
     uart.write(packet)
     time.sleep_ms(10)
     dir_pin.value(0)
     
+    # Wait for response
     time.sleep_ms(timeout_ms)
     
     if uart.any():
         response = uart.read()
+        # Find status packet header
         for i in range(len(response) - 10):
             if response[i:i+4] == b'\xFF\xFF\xFD\x00':
                 if i + 7 < len(response) and response[i+7] == 0x55:
@@ -82,17 +91,8 @@ def send_and_receive(packet, timeout_ms=150):
                         return response[i:i+7+pkt_len]
     return None
 
-def write_byte(servo_id, address, value):
-    """Write a single byte"""
-    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x06, 0x00, 0x03])
-    packet.extend([address & 0xFF, (address >> 8) & 0xFF, value])
-    crc = calc_crc(packet)
-    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
-    response = send_and_receive(bytes(packet))
-    return response is not None and len(response) >= 9 and response[8] == 0
-
 def write_dword(servo_id, address, value):
-    """Write a 4-byte value"""
+    """Write a 4-byte value to servo"""
     packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x09, 0x00, 0x03])
     packet.extend([address & 0xFF, (address >> 8) & 0xFF])
     packet.extend([value & 0xFF, (value >> 8) & 0xFF, (value >> 16) & 0xFF, (value >> 24) & 0xFF])
@@ -102,15 +102,14 @@ def write_dword(servo_id, address, value):
     return response is not None and len(response) >= 9 and response[8] == 0
 
 def read_dword(servo_id, address):
-    """Read a 4-byte value (for position)"""
+    """Read a 4-byte value from servo"""
     packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x07, 0x00, 0x02])
-    packet.extend([address & 0xFF, (address >> 8) & 0xFF, 0x04, 0x00])  # Read 4 bytes
+    packet.extend([address & 0xFF, (address >> 8) & 0xFF, 0x04, 0x00])
     crc = calc_crc(packet)
     packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
     response = send_and_receive(bytes(packet))
     
     if response is not None and len(response) >= 13 and response[8] == 0:
-        # Extract 4-byte value from response
         value = response[9] | (response[10] << 8) | (response[11] << 16) | (response[12] << 24)
         # Handle signed 32-bit integer
         if value >= 0x80000000:
@@ -118,98 +117,98 @@ def read_dword(servo_id, address):
         return value
     return None
 
-def clear_multi_turn(servo_id):
-    """
-    Clear Multi-Turn command - resets Present Position to 0-4095 range
-    without moving the motor. Useful for resetting the counter.
-    
-    This is instruction 0x0A in the DYNAMIXEL protocol.
-    """
-    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x03, 0x00, 0x0A])
-    crc = calc_crc(packet)
-    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
-    response = send_and_receive(bytes(packet))
-    return response is not None and len(response) >= 9 and response[8] == 0
+# Main script
+print("="*60)
+print("EQX Motor Debug Script - Standalone")
+print("="*60)
+print(f"Motor ID: {EQX_MOTOR_ID}")
+print(f"Gear Ratio: {EQX_GEAR_RATIO:.2f}:1")
+print()
 
-def read_present_position(servo_id):
-    """
-    Read the current position from the motor.
-    CRITICAL: Call this on boot before sending any Goal Position commands!
-    
-    Returns: Current position as signed 32-bit integer, or None on error
-    """
-    return read_dword(servo_id, 132)  # ADDR_PRESENT_POSITION = 132
+# Read initial position
+print("Reading initial position...")
+initial_ticks = read_dword(EQX_MOTOR_ID, ADDR_PRESENT_POSITION)
 
-def set_extended_mode(servo_id):
-    """
-    Configure servo for Extended Position Mode (Mode 4).
-    Do this ONCE and leave it permanently.
-    """
-    print(f"Configuring Motor {servo_id} for Extended Position Mode...")
-    
-    # Disable torque
-    if not write_byte(servo_id, 64, 0):  # ADDR_TORQUE_ENABLE = 64
-        print(f"  ✗ Failed to disable torque")
-        return False
-    
-    # Set Operating Mode to 4 (Extended Position)
-    if not write_byte(servo_id, 11, 4):  # ADDR_OPERATING_MODE = 11
-        print(f"  ✗ Failed to set operating mode")
-        return False
-    
-    # Re-enable torque
-    if not write_byte(servo_id, 64, 1):
-        print(f"  ✗ Failed to enable torque")
-        return False
-    
-    print(f"  ✓ Motor {servo_id} configured for Extended Position Mode")
-    return True
+if initial_ticks is None:
+    print("✗ Failed to read position - check connections!")
+    print("  - UART: TX=GP0, RX=GP1, DIR=GP2")
+    print("  - Motor ID should be 1")
+    print("  - Baud rate: 57600")
+    import sys
+    sys.exit(1)
 
-def power_on_routine(servo_id):
-    """
-    CRITICAL: Run this on every boot!
-    
-    Reads the current position and returns it as the baseline.
-    Use this value as your starting point to avoid motor jumps.
-    
-    Returns: Current position, or None on error
-    """
-    print(f"Reading Motor {servo_id} present position...")
-    position = read_present_position(servo_id)
-    
-    if position is not None:
-        rotations = position / 4096.0
-        degrees = (position % 4096) / 4096.0 * 360.0
-        print(f"  Motor {servo_id}: position={position} ({rotations:.2f} rotations, {degrees:.1f}° within current rotation)")
-        return position
-    else:
-        print(f"  ✗ Failed to read position from Motor {servo_id}")
-        return None
+print(f"✓ Initial position: {initial_ticks} ticks")
 
-# Example usage for Orbigator boot sequence:
-def orbigator_init():
-    """
-    Complete initialization routine for Orbigator motors.
-    Call this once on boot.
-    """
-    print("="*60)
-    print("ORBIGATOR MOTOR INITIALIZATION")
-    print("="*60)
-    print()
+# Convert to degrees (motor degrees, not output degrees)
+TICKS_PER_DEGREE = 4096.0 / 360.0
+initial_motor_deg = initial_ticks / TICKS_PER_DEGREE
+initial_output_deg = initial_motor_deg / EQX_GEAR_RATIO
+
+print(f"  Motor degrees: {initial_motor_deg:.2f}°")
+print(f"  Output degrees: {initial_output_deg:.2f}°")
+
+# Set speed limit
+print("\nSetting speed limit...")
+if write_dword(EQX_MOTOR_ID, ADDR_PROFILE_VELOCITY, 50):
+    print("✓ Speed limit set to 50")
+else:
+    print("⚠ Failed to set speed limit (continuing anyway)")
+
+print("\n" + "="*60)
+print("Starting continuous forward/backward movement")
+print("1 revolution forward, 1 revolution backward")
+print("Press Ctrl+C to stop")
+print("="*60)
+
+cycle = 0
+try:
+    while True:
+        cycle += 1
+        print(f"\n--- Cycle {cycle} ---")
+        
+        # Forward 1 revolution (360 motor degrees)
+        forward_motor_deg = initial_motor_deg + 360.0
+        forward_ticks = int(forward_motor_deg * TICKS_PER_DEGREE)
+        
+        print(f"Moving FORWARD to {forward_motor_deg:.2f}° motor ({forward_ticks} ticks)...")
+        if write_dword(EQX_MOTOR_ID, ADDR_GOAL_POSITION, forward_ticks):
+            print("  ✓ Command sent")
+        else:
+            print("  ✗ Command failed!")
+        
+        time.sleep(3)
+        
+        # Read actual position
+        actual_ticks = read_dword(EQX_MOTOR_ID, ADDR_PRESENT_POSITION)
+        if actual_ticks is not None:
+            actual_motor_deg = actual_ticks / TICKS_PER_DEGREE
+            print(f"  Actual position: {actual_motor_deg:.2f}° motor ({actual_ticks} ticks)")
+        
+        # Backward to initial position
+        backward_ticks = int(initial_motor_deg * TICKS_PER_DEGREE)
+        
+        print(f"Moving BACKWARD to {initial_motor_deg:.2f}° motor ({backward_ticks} ticks)...")
+        if write_dword(EQX_MOTOR_ID, ADDR_GOAL_POSITION, backward_ticks):
+            print("  ✓ Command sent")
+        else:
+            print("  ✗ Command failed!")
+        
+        time.sleep(3)
+        
+        # Read actual position
+        actual_ticks = read_dword(EQX_MOTOR_ID, ADDR_PRESENT_POSITION)
+        if actual_ticks is not None:
+            actual_motor_deg = actual_ticks / TICKS_PER_DEGREE
+            print(f"  Actual position: {actual_motor_deg:.2f}° motor ({actual_ticks} ticks)")
+
+except KeyboardInterrupt:
+    print("\n\nStopped by user")
+    print(f"Total cycles completed: {cycle}")
     
-    # Read current positions (CRITICAL - do this before any movement!)
-    lan_pos = power_on_routine(1)
-    aov_pos = power_on_routine(2)
+    # Return to initial position
+    print(f"\nReturning to initial position ({initial_motor_deg:.2f}° motor)...")
+    initial_ticks_int = int(initial_motor_deg * TICKS_PER_DEGREE)
+    write_dword(EQX_MOTOR_ID, ADDR_GOAL_POSITION, initial_ticks_int)
+    time.sleep(2)
     
-    if lan_pos is None or aov_pos is None:
-        print("\n✗ Failed to read motor positions!")
-        return None, None
-    
-    print()
-    print("✓ Motors initialized successfully")
-    print(f"  EQX baseline: {lan_pos}")
-    print(f"  AoV baseline: {aov_pos}")
-    print()
-    print("Use these values as your starting positions.")
-    
-    return lan_pos, aov_pos
+    print("\n✓ Debug script complete")

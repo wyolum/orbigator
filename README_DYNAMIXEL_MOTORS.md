@@ -1,17 +1,15 @@
 # 🎉 DYNAMIXEL MOTORS - START HERE! 🎉
 
-## ⚡ SERVO CHOICE: XC330-M288-T (Upgraded)
+## ⚡ SERVO CHOICE: XL330-M288-T
 
-**Selected Model:** DYNAMIXEL XC330-M288-T
-**Why:** XL330-M288-T backordered until Q1 2026. XC330 is the upgraded version with:
-- ✅ Metal gears (vs plastic in XL330)
-- ✅ Upgraded bearings
-- ✅ 78% more torque (0.93 vs 0.52 N·m @ 5V)
-- ✅ **100% compatible** with all XL330 documentation below
-- ✅ Same Protocol 2.0, same wiring, same code
-- ✅ Available immediately
-
-**Note:** All documentation references to "XL330" apply equally to "XC330". No changes needed.
+**Selected Model:** DYNAMIXEL XL330-M288-T
+**Specifications:**
+- Protocol 2.0 communication
+- 0.52 N·m stall torque @ 5V
+- 288° range in Position Control Mode
+- Unlimited rotation in Extended Position Mode (Mode 4)
+- Compact size: 24mm × 36mm × 27mm
+- Metal horn with M2 mounting holes
 
 ---
 
@@ -44,7 +42,7 @@
    setup_orbigator_servos()
    ```
 4. Follow prompts to set:
-   - First servo → ID=1 (LAN Motor)
+   - First servo → ID=1 (EQX Motor)
    - Second servo → ID=2 (AoV Motor - Argument of Vehicle)
 
 **Alternative - Interactive Menu:**
@@ -77,7 +75,7 @@ Use `dynamixel_setup.py` to verify:
 scan_servos()
 
 # Should find ID 1 and 2
-ping(1)  # LAN Motor
+ping(1)  # EQX Motor
 ping(2)  # AoV Motor
 
 # Test movement
@@ -106,7 +104,7 @@ Before you start, verify you have:
 
 | Servo ID | Motor Type | Function |
 |----------|------------|----------|
-| 1 | LAN Motor | Longitude of Ascending Node |
+| 1 | EQX Motor | Equator crossing |
 | 2 | AoV Motor | Argument of Vehicle (0°=equator↑, 90°=max lat, 180°=equator↓, 270°=min lat) |
 
 ### 📞 **Need Help?**

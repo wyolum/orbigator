@@ -159,7 +159,7 @@ Pin 14 (VCC)  ← 3.3V from Pico
 - [ ] Open Thonny or your preferred MicroPython IDE
 - [ ] Verify script is on Pico
 
-### 3.2 Configure First Servo (LAN Motor - ID 1)
+### 3.2 Configure First Servo (EQX Motor - ID 1)
 
 **Connect ONLY the first servo:**
 - [ ] Take ONE servo
@@ -187,7 +187,7 @@ ping(1)
 # Should respond with model and firmware info
 ```
 
-- [ ] Mark this servo with tape/label: "LAN - ID 1"
+- [ ] Mark this servo with tape/label: "EQX - ID 1"
 - [ ] Disconnect servo from power
 
 ### 3.3 Configure Second Servo (AOV Motor - ID 2)
@@ -247,7 +247,7 @@ ping(2)
 
 ### 5.1 Basic Movement Test
 ```python
-# Test Servo 1 (LAN Motor)
+# Test Servo 1 (EQX Motor)
 set_torque(1, True)
 set_position(1, 2048)  # Center position
 time.sleep(1)
@@ -367,7 +367,7 @@ set_position(1, 4095)
 For Orbigator, you need to map servo positions to orbital angles:
 
 ### **Quick Reference:**
-- Servo 1 (ID=1): **LAN Motor** (Longitude of Ascending Node)
+- Servo 1 (ID=1): **EQX Motor** (Equator crossing)
 - Servo 2 (ID=2): **AoV Motor** (Argument of Vehicle - orbital position)
   - 0° = Satellite crosses equator northbound
   - 90° = Maximum latitude

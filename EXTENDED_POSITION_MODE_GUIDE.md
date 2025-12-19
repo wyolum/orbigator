@@ -16,7 +16,7 @@ Configure both motors for Extended Position Mode during initial setup and **neve
 from dynamixel_extended_utils import set_extended_mode
 
 # One-time setup (or after factory reset)
-set_extended_mode(1)  # LAN motor
+set_extended_mode(1)  # EQX motor
 set_extended_mode(2)  # AoV motor
 ```
 
@@ -108,7 +108,7 @@ print(f"After clear: {new_pos}")
 from dynamixel_extended_utils import set_extended_mode
 
 # Configure both motors for Extended Position Mode
-set_extended_mode(1)  # LAN motor
+set_extended_mode(1)  # EQX motor
 set_extended_mode(2)  # AoV motor
 
 # Done! Motors will remember this setting.
@@ -123,7 +123,7 @@ from dynamixel_extended_utils import orbigator_init, write_dword
 lan_pos, aov_pos = orbigator_init()
 
 # 2. Use these as your baseline for movements
-# Example: Move LAN motor forward by 90° from current position
+# Example: Move EQX motor forward by 90° from current position
 degrees_to_move = 90
 ticks_per_degree = 4096 / 360.0
 new_lan_pos = lan_pos + int(degrees_to_move * ticks_per_degree)
@@ -157,7 +157,7 @@ TICKS_PER_DEGREE = 4096 / 360.0
 def set_orbital_position(lan_degrees, aov_degrees):
     """
     Set orbital position in degrees.
-    LAN: Longitude of Ascending Node (orbital plane rotation)
+    EQX: Equator crossing (orbital plane rotation)
     AoV: Argument of Vehicle (position along orbit)
     """
     global lan_position, aov_position
