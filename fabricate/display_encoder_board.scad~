@@ -1,0 +1,6 @@
+board_w = 35;
+board_l = 65;
+board_h = 2;
+
+
+cube([board_w, board_l, board_h]);

@@ -1,0 +1,62 @@
+SN74HC126N PINOUT DIAGRAM
+=========================
+Quad Tri-State Buffer (14-pin DIP)
+
+         +-----v-----+
+    1OE  |1        14| VCC (3.3V)
+    1A   |2        13| 4OE
+    1Y   |3        12| 4A
+    2OE  |4        11| 4Y
+    2A   |5        10| 3OE
+    2Y   |6         9| 3A
+    GND  |7         8| 3Y
+         +-----------+
+
+ORBIGATOR CONNECTIONS (Using Buffer 1 only):
+=============================================
+
+Pin 1  (1OE) ← GP2 (Direction Control)
+Pin 2  (1A)  ← GP0 (UART TX from Pico)
+Pin 3  (1Y)  → DATA BUS (to Dynamixel motors)
+Pin 7  (GND) → Common Ground
+Pin 14 (VCC) → 3.3V from Pico
+
+UNUSED PINS (Buffers 2, 3, 4):
+- Pins 4, 5, 6 (Buffer 2)
+- Pins 8, 9, 10 (Buffer 3)
+- Pins 11, 12, 13 (Buffer 4)
+- Leave floating or tie OE pins to GND to disable
+
+OPERATION:
+==========
+When 1OE (Pin 1) = HIGH:
+  - Buffer is ENABLED
+  - 1Y (Pin 3) outputs the signal from 1A (Pin 2)
+  - Pico transmits to motors
+
+When 1OE (Pin 1) = LOW:
+  - Buffer is TRI-STATED (high impedance)
+  - 1Y (Pin 3) is disconnected
+  - Motors can transmit back to Pico on DATA line
+
+SIGNAL FLOW:
+============
+TX Mode (GP2=HIGH):
+  Pico GP0 → Pin 2 (1A) → Pin 3 (1Y) → DATA BUS → Motors
+
+RX Mode (GP2=LOW):
+  Motors → DATA BUS → Pico GP1 (direct connection)
+  (Pin 3 is tri-stated, doesn't interfere)
+
+CRITICAL NOTES:
+===============
+1. VCC must be 3.3V (74HC series is 3.3V compatible)
+2. Do NOT use 74LS126 (requires 5V, not compatible)
+3. GP2 must be set HIGH before transmitting
+4. GP2 must be set LOW to receive motor responses
+5. Add 0.1µF bypass capacitor between VCC and GND
+
+DATASHEET:
+==========
+Texas Instruments SN74HC126N
+https://www.ti.com/lit/ds/symlink/sn74hc126.pdf

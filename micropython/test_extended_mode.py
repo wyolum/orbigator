@@ -198,4 +198,4 @@ def main(motor_id=1):
         print(f"  write_byte({motor_id}, 64, 0)  # {motor_name}")
 
 if __name__ == "__main__":
-    main(1)
+    main(2)

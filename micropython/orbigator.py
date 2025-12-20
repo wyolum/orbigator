@@ -31,14 +31,14 @@ EQX_GEAR_RATIO = 120.0 / 11.0  # Ring gear / Drive gear (TBR: verify tooth count
 AOV_GEAR_RATIO = 1.0  # Direct drive
 
 # Encoder settings
-DETENT_DIV = 2  # Changed from 4 - makes encoder more responsive
+DETENT_DIV = 4   # Changed from 4 - makes encoder more responsive
 DEBOUNCE_MS = 200
 
 # Altitude range: 200 km to 2000 km
 MIN_ALTITUDE_KM = 200
 MAX_ALTITUDE_KM = 2000
 
-MAX_AOV_SPEED = 50
+MAX_AOV_SPEED = 10
 MAX_EQX_SPEED = 50 ## unlimited
 
 # ---------------- OLED init ----------------
@@ -94,10 +94,12 @@ try:
     print("RTC found and initialized.")
     # Check for valid year
     t = rtc.datetime()
-    if t[0] < 2020:
+    if t is not None and t[0] < 2020:
         print("RTC year < 2020, resetting to default.")
         # Set to 2020-01-01 00:00:00
         rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0)) # Wed
+    elif t is None:
+        print("RTC communication failed during init.")
 except Exception as e:
     print("RTC init failed:", str(e))
     rtc = None
@@ -107,10 +109,15 @@ def get_timestamp():
     try:
         if rtc:
             t = rtc.datetime()
+            if t is None:
+                # I2C communication failed, fall back to system time
+                return time.time()
             # Check year again just in case
             if t[0] < 2020:
                  rtc.datetime((2020, 1, 1, 2, 0, 0, 0, 0))
                  t = rtc.datetime()
+                 if t is None:
+                     return time.time()
             # DS3231: (year, month, day, weekday, hour, minute, second, subsecond)
             # Calculate Unix timestamp manually (seconds since 1970-01-01)
             # Simple approximation - good enough for relative time tracking
@@ -141,12 +148,13 @@ def get_time_string():
     """Return formatted time string YY-MM-DD HH:MM:SS"""
     if rtc:
         t = rtc.datetime()
-        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
-            t[0]%100, t[1], t[2], t[4], t[5], t[6])
-    else:
-        t = time.localtime()
-        return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
-            t[0]%100, t[1], t[2], t[3], t[4], t[5])
+        if t is not None:
+            return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
+                t[0]%100, t[1], t[2], t[4], t[5], t[6])
+    # Fall back to system time if RTC fails or returns None
+    t = time.localtime()
+    return "{:02d}{:02d}{:02d} {:02d}:{:02d}:{:02d}z".format(
+        t[0]%100, t[1], t[2], t[3], t[4], t[5])
 
 def setup_datetime():
     """Prompt user to set date and time on startup."""
@@ -171,6 +179,10 @@ def setup_datetime():
     
     # Get current time or default
     t = rtc.datetime()
+    if t is None:
+        # I2C communication failed, use defaults
+        print("RTC communication failed, using defaults.")
+        t = (2020, 1, 1, 0, 0, 0, 0, 0)
     # (year, month, day, weekday, hour, minute, second, subsecond)
     # Mutable list for editing: [year, month, day, hour, minute, second]
     dt = [t[0], t[1], t[2], t[4], t[5], t[6]]
@@ -304,7 +316,7 @@ try:
     disp.text("Flash x1", 0, 32)
     disp.show()
     
-    success = eqx_motor.flash_led(count=1, on_time_ms=300, off_time_ms=200)
+    success = eqx_motor.flash_led(count=1, on_time_ms=50, off_time_ms=50)
     if success:
         print(f"  ✓ EQX motor LED flashed")
     else:
@@ -319,7 +331,7 @@ try:
     disp.text("Flash x2", 0, 32)
     disp.show()
     
-    success = aov_motor.flash_led(count=2, on_time_ms=300, off_time_ms=200)
+    success = aov_motor.flash_led(count=2, on_time_ms=50, off_time_ms=50)
     if success:
         print(f"  ✓ AoV motor LED flashed")
     else:
@@ -402,14 +414,22 @@ def compute_altitude_from_period(period_min):
     return altitude, a
 
 def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
-    """Compute EQX rate including J2 precession and Earth rotation (deg/day)."""
+    """Compute EQX rate in Earth-fixed frame (deg/day).
+    
+    The Orbigator operates in an almost-ECI (Earth-Centered Inertial) frame:
+    - The globe rotates at 360°/sidereal day (Earth's rotation)
+    - The orbital plane precesses due to J2 (~5°/day for ISS)
+    
+    Total EQX rate ≈ 360°/sidereal day + J2 precession
+    Motor position is wrapped modulo 360° to keep within one revolution.
+    """
     a = altitude_km + EARTH_RADIUS
     inc_rad = math.radians(inclination_deg)
     
     # Mean motion (rad/s)
     n = math.sqrt(EARTH_MU / (a**3))
     
-    # J2 precession rate (rad/s) in inertial frame
+    # J2 precession rate (rad/s) - nodal precession of orbital plane
     # dΩ/dt = -1.5 * n * J2 * (Re/a)² * cos(i)
     eqx_rate_rad_s = -1.5 * n * EARTH_J2 * (EARTH_RADIUS / a)**2 * math.cos(inc_rad)
     
@@ -417,7 +437,7 @@ def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
     eqx_j2_deg_day = math.degrees(eqx_rate_rad_s) * 86400
     
     # Add Earth's rotation (360° per sidereal day)
-    # Total apparent rate in Earth-fixed frame
+    # Total rate in Earth-fixed frame
     eqx_total_deg_day = eqx_j2_deg_day + EARTH_ROTATION_DEG_DAY
     
     return eqx_total_deg_day
@@ -464,6 +484,29 @@ def wrap_aov_position(current_deg, target_deg):
     wrapped_target = current_deg + diff
     
     return wrapped_target
+
+def get_new_pos(current_pos, command_pos):
+    """
+    Calculate new motor position preserving turn count in Extended Position Mode.
+    
+    This function preserves the number of full revolutions the motor has made
+    and only applies the incremental change from the commanded position.
+    
+    Args:
+        current_pos: Current motor position (can be > 360° in Extended Mode)
+        command_pos: Commanded position (typically 0-360°)
+    
+    Returns:
+        New position with preserved turn count
+        
+    Example:
+        current_pos = 1125.5  # 3 full turns + 45.5°
+        command_pos = 46.0    # Target is 46°
+        Returns: 1126.0       # 3 full turns + 46° (0.5° increment)
+    """
+    turns, pos = divmod(current_pos, 360)
+    change = command_pos - pos
+    return turns * 360 + pos + change
 
 
 # ---------------- Persistence ----------------
@@ -541,18 +584,25 @@ def load_state():
             target_aov_deg = wrap_aov_position(current_aov_deg, target_aov_deg)
             aov_diff = target_aov_deg - current_aov_deg
             
-            # Move motors to catch-up positions
-            print(f"Moving EQX: {current_eqx_deg:.2f}° → {target_eqx_deg:.2f}° (Δ{eqx_delta:.2f}°)")
-            eqx_motor.set_angle_degrees(target_eqx_deg)
+            # Move motors to catch-up positions using Extended Position Mode
+            # Wrap positions to 0-360 and use get_new_pos to preserve turn count
+            target_eqx_wrapped = target_eqx_deg % 360.0
+            target_aov_wrapped = target_aov_deg % 360.0
+            
+            new_eqx_pos = get_new_pos(current_eqx_deg, target_eqx_wrapped) % 360 # always positive
+            new_aov_pos = get_new_pos(current_aov_deg, target_aov_wrapped) % 360 # always positive
+            
+            print(f"Moving EQX: {current_eqx_deg:.2f}° → {new_eqx_pos:.2f}° (target: {target_eqx_wrapped:.2f}°)")
+            eqx_motor.set_angle_degrees(new_eqx_pos)
             time.sleep(0.5)
             
-            print(f"Moving AoV: {current_aov_deg:.2f}° → {target_aov_deg:.2f}° (Δ{aov_diff:.2f}°)")
-            aov_motor.set_angle_degrees(target_aov_deg)
+            print(f"Moving AoV: {current_aov_deg:.2f}° → {new_aov_pos:.2f}° (target: {target_aov_wrapped:.2f}°)")
+            aov_motor.set_angle_degrees(new_aov_pos)
             time.sleep(0.5)
             
-            # Update positions
-            eqx_position_deg = target_eqx_deg
-            aov_position_deg = target_aov_deg
+            # Update positions (wrapped for display)
+            eqx_position_deg = target_eqx_wrapped
+            aov_position_deg = target_aov_wrapped
             
             print("✓ Catch-up complete")
         else:
@@ -604,6 +654,12 @@ last_detent = 0
 # Button state tracking for long press detection
 button_down = False
 button_press_start = 0
+
+# Display error tracking
+display_consecutive_failures = 0
+
+# Display update timing - update once per second
+last_display_update = 0
 
 def poll_button():
     """Check for button press and advance state (non-blocking state machine)."""
@@ -706,6 +762,16 @@ def update_from_encoder():
 # Load saved state on startup
 load_state()
 
+# Initialize motor rates if starting in state 3
+if current_state == 3:
+    _, _, eqx_rate_deg_day, orbital_period_min = compute_motor_rates(orbital_altitude_km)
+    eqx_rate_deg_sec = eqx_rate_deg_day / 86400.0
+    aov_rate_deg_sec = 360.0 / (orbital_period_min * 60.0)
+    run_start_time = get_timestamp()
+    run_start_eqx_deg = eqx_position_deg
+    run_start_aov_deg = aov_position_deg
+    print(f"Motor rates initialized: AoV={aov_rate_deg_sec:.6f}°/s, EQX={eqx_rate_deg_sec:.6f}°/s")
+
 print("Orbigator - Orbital Mechanics Simulator")
 print("State 0: Set Altitude | State 1: Set EQX")
 print("State 2: Set AOV | State 3: Run")
@@ -744,53 +810,37 @@ while True:
         target_aov_deg = run_start_aov_deg + (aov_rate_deg_sec * elapsed)
         
         # Update global positions for display/saving
-        eqx_position_deg = target_eqx_deg
+        eqx_position_deg = target_eqx_deg % 360.0  # Wrap to 0-360 for display
         aov_position_deg = target_aov_deg % 360.0  # Keep in 0-360 for display
         
-        # Only send motor commands if position changed significantly (> 0.5°)
-        # This prevents flooding the motors with commands
-        if abs(target_eqx_deg - eqx_motor.output_degrees) > 0.5:
-            eqx_motor.set_angle_degrees(target_eqx_deg)
+        # Send motor commands using Extended Position Mode
+        # Preserve turn count and apply incremental changes
+        current_eqx = eqx_motor.output_degrees
+        new_eqx_pos = get_new_pos(current_eqx, eqx_position_deg)
+        eqx_motor.set_angle_degrees(new_eqx_pos)
         
-        # CRITICAL: Wrap AoV position before sending to motor
         current_aov = aov_motor.output_degrees
-        wrapped_aov_target = wrap_aov_position(current_aov, target_aov_deg)
-        if abs(wrapped_aov_target - current_aov) > 0.5:
-            aov_motor.set_angle_degrees(wrapped_aov_target)
+        new_aov_pos = get_new_pos(current_aov, aov_position_deg)
+        aov_motor.set_angle_degrees(new_aov_pos)
     else:
-        # States 0-2: Encoder control (commented out for debugging)
-        # update_from_encoder()
-        pass
+        # States 0-2: Encoder control
+        update_from_encoder()
     
-    # Display
-    disp.fill(0)
-    disp.text(get_time_string(), 0, 0)
-    
-    
-    # States 0-2 display (commented out for debugging)
-    # if current_state == 0:
-    #     disp.text("Set Altitude:", 0, 12)
-    #     disp.text("{:.0f} km".format(orbital_altitude_km), 0, 24)
-    #     period = compute_period_from_altitude(orbital_altitude_km)
-    #     disp.text("T: {:.1f}min".format(period), 0, 36)
-    # 
-    # elif current_state == 1:
-    #     disp.text("Set EQX:", 0, 12)
-    #     disp.text("{:.1f} deg".format(eqx_position_deg), 0, 24)
-    #     disp.text("Alt: {:.0f}km".format(orbital_altitude_km), 0, 36)
-    # 
-    # elif current_state == 2:
-    #     disp.text("Set AOV:", 0, 12)
-    #     disp.text("{:.1f} deg".format(aov_position_deg), 0, 24)
-    #     disp.text("EQX: {:.1f}d".format(eqx_position_deg), 0, 36)
-    # 
-    # else:  # State 3: Running
-    
-    if current_state == 3:  # Running (always active for debugging)
-        sub_mode_indicator = "A>" if run_sub_mode == 0 else "X>"
-        disp.text("RUN " + sub_mode_indicator, 0, 12)
-        disp.text("T:{:.0f}m".format(orbital_period_min), 0, 24)
-        disp.text("A:{:.1f} X:{:.1f}".format(aov_position_deg % 360, eqx_position_deg % 360), 0, 36)
-        disp.text("dL:{:.2f}d/d".format(eqx_rate_deg_day), 0, 48)
-    
-    disp.show()
+    # Display - update once per second
+    now_ms = time.ticks_ms()
+    if time.ticks_diff(now_ms, last_display_update) >= 1000:
+        last_display_update = now_ms
+        
+        disp.fill(0)
+        disp.text(get_time_string(), 0, 0)
+        
+        if current_state == 3:  # Running (always active for debugging)
+            sub_mode_indicator = "A>" if run_sub_mode == 0 else "X>"
+            disp.text("RUN " + sub_mode_indicator, 0, 12)
+            disp.text("T:{:.0f}m".format(orbital_period_min), 0, 24)
+            disp.text("A:{:.1f} X:{:.1f}".format(aov_position_deg % 360, eqx_position_deg % 360), 0, 36)
+            disp.text("dL:{:.2f}d/d".format(eqx_rate_deg_day), 0, 48)
+        
+        disp.show()
+
+

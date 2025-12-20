@@ -1,0 +1,44 @@
+IMPORTANT NOTE FOR ANOOL - I2C PULL-UP RESISTORS
+================================================
+Date: 2025-12-20
+
+ISSUE DISCOVERED:
+-----------------
+The OLED display was experiencing glitching on the top line during operation.
+Initially thought to be a software issue, but turned out to be hardware.
+
+ROOT CAUSE:
+-----------
+Missing external I2C pull-up resistors on the shared I2C bus.
+
+When using MULTIPLE I2C devices (OLED + RTC) on the same bus, the built-in 
+pull-ups on individual modules are NOT sufficient. The bus needs stronger 
+pull-ups to maintain signal integrity.
+
+SOLUTION IMPLEMENTED:
+---------------------
+Added two 4.7kΩ pull-up resistors:
+- R2: 4.7kΩ from SDA (GP4) to +3.3V
+- R3: 4.7kΩ from SCL (GP5) to +3.3V
+
+VERIFICATION:
+-------------
+- Touching wires with finger (adding capacitance) temporarily stabilized display
+- Adding proper 4.7kΩ pull-ups completely fixed the glitching
+- Display now updates smoothly at 1 Hz
+
+CRITICAL FOR PCB DESIGN:
+------------------------
+When designing the Orbigator PCB, MUST include:
+1. 4.7kΩ resistor from SDA to 3.3V
+2. 4.7kΩ resistor from SCL to 3.3V
+
+These are REQUIRED for reliable I2C communication with multiple devices.
+Do NOT rely on module-internal pull-ups alone!
+
+UPDATED DOCUMENTATION:
+----------------------
+- ORBIGATOR_CIRCUIT_DIAGRAM.txt now shows R2 and R3 pull-up resistors
+- Critical connections section updated with I2C pull-up requirements
+
+-- Justin

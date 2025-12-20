@@ -55,7 +55,18 @@ Raspberry Pi Pico 2 with DYNAMIXEL Motors
     │ 38: GND ────────────────────────────────────────────┼─────┼───┼───────────┘ │ │
     └─────────────────────────────────────────────────────┼─────┼───┼─────────────┼─┼─┘
                                                           │     │   │             │ │
-                    ┌─────────────────────────────────────┼─────┼───┘             │ │
+                                          ┌───────────────┼─────┼───┘             │ │
+                                          │ 4.7kΩ (R2)    │     │                 │ │
+                                          │ I2C Pull-up   │     │                 │ │
+                                          └───┬───────────┘     │                 │ │
+                                              │                 │                 │ │
+                                          ┌───┴───┐             │                 │ │
+                                          │ 4.7kΩ │             │                 │ │
+                                          │  R3   │             │                 │ │
+                                          │ I2C   │             │                 │ │
+                                          └───┬───┘             │                 │ │
+                                              │                 │                 │ │
+                    ┌─────────────────────────┼─────────────────┘                 │ │
                     │  OLED Display (DISP1)               │     │                 │ │
                     │  128x64 SH1106/SSD1306              │     │                 │ │
                     │  I2C Address: 0x3C                  │     │                 │ │
@@ -139,17 +150,24 @@ CRITICAL CONNECTIONS:
    - 10kΩ resistor from DATA line to +5V
    - Required for reliable DYNAMIXEL communication
 
-2. Buffer Control:
+2. I2C Pull-ups (R2, R3):
+   - 4.7kΩ resistor from SDA (GP4) to +3.3V
+   - 4.7kΩ resistor from SCL (GP5) to +3.3V
+   - CRITICAL: Required when using multiple I2C devices (OLED + RTC)
+   - Without these, display will glitch and RTC communication will be unreliable
+   - Individual module pull-ups are not sufficient for multi-device bus
+
+3. Buffer Control:
    - GP2 controls 74HC126 output enable (1OE)
    - Must be set HIGH before transmitting
    - Must be set LOW to receive
 
-3. Motor Daisy Chain:
+4. Motor Daisy Chain:
    - Both motors share DATA line
    - Each motor has unique ID (1 and 2)
    - Can be connected in any order
 
-4. I2C Shared Bus:
+5. I2C Shared Bus:
    - OLED and RTC on same bus
    - Different I2C addresses prevent conflicts
    - 100 kHz frequency for reliability

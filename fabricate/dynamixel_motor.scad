@@ -18,6 +18,7 @@ shaft_offset_from_top = 9.5; // Distance from top of motor to shaft center
 horn_diameter = 16;       // Diameter of output horn
 horn_height = 2.8;          // Height of horn above body
 horn_screw_diameter = 2;    // Center screw hole
+screw_head_diameter = 3.75;
 horn_mount_holes = 4;       // Number of mounting holes in horn
 horn_mount_radius = 6;      // Radius of mounting holes from center
 horn_mount_hole_dia = 2;    // Diameter of mounting holes
@@ -117,7 +118,7 @@ module dynamixel_mounting_screws(){
       translate([x * bracket_hole_spacing_x / 2, y * bracket_hole_spacing_y / 2, motor_height/2])
 	cylinder(h=motor_height*2, d=bracket_hole_diameter, center=true);
       translate([x * bracket_hole_spacing_x / 2, y * bracket_hole_spacing_y / 2, motor_height*2+1])
-	cylinder(h=motor_height*2, d=bracket_hole_diameter*3, center=true);
+	cylinder(h=motor_height*2, d=screw_head_diameter, center=true);
     }
   }
 }

@@ -2,13 +2,15 @@ include <arduino.scad>
 include </home/justin/code/BOSL2/std.scad>
 include </home/justin/code/BOSL2/gears.scad>
 
-use <stepper_motors.scad>
 use <dynamixel_motor.scad>
+use <inclination_aov_mount.scad>
 use <flange.scad>
 use <sled.scad>
 use <spring.scad>
 use <spring_ring.scad>
-use <aov_arm.scad>
+use <dynamixel_aov_arm.scad>
+use <main_board.scad>
+
 // Import the STEP file
 module pico(){
   import("stls/pi-pico-2w-cad-reference.stl");
@@ -190,6 +192,13 @@ module RingLock(){
   }
 }
 
+module gear_support(){
+  translate([55,0,-18])rotate([0,-90,0])difference(){
+    cylinder(d=16.3+1.8, $fn=30, h=5, center=true);
+    translate([-10,0,0])cube([20, 20, 6],center=true);
+  }
+}
+
 module new_base_assy(){
   dd = 23/2;
   hh = 23;  
@@ -199,8 +208,9 @@ module new_base_assy(){
 
 	translate([-22/2, -10, h/2+1])cube([22, 62, 10]);
 	translate([-35/2, -10, -hh])cube([35, 25, hh+10]);
-	//translate([0, r, h/2+1])cylinder(d=40, h=10);
-
+	rotate([0,0,30])gear_support();
+	rotate([0,0,-90])gear_support();
+	rotate([0,0,-210])gear_support();
 	// front post to clamp sun gear
 	translate([0,-r, -24])cylinder(d=10, h=18, center=false);
 	translate([0,-r, -24+18])cylinder(d1=8, d2=8, h=10, center=false);
@@ -258,6 +268,7 @@ module base_with_1010_hole(){
        //pivot mount screw hole
        translate([0, -19, 0])cylinder(d=4.5, h=100, center=true);
        translate([0, -19, -30+4])cylinder(d=10, h=5, center=false);
+       translate([50,0,-20])cube([40, 15, 5], center=true); // motor cable slot
     }
   }
 }
@@ -266,46 +277,6 @@ module d_shaft(D, d, h){
     cylinder(d=D, h=h, $fn=30);
     translate([D/2.5,-d / 2, -1])cube([d, d, h + 2]);
   }
-}
-
-module aov_arm_base(){
-  RR = 70;
-  echo("RR=", RR);
-  rr = RR - 40;
-  echo("rr=", rr);
-  dd = 8; // magnet support offset from globe_r
-  echo("Globe_radius - 8", globe_r - 8);
-  cylinder(d=28, h=12+2);
-  hull(){
-    translate([0,0,5])cylinder(r=6, h=10,center=true);
-    translate([-(globe_r-dd-3), 0, 2.5])cube([6, 6, 5], center=true);
-  }
-  difference(){
-    intersection(){
-      difference(){
-	cylinder(r=globe_r-dd, h=7);
-	translate([0,0,-1])cylinder(r=globe_r-dd-2, h=14);
-      }
-      translate([-100,0,0])cube([200, 25, 100], center=true);
-    }
-    rotate([0, 0, 2.6])translate([-160, 0, 3.4])
-      rotate([0, 90, 0])cylinder(d=3.5, h=10, $fn=30);
-    rotate([0, 0, -2.6])translate([-160, 0, 3.4])
-      rotate([0, 90, 0])cylinder(d=3.5, h=10, $fn=30);
-  }
-  difference(){
-    cylinder(r=RR, h=10);
-    translate([0,0,-1])cylinder(r=rr, h=12);
-    rotate([0, 0, 30])translate([-10 * rr-1, 0, -1])
-      cube([20 * rr + 2, 20 * rr + 2, 12]);
-    rotate([0, 0, 150])translate([-10 * rr-1, 0, -1])
-      cube([20 * rr + 2, 20 * rr + 2, 12]);
-  }
-  translate([0, -3/2, 0])cube([RR, 3, 10]);
-  rotate([0,0,-30])
-  translate([0, -3/2, 0])cube([RR, 3, 10]);
-  rotate([0,0,30])
-  translate([0, -3/2, 0])cube([RR, 3, 10]);
 }
 
 module torus(d=10, thickness=4,res=20){
@@ -319,41 +290,15 @@ module weight_hole(){
   cylinder(d=6, h=20);
 }
 
-module old_aov_arm(){
-  difference(){
-    aov_arm_base();
-    translate([0,0,-1])d_shaft(3, 2.5, 10);
-    //translate([0, 0, -5])torus(d=50, thickness=6, res=60);
-    translate([0,0,-1])cylinder(d=24, h=12+1); // flange cutout
-    for(i=[0:3]){
-      rotate([0,0,90*i])translate([8,0,0])translate([0,0,-1])cylinder(d=3.5,h=20);
-    }
-    rotate([0,0,135])translate([0, 0, 8])rotate([0, 90, 0])cylinder(d=4, h=20); // shaft mount hole
-    if(false){ // weight holes
-      for(i=[-25:10:25]){
-	rotate([0,0,i])translate([63, 0, 5])weight_hole();
-      }
-      for(i=[-25:10:25]){
-	rotate([0,0,i])translate([48, 0, 5])weight_hole();
-      }
-      for(i=[-20:10:20]){
-	rotate([0,0,i])translate([56, 0, 5])weight_hole();
-      }
-      for(i=[-20:13:25]){
-	rotate([0,0,i])translate([40, 0, 5])weight_hole();
-      }
-    }
-  }
-}
 module aov_motor_assy(inc, aov){
   translate([0,0,-140]){
     //color("black")translate([-5,-5,-1000+100])cube([10, 10, 1000], center=false);
     translate([0, 0, 150])translate([0, 0, -10])
       rotate([inc, 0, 0])rotate([0, 180, 0]){
-      translate([0,0,0])worm_gear_stepper();
-      color("coral")aov_motor_mount();
+      translate([0,0,0])rotate([0,180,90])translate([0,0,-2.8])dynamixel_xl330();
+      color("coral")dynamixel_motor_mount();
       //translate([-10,10,90])rotate([90, 180, 180])arduino();
-      translate([0,10,40])rotate([90, 0, 180])pico();
+      //translate([0,10,40])rotate([90, 0, 180])pico();
     }
     translate([0, -3, 140])
       rotate([inc, 0, 0])rotate([0, 0, aov-180]){
@@ -363,15 +308,59 @@ module aov_motor_assy(inc, aov){
     }
   }
 }
-
-
+/*
+  difference(){
+  outside_box();
+  translate([0,0,-4])scale([.98, .98, 1])outside_box();
+  sphere(d=globe_d+2);
+}
+*/
+//translate([170, 0, -150])rotate([0,10,0])main_assy();
+module inside_box(){
+  hull(){
+    color("red")translate([0,-40,-174])side_panel();
+    color("red")translate([0, 40,-174])side_panel();
+  }
+}
+module outside_box(){
+  difference(){
+    minkowski(){
+      inside_box();
+      cube(4, center=2);
+    }
+    inside_box();
+    translate([0,0,-5])inside_box();
+    translate([-5,0,0])inside_box();
+    translate([-5,0,-5])inside_box();
+    sphere(globe_r + 2);
+    translate([190-50,0,-165])rotate([0,100,0])cylinder(d=7, h=40, center=true);
+    translate([170-50, 0, -150])rotate([0,10,0])mounting_screws();
+    translate([170-50, 0, -150])rotate([0,10,0])cube([30, 55, 30], center=true);
+    translate([170-50, 20, -150])rotate([0,10,0])cylinder(d=18, h=20, center=true);
+  }
+}
+module side_panel(){
+  rotate([90, 0, 0])linear_extrude(2, center=true)
+    //polygon([[40, 2], [40, 29], [136, 29], [205, 17], [205, 2]]);
+    //polygon([[40, 2], [40, 29], [130, 29], [199, 17], [199, 2]]);
+    polygon([[40, 2], [40, 29], [130-50, 29], [199-50, 17], [199-50, 2]]);
+}
+outside_box();
+module display_panel(){
+  rotate([0,0,0])translate([globe_d/2+5,0,24])rotate([0, 10, 0]){
+    difference(){
+      cube([70, 80, 2], center=true);
+      //display_assy();
+    }
+  }
+}
 if(true){
-  //color("cornflowerblue")Ring();
+  color("cornflowerblue")Ring();
   eqx_motor_assy();
-  //color("lightslategrey")base_with_1010_hole();
-  //idlers();
-  //aov_motor_assy(65, 90);
-  //color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+  color("lightslategrey")base_with_1010_hole();
+  aov_motor_assy(65, 350);
+  color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+  color("black")translate([0,0,-100])cube([10, 10, 150], center=true);
 }
 else{
   //Ring();
@@ -390,3 +379,5 @@ module globe(){
   }
 }
   
+
+globe();

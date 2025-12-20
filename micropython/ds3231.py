@@ -24,19 +24,26 @@ class DS3231:
         """Get or set datetime as tuple: (year, month, day, weekday, hour, minute, second, subsecond)
         weekday: 0=Monday, 6=Sunday
         If dt is None, returns current datetime. If dt is provided, sets the datetime.
+        Returns None if I2C communication fails.
         """
         if dt is None:
             # Read current datetime using write-then-read method (more reliable)
-            self.i2c.writeto(self.addr, b'\x00')  # Set register pointer to 0x00
-            buf = self.i2c.readfrom(self.addr, 7)  # Read 7 bytes
-            second = self._bcd2dec(buf[0] & 0x7F)
-            minute = self._bcd2dec(buf[1] & 0x7F)
-            hour = self._bcd2dec(buf[2] & 0x3F)  # 24-hour mode
-            weekday = self._bcd2dec(buf[3] & 0x07) - 1  # DS3231 uses 1-7, we use 0-6
-            day = self._bcd2dec(buf[4] & 0x3F)
-            month = self._bcd2dec(buf[5] & 0x1F)
-            year = self._bcd2dec(buf[6]) + 2000
-            return (year, month, day, weekday, hour, minute, second, 0)
+            try:
+                self.i2c.writeto(self.addr, b'\x00')  # Set register pointer to 0x00
+                buf = self.i2c.readfrom(self.addr, 7)  # Read 7 bytes
+                if buf is None:
+                    return None
+                second = self._bcd2dec(buf[0] & 0x7F)
+                minute = self._bcd2dec(buf[1] & 0x7F)
+                hour = self._bcd2dec(buf[2] & 0x3F)  # 24-hour mode
+                weekday = self._bcd2dec(buf[3] & 0x07) - 1  # DS3231 uses 1-7, we use 0-6
+                day = self._bcd2dec(buf[4] & 0x3F)
+                month = self._bcd2dec(buf[5] & 0x1F)
+                year = self._bcd2dec(buf[6]) + 2000
+                return (year, month, day, weekday, hour, minute, second, 0)
+            except (OSError, TypeError):
+                # I2C communication failed
+                return None
         else:
             # Set datetime
             year, month, day, weekday, hour, minute, second, subsecond = dt

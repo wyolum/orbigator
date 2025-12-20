@@ -90,7 +90,7 @@ module aov_arm() {
       for(i = [1:4]) {
         rotate([0, 0, 45 + 90 * i])
           translate([6, 0, -1])  // 6mm = horn_mount_radius
-            #cylinder(d=2, h=30, $fn=30);  // Slightly larger than horn_mount_hole_dia (2mm)
+            cylinder(d=2, h=30, $fn=30);  // Slightly larger than horn_mount_hole_dia (2mm)
       }
     }
     

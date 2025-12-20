@@ -90,6 +90,21 @@ Update `orbigator.py` to use DYNAMIXEL instead of steppers:
 - Replace `aov_move_steps()` with DYNAMIXEL position commands
 - Use servo feedback for accurate position tracking
 
+### 🔩 **Mounting Hardware**
+
+Each XL330-M288-T motor includes:
+- **10× M2×8 screws** (PHS TAP type)
+- **6× M2×6 screws** (PHS TAP type - for horn accessories)
+
+**For Orbigator mounting:**
+- **Motor body mounting:** Use M2×8 screws
+  - AoV arm bracket thickness: 5.25mm
+  - Screws mount from back of bracket into motor body
+  - Slight chamfer at hole entrance helps guide screws
+  - Screw fully until threads engage (don't stop at the chamfer!)
+- **Horn mounting:** M2×6 screws work for horn accessories
+- **Note:** For Orbigator, only M2×8 screws are needed for motor mounting
+
 ### 📦 **Parts Checklist**
 
 Before you start, verify you have:
