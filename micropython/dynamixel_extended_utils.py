@@ -165,6 +165,33 @@ def set_extended_mode(servo_id):
     print(f"  ✓ Motor {servo_id} configured for Extended Position Mode")
     return True
 
+def get_new_pos(current_pos, command_pos):
+    """
+    Calculate new motor position using shortest path in Extended Position Mode.
+    
+    This function preserves the number of full revolutions the motor has made
+    and applies the change via the SHORTEST path (-180° to +180°).
+    
+    Args:
+        current_pos: Current motor position (can be > 360° in Extended Mode)
+        command_pos: Commanded position (typically 0-360°)
+    
+    Returns:
+        New position with preserved turn count, using shortest path
+        
+    Examples:
+        current_pos = 358.0, command_pos = 2.0
+        Returns: 362.0  # Moves forward +4° (shortest path)
+        
+        current_pos = 10.0, command_pos = 350.0
+        Returns: 370.0  # Moves backward -20° (shortest path)
+    """
+    turns, pos = divmod(current_pos, 360)
+    change = command_pos - pos
+    # Normalize change to shortest path: -180 to +180
+    change = (change + 180) % 360 - 180
+    return turns * 360 + pos + change
+
 def power_on_routine(servo_id):
     """
     CRITICAL: Run this on every boot!

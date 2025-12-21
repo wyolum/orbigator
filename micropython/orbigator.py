@@ -485,30 +485,6 @@ def wrap_aov_position(current_deg, target_deg):
     
     return wrapped_target
 
-def get_new_pos(current_pos, command_pos):
-    """
-    Calculate new motor position preserving turn count in Extended Position Mode.
-    
-    This function preserves the number of full revolutions the motor has made
-    and only applies the incremental change from the commanded position.
-    
-    Args:
-        current_pos: Current motor position (can be > 360° in Extended Mode)
-        command_pos: Commanded position (typically 0-360°)
-    
-    Returns:
-        New position with preserved turn count
-        
-    Example:
-        current_pos = 1125.5  # 3 full turns + 45.5°
-        command_pos = 46.0    # Target is 46°
-        Returns: 1126.0       # 3 full turns + 46° (0.5° increment)
-    """
-    turns, pos = divmod(current_pos, 360)
-    change = command_pos - pos
-    return turns * 360 + pos + change
-
-
 # ---------------- Persistence ----------------
 def save_state():
     """Save current orbital parameters to config file."""
@@ -584,25 +560,21 @@ def load_state():
             target_aov_deg = wrap_aov_position(current_aov_deg, target_aov_deg)
             aov_diff = target_aov_deg - current_aov_deg
             
-            # Move motors to catch-up positions using Extended Position Mode
-            # Wrap positions to 0-360 and use get_new_pos to preserve turn count
+            # Move motors to catch-up positions using shortest path
             target_eqx_wrapped = target_eqx_deg % 360.0
             target_aov_wrapped = target_aov_deg % 360.0
             
-            new_eqx_pos = get_new_pos(current_eqx_deg, target_eqx_wrapped) % 360 # always positive
-            new_aov_pos = get_new_pos(current_aov_deg, target_aov_wrapped) % 360 # always positive
-            
-            print(f"Moving EQX: {current_eqx_deg:.2f}° → {new_eqx_pos:.2f}° (target: {target_eqx_wrapped:.2f}°)")
-            eqx_motor.set_angle_degrees(new_eqx_pos)
+            print(f"Moving EQX: {current_eqx_deg:.2f}° → target: {target_eqx_wrapped:.2f}°")
+            eqx_motor.set_nearest_degrees(target_eqx_wrapped)
             time.sleep(0.5)
             
-            print(f"Moving AoV: {current_aov_deg:.2f}° → {new_aov_pos:.2f}° (target: {target_aov_wrapped:.2f}°)")
-            aov_motor.set_angle_degrees(new_aov_pos)
+            print(f"Moving AoV: {current_aov_deg:.2f}° → target: {target_aov_wrapped:.2f}° (Δ={aov_diff:+.2f}°)")
+            aov_motor.set_nearest_degrees(target_aov_wrapped)
             time.sleep(0.5)
             
             # Update positions (wrapped for display)
             eqx_position_deg = target_eqx_wrapped
-            aov_position_deg = target_aov_wrapped
+            aov_position_deg = target_aov_deg % 360.0
             
             print("✓ Catch-up complete")
         else:
@@ -739,21 +711,15 @@ def update_from_encoder():
             # Adjust EQX (1 degree per detent)
             eqx_position_deg += delta * 1.0
             eqx_position_deg = eqx_position_deg % 360.0
-            # Update motor position
-            eqx_motor.set_angle_degrees(eqx_position_deg)
+            # Update motor position using shortest path
+            eqx_motor.set_nearest_degrees(eqx_position_deg)
         
         elif current_state == 2:
             # Adjust AOV (1 degree per detent)
             aov_position_deg += delta * 1.0
-            # Wrap to 0-360 range for display
             aov_position_deg = aov_position_deg % 360.0
-            # CRITICAL: Wrap position to prevent multi-revolution movement
-            current_aov = aov_motor.get_angle_degrees()
-            if current_aov is not None:
-                wrapped_target = wrap_aov_position(current_aov, aov_position_deg)
-                aov_motor.set_angle_degrees(wrapped_target)
-            else:
-                aov_motor.set_angle_degrees(aov_position_deg)
+            # Update motor position using shortest path
+            aov_motor.set_nearest_degrees(aov_position_deg)
 
 # ---------------- Main Loop ----------------
 # Setup Date/Time on startup (commented out for debugging)
@@ -813,15 +779,9 @@ while True:
         eqx_position_deg = target_eqx_deg % 360.0  # Wrap to 0-360 for display
         aov_position_deg = target_aov_deg % 360.0  # Keep in 0-360 for display
         
-        # Send motor commands using Extended Position Mode
-        # Preserve turn count and apply incremental changes
-        current_eqx = eqx_motor.output_degrees
-        new_eqx_pos = get_new_pos(current_eqx, eqx_position_deg)
-        eqx_motor.set_angle_degrees(new_eqx_pos)
-        
-        current_aov = aov_motor.output_degrees
-        new_aov_pos = get_new_pos(current_aov, aov_position_deg)
-        aov_motor.set_angle_degrees(new_aov_pos)
+        # Send motor commands using shortest path
+        eqx_motor.set_nearest_degrees(eqx_position_deg)
+        aov_motor.set_nearest_degrees(aov_position_deg)
     else:
         # States 0-2: Encoder control
         update_from_encoder()

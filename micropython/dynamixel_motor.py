@@ -106,6 +106,34 @@ class DynamixelMotor:
         
         return success
     
+    def set_nearest_degrees(self, target_degrees):
+        """
+        Set the output angle using the shortest path (nearest route).
+        
+        This method uses get_new_pos() to calculate the shortest path to the target,
+        preventing the motor from wrapping the long way around 0°/360°.
+        
+        For example:
+        - Current: 358°, Target: 2° → Moves forward +4° (not backward -356°)
+        - Current: 10°, Target: 350° → Moves backward -20° (not forward +340°)
+        
+        Args:
+            target_degrees: Desired output angle in degrees (0-360)
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        from dynamixel_extended_utils import get_new_pos
+        
+        # Get current position
+        current_degrees = self.output_degrees
+        
+        # Calculate shortest path using get_new_pos
+        new_degrees = get_new_pos(current_degrees, target_degrees)
+        
+        # Command the motor
+        return self.set_angle_degrees(new_degrees)
+    
     def get_angle_degrees(self):
         """
         Read current output angle in degrees.

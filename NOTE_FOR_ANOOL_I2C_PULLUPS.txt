@@ -21,7 +21,46 @@ Added two 4.7kΩ pull-up resistors:
 - R2: 4.7kΩ from SDA (GP4) to +3.3V
 - R3: 4.7kΩ from SCL (GP5) to +3.3V
 
-VERIFICATION:
+4. DS3231 RTC BACKUP POWER REQUIREMENT:
+   ========================================
+   The DS3231 RTC module REQUIRES backup power to maintain time when unplugged.
+   
+   OPTION 1: CR2032 Battery (Traditional)
+   ---------------------------------------
+   - Battery Type: CR2032 (3V lithium coin cell)
+   - Backup Duration: 5-10 years
+   - Footprint: Large (~20mm diameter battery holder)
+   - Pros: Very long backup time, simple implementation
+   - Cons: Large PCB footprint, requires periodic replacement
+   
+   OPTION 2: Supercapacitor (RECOMMENDED for Orbigator)
+   -----------------------------------------------------
+   - Component: 0.47F - 1F supercapacitor, 5.5V rated
+   - Example: Panasonic EEC-series or equivalent
+   - Backup Duration: Several days to weeks (sufficient for display piece)
+   - Footprint: Small SMD package (similar to large electrolytic cap)
+   - Charging Circuit: 47Ω resistor in series to limit inrush current
+   
+   Supercap Circuit:
+   +3.3V ──┬── 47Ω ──┬── DS3231 BAT pin
+           │         │
+           │       [0.47F]
+           │       Supercap
+           │         │
+          GND ──────┴── GND
+   
+   Pros: 
+   - Much smaller PCB footprint
+   - No battery replacement needed (lasts forever)
+   - Environmentally friendly
+   - Perfect for display piece that's usually powered
+   
+   Cons:
+   - Shorter backup time than battery (but adequate for this use case)
+   
+   RECOMMENDATION: Use supercapacitor option for cleaner PCB design.
+
+SUMMARY FOR PCB DESIGN:
 -------------
 - Touching wires with finger (adding capacitance) temporarily stabilized display
 - Adding proper 4.7kΩ pull-ups completely fixed the glitching

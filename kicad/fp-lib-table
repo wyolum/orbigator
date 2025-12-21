@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "orbigator")(type "KiCad")(uri "${KIPRJMOD}/orbigator.pretty")(options "")(descr "Orbigator custom footprints"))
+)
