@@ -43,7 +43,8 @@ class MenuMode(Mode):
         self.items = ["Orbit!", "Set Period", "Settings"]
     
     def on_encoder_rotate(self, delta):
-        move = 1 if delta > 0 else -1 if delta < 0 else 0
+        # Invert: CW (delta < 0) = Move Down (selection increases)
+        move = -1 if delta > 0 else 1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         print(f"Menu: {self.items[self.selection]}")
     
@@ -137,7 +138,7 @@ class OrbitMode(Mode):
         print(f"Orbit logic active: AoV={g.aov_rate_deg_sec:.6f} deg/s, EQX={g.eqx_rate_deg_sec:.6f} deg/s")
     
     def on_encoder_rotate(self, delta):
-        d = delta # CW = Nudge Forward
+        d = -delta # Invert: CW = Nudge Forward
         if self.nudge_target == 0:
             g.run_start_aov_deg += d * 1.0
             print(f"AoV nudge: {d:+.0f} deg")
@@ -219,8 +220,8 @@ class PeriodEditorMode(Mode):
         self.field = 0 # 0=H, 1=M, 2=S
     
     def on_encoder_rotate(self, delta):
-        # Intuitive "up = increase"
-        d = delta
+        # Invert: CW = increase
+        d = -delta
         if self.field == 0:
             self.hh = max(0, min(23, self.hh + d))
         elif self.field == 1:
@@ -296,10 +297,11 @@ class SettingsMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Set EQX Angle", "Set AoV Angle", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
-        move = 1 if delta > 0 else -1 if delta < 0 else 0
+        # Invert: CW = Move Down
+        move = -1 if delta > 0 else 1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         
     def on_confirm(self):
@@ -310,12 +312,16 @@ class SettingsMode(Mode):
         elif self.selection == 2:
             return DatetimeEditorMode()
         elif self.selection == 3:
+            return MotorEditorMode(target=0) # EQX
+        elif self.selection == 4:
+            return MotorEditorMode(target=1) # AoV
+        elif self.selection == 5:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 4:
+        elif self.selection == 6:
             return MenuMode()
         return None
     
@@ -337,7 +343,7 @@ class AltitudeEditorMode(Mode):
         self.alt = int(g.orbital_altitude_km)
         
     def on_encoder_rotate(self, delta):
-        d = delta * 10
+        d = -delta * 10 # Invert: CW = increase
         self.alt = max(200, min(2000, self.alt + d))
         
     def on_confirm(self):
@@ -367,7 +373,7 @@ class InclinationEditorMode(Mode):
         self.inc_x10 = int(g.orbital_inclination_deg * 10)
         
     def on_encoder_rotate(self, delta):
-        d = delta # up = increase
+        d = -delta # Invert: CW = increase
         # Range 0 to 180 (most common 0 to 99)
         self.inc_x10 = max(0, min(1800, self.inc_x10 + d))
         
@@ -405,7 +411,7 @@ class DatetimeEditorMode(Mode):
         self.field = 0 # 0=Y, 1=M, 2=D, 3=H, 4=Min
         
     def on_encoder_rotate(self, delta):
-        d = delta
+        d = -delta # Invert: CW = increase
         if self.field == 0: self.year = max(2024, min(2099, self.year + d))
         elif self.field == 1: self.month = (self.month - 1 + d) % 12 + 1
         elif self.field == 2: self.day = (self.day - 1 + d) % 31 + 1
@@ -447,4 +453,40 @@ class DatetimeEditorMode(Mode):
         fields = ["Year", "Month", "Day", "Hour", "Minute"]
         disp.text(f"Edit: {fields[self.field]}", 0, 48)
         disp.text("Confirm >> Next", 0, 58)
+        disp.show()
+
+class MotorEditorMode(Mode):
+    """Manual adjustment of absolute motor positions."""
+    def __init__(self, target=0):
+        self.target = target # 0=EQX, 1=AoV
+        self.pos = g.eqx_position_deg if target == 0 else g.aov_position_deg
+        self.label = "SET EQX ANGLE" if target == 0 else "SET AOV ANGLE"
+        
+    def on_encoder_rotate(self, delta):
+        d = -delta # CW = Increase
+        self.pos += d
+        # Live movement for alignment
+        m = g.eqx_motor if self.target == 0 else g.aov_motor
+        if m:
+            m.set_nearest_degrees(self.pos)
+            
+    def on_confirm(self):
+        if self.target == 0: g.eqx_position_deg = self.pos
+        else: g.aov_position_deg = self.pos
+        utils.save_state()
+        return SettingsMode()
+        
+    def on_back(self):
+        return SettingsMode()
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text(self.label, 0, 0)
+        pos_str = f"{self.pos:.1f} deg"
+        w = len(pos_str) * 8
+        disp.fb.fill_rect(20, 24, w+4, 10, 1)
+        disp.fb.text(pos_str, 22, 25, 0)
+        
+        disp.text("Dial to Move Motor", 0, 45)
+        disp.text("Confirm to Save", 0, 56)
         disp.show()
