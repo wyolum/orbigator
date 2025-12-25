@@ -25,7 +25,10 @@ fi
 cd "$SRC_DIR"
 
 echo "📤 Uploading core files..."
-mpremote fs cp orbigator.py :main.py
+mpremote fs cp orbigator.py :
+mpremote fs cp modes.py :
+mpremote fs cp orb_globals.py :
+mpremote fs cp orb_utils.py :
 mpremote fs cp dynamixel_motor.py :
 mpremote fs cp dynamixel_extended_utils.py :
 mpremote fs cp ds3231.py :
