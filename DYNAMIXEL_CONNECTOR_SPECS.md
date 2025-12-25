@@ -19,13 +19,14 @@ The DYNAMIXEL XL-330 uses a **3-pin JST-GH family connector** on the servo PCB.
 
 ### 1. JST-GH Crimp Housings (3-pin)
 Use these on the servo cable that mates to the XL-330.
-- **Part**: JST GH 3-pin housing
-- **Example**: [DigiKey - SM03B-GHS-TB](https://www.digikey.com/en/products/detail/jst-sales-america-inc/SM03B-GHS-TB(LF)(SN)/2978459)
+- **Part**: JST GHR-03V-S (3-pin housing)
+- **Verified Link**: [DigiKey - GHR-03V-S](https://www.digikey.com/en/products/detail/jst-sales-america-inc/GHR-03V-S/2978418)
 - **Features**: Designed for movement without loosening.
 
 ### 2. JST-GH Crimp Pins (for cable ends)
-You must use crimp pins made specifically for the GH series.
-- **Example**: [DigiKey - GH-314-T273](https://www.digikey.com/en/products/detail/jst-sales-america-inc/GH-314-T273/2978467)
+You must use crimp pins made specifically for the GH series (26-30 AWG).
+- **Part**: JST SSHL-002T-P0.2
+- **Verified Link**: [DigiKey - SSHL-002T-P0.2](https://www.digikey.com/en/products/detail/jst-sales-america-inc/SSHL-002T-P0.2-608779/608779)
 - **Important**: Crimp them onto your wires with a proper tool — do not solder directly to the housing.
 
 ### 3. Matching Servo Cable Assemblies
