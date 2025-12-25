@@ -40,7 +40,7 @@ class MenuMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Orbit!", "Set Period", "Settings"]
+        self.items = ["Orbit!", "Align EQX", "Align AoV", "Set Period", "Settings"]
     
     def on_encoder_rotate(self, delta):
         # Invert: CW (delta < 0) = Move Down (selection increases)
@@ -52,8 +52,12 @@ class MenuMode(Mode):
         if self.selection == 0:
             return OrbitMode()
         elif self.selection == 1:
-            return PeriodEditorMode()
+            return MotorEditorMode(target=0) # EQX
         elif self.selection == 2:
+            return MotorEditorMode(target=1) # AoV
+        elif self.selection == 3:
+            return PeriodEditorMode()
+        elif self.selection == 4:
             return SettingsMode()
         return None
     
@@ -297,7 +301,7 @@ class SettingsMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Set EQX Angle", "Set AoV Angle", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         # Invert: CW = Move Down
@@ -312,16 +316,12 @@ class SettingsMode(Mode):
         elif self.selection == 2:
             return DatetimeEditorMode()
         elif self.selection == 3:
-            return MotorEditorMode(target=0) # EQX
-        elif self.selection == 4:
-            return MotorEditorMode(target=1) # AoV
-        elif self.selection == 5:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 6:
+        elif self.selection == 4:
             return MenuMode()
         return None
     
@@ -474,10 +474,10 @@ class MotorEditorMode(Mode):
         if self.target == 0: g.eqx_position_deg = self.pos
         else: g.aov_position_deg = self.pos
         utils.save_state()
-        return SettingsMode()
+        return MenuMode() # Return to main menu instead of settings
         
     def on_back(self):
-        return SettingsMode()
+        return MenuMode()
         
     def render(self, disp):
         disp.fill(0)
