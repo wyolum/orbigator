@@ -30,6 +30,7 @@ mpremote fs cp modes.py :
 mpremote fs cp orb_globals.py :
 mpremote fs cp pins.py :
 mpremote fs cp orb_utils.py :
+mpremote fs cp input_utils.py :
 mpremote fs cp dynamixel_motor.py :
 mpremote fs cp dynamixel_extended_utils.py :
 mpremote fs cp ds3231.py :

@@ -31,3 +31,8 @@ run_start_time = 0
 run_start_ticks = 0
 run_start_aov_deg = 0.0
 run_start_eqx_deg = 0.0
+
+# Motor health tracking
+motor_health_ok = True  # Global health flag
+motor_offline_id = None  # ID of offline motor (if any)
+motor_offline_error = ""  # Error description

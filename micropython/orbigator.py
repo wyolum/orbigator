@@ -168,7 +168,15 @@ while True:
                 current_mode.enter()
     last_confirm_btn = confirm_val
     
-    # 5. Update and Render
+    # 5. Check Motor Health
+    if not g.motor_health_ok and g.motor_offline_id is not None:
+        # Transition to offline mode
+        motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
+        current_mode.exit()
+        current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
+        current_mode.enter()
+    
+    # 6. Update and Render
     current_mode.update(now)
     
     if time.ticks_diff(now, last_display_update) >= 200:

@@ -5,12 +5,14 @@ Mode-based architecture for clean UI state management
 
 import orb_globals as g
 import orb_utils as utils
+import input_utils
 import time
 
 class Mode:
     """Base class for UI modes."""
     
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         pass
     
     def on_encoder_press(self):
@@ -43,6 +45,7 @@ class MenuMode(Mode):
         self.items = ["Orbit!", "Align EQX", "Align AoV", "Set Period", "Settings"]
     
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         # Default: CW (delta > 0) = Move Down (selection increases)
         move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
@@ -131,6 +134,7 @@ class OrbitMode(Mode):
         print(f"Orbit logic active: AoV={g.aov_rate_deg_sec:.6f} deg/s, EQX={g.eqx_rate_deg_sec:.6f} deg/s")
     
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         d = delta # CW = Nudge Forward
         if self.nudge_target == 0:
             g.run_start_aov_deg += d * 1.0
@@ -162,9 +166,20 @@ class OrbitMode(Mode):
         g.eqx_position_deg = g.run_start_eqx_deg + (g.eqx_rate_deg_sec * elapsed)
         
         if g.aov_motor:
-            g.aov_motor.set_angle_degrees(g.aov_position_deg)
+            result = g.aov_motor.set_angle_degrees(g.aov_position_deg)
+            # Check for repeated failures
+            if not result and g.aov_motor.consecutive_failures >= g.aov_motor.MAX_FAILURES_BEFORE_OFFLINE:
+                g.motor_health_ok = False
+                g.motor_offline_id = g.aov_motor.motor_id
+                g.motor_offline_error = "Comm failure"
+                
         if g.eqx_motor:
-            g.eqx_motor.set_angle_degrees(g.eqx_position_deg)
+            result = g.eqx_motor.set_angle_degrees(g.eqx_position_deg)
+            # Check for repeated failures
+            if not result and g.eqx_motor.consecutive_failures >= g.eqx_motor.MAX_FAILURES_BEFORE_OFFLINE:
+                g.motor_health_ok = False
+                g.motor_offline_id = g.eqx_motor.motor_id
+                g.motor_offline_error = "Comm failure"
             
         if self.debug_counter > 500: # Approx every 5 seconds (assuming 10ms loop time? No, high speed loop)
             # Actually use time check for printing
@@ -219,6 +234,7 @@ class PeriodEditorMode(Mode):
         self.field = 0 # 0=H, 1=M, 2=S
     
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         # CW = increase
         d = delta
         if self.field == 0:
@@ -299,6 +315,7 @@ class SettingsMode(Mode):
         self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         # Default: CW = Move Down
         move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
@@ -348,6 +365,7 @@ class AltitudeEditorMode(Mode):
         self.alt = int(g.orbital_altitude_km)
         
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         d = delta * 10 # CW = increase
         self.alt = max(200, min(2000, self.alt + d))
         
@@ -378,6 +396,7 @@ class InclinationEditorMode(Mode):
         self.inc_x10 = int(g.orbital_inclination_deg * 10)
         
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         d = delta # CW = increase
         # Range 0 to 180 (most common 0 to 99)
         self.inc_x10 = max(0, min(1800, self.inc_x10 + d))
@@ -416,6 +435,7 @@ class DatetimeEditorMode(Mode):
         self.field = 0 # 0=Y, 1=M, 2=D, 3=H, 4=Min
         
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         d = delta # CW = increase
         if self.field == 0: self.year = max(2024, min(2099, self.year + d))
         elif self.field == 1: self.month = (self.month - 1 + d) % 12 + 1
@@ -469,6 +489,7 @@ class MotorEditorMode(Mode):
         self.step_size = 1.0 # Default coarse
         
     def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
         d = delta * self.step_size
         self.pos += d
         m = g.eqx_motor if self.target == 0 else g.aov_motor
@@ -525,4 +546,46 @@ class MotorEditorMode(Mode):
         
         disp.text("Dial to Move Motor", 0, 45)
         disp.text("Confirm to Save", 0, 56)
+        disp.show()
+
+class MotorOfflineMode(Mode):
+    """Degraded mode when motor communication fails."""
+    def __init__(self, motor_id, motor_name, error_msg):
+        self.motor_id = motor_id
+        self.motor_name = motor_name
+        self.error_msg = error_msg
+        print(f"\n{'='*60}")
+        print(f"MOTOR OFFLINE: {motor_name} (ID {motor_id})")
+        print(f"Error: {error_msg}")
+        print(f"{'='*60}\n")
+        
+    def on_confirm(self):
+        # Attempt recovery
+        print(f"Attempting to recover motor {self.motor_id} ({self.motor_name})...")
+        g.motor_health_ok = True
+        g.motor_offline_id = None
+        g.motor_offline_error = ""
+        
+        # Reset failure counters
+        if self.motor_id == 2 and g.aov_motor:
+            g.aov_motor.consecutive_failures = 0
+        elif self.motor_id == 1 and g.eqx_motor:
+            g.eqx_motor.consecutive_failures = 0
+        
+        return MenuMode()  # Return to menu
+        
+    def on_back(self):
+        return None  # Stay in offline mode
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("MOTOR OFFLINE", 0, 0)
+        disp.text(f"Motor: {self.motor_name}", 0, 12)
+        disp.text(f"ID: {self.motor_id}", 0, 24)
+        
+        # Error code (truncate if too long)
+        err = self.error_msg[:16]
+        disp.text(f"Err: {err}", 0, 36)
+        
+        disp.text("Confirm to Retry", 0, 56)
         disp.show()

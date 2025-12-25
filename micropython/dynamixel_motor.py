@@ -38,6 +38,10 @@ class DynamixelMotor:
         self.name = name
         self.gear_ratio = gear_ratio
         
+        # Communication resilience
+        self.consecutive_failures = 0
+        self.MAX_FAILURES_BEFORE_OFFLINE = 5
+        
         # Read current motor position on initialization
         motor_ticks = read_present_position(motor_id)
         
@@ -53,7 +57,41 @@ class DynamixelMotor:
         print(f"Motor {motor_id} ({name}) initialized:")
         print(f"  Motor position: {self.motor_degrees:.2f}°")
         print(f"  Output position: {self.output_degrees:.2f}°")
-        print(f"  Gear ratio: {gear_ratio:.3f}:1")
+        print(f"  Gear ratio: {self.gear_ratio:.3f}:1")
+    
+    def _retry_operation(self, operation, operation_name, max_retries=3):
+        """
+        Retry wrapper for DYNAMIXEL operations with exponential backoff.
+        
+        Args:
+            operation: Callable that returns result or None on failure
+            operation_name: Human-readable name for logging
+            max_retries: Maximum number of attempts (default 3)
+        
+        Returns:
+            Operation result, or None if all retries failed
+        """
+        backoff_ms = [10, 20, 40]  # Exponential backoff
+        
+        for attempt in range(max_retries):
+            result = operation()
+            if result is not None:
+                # Success - reset failure counter
+                if self.consecutive_failures > 0:
+                    print(f"Motor {self.motor_id} ({self.name}): Communication restored")
+                self.consecutive_failures = 0
+                return result
+            
+            # Failure - log and backoff
+            if attempt < max_retries - 1:
+                delay = backoff_ms[attempt] if attempt < len(backoff_ms) else backoff_ms[-1]
+                print(f"Motor {self.motor_id} ({self.name}): {operation_name} failed (attempt {attempt+1}/{max_retries}), retrying in {delay}ms...")
+                time.sleep_ms(delay)
+        
+        # All retries failed
+        self.consecutive_failures += 1
+        print(f"Motor {self.motor_id} ({self.name}): {operation_name} FAILED after {max_retries} attempts (consecutive failures: {self.consecutive_failures})")
+        return None
     
     def set_speed_limit(self, velocity=100):
         """
@@ -82,31 +120,36 @@ class DynamixelMotor:
     
     def set_angle_degrees(self, output_degrees):
         """
-        Set the output angle in degrees.
+        Set the output angle in degrees with retry logic.
         
         For geared motors (EQX), this is the globe position.
         For direct drive (AoV), this is the motor position.
         
         Args:
             output_degrees: Desired output angle in degrees
+        
+        Returns:
+            True if successful, False otherwise
         """
         # Convert output degrees to motor degrees
         motor_degrees = output_degrees * self.gear_ratio
         
-        # Convert motor degrees to ticks
-        motor_ticks = int(motor_degrees * self.TICKS_PER_MOTOR_DEGREE)
+        # Command the motor with retry logic
+        def _write_operation():
+            motor_ticks = int(motor_degrees * self.TICKS_PER_MOTOR_DEGREE)
+            success = write_dword(self.motor_id, self.ADDR_GOAL_POSITION, motor_ticks)
+            return success if success else None
         
-        # Send to motor
-        success = write_dword(self.motor_id, self.ADDR_GOAL_POSITION, motor_ticks)
+        result = self._retry_operation(_write_operation, "write position")
         
-        if success:
+        if result:
             # Update tracking
             self.output_degrees = output_degrees
             self.motor_degrees = motor_degrees
+            return True
         else:
             print(f"Warning: Failed to set position for motor {self.motor_id} ({self.name})")
-        
-        return success
+            return False
     
     def set_nearest_degrees(self, target_degrees):
         """
@@ -138,27 +181,30 @@ class DynamixelMotor:
     
     def get_angle_degrees(self):
         """
-        Read current output angle in degrees.
+        Read current output angle in degrees with retry logic.
         
         Returns:
             Current output angle, or None on error
         """
-        motor_ticks = read_present_position(self.motor_id)
+        def _read_operation():
+            motor_ticks = read_present_position(self.motor_id)
+            
+            if motor_ticks is None:
+                return None
+            
+            # Convert to motor degrees
+            motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
+            
+            # Convert to output degrees
+            output_degrees = motor_degrees / self.gear_ratio
+            
+            # Update tracking
+            self.motor_degrees = motor_degrees
+            self.output_degrees = output_degrees
+            
+            return output_degrees
         
-        if motor_ticks is None:
-            return None
-        
-        # Convert to motor degrees
-        motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
-        
-        # Convert to output degrees
-        output_degrees = motor_degrees / self.gear_ratio
-        
-        # Update tracking
-        self.motor_degrees = motor_degrees
-        self.output_degrees = output_degrees
-        
-        return output_degrees
+        return self._retry_operation(_read_operation, "read position")
     
     def move_relative_degrees(self, delta_output_degrees):
         """
