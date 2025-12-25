@@ -466,9 +466,10 @@ class MotorEditorMode(Mode):
         self.target = target # 0=EQX, 1=AoV
         self.pos = g.eqx_position_deg if target == 0 else g.aov_position_deg
         self.label = "SET EQX ANGLE" if target == 0 else "SET AOV ANGLE"
+        self.step_size = 1.0 # Default coarse
         
     def on_encoder_rotate(self, delta):
-        d = delta # CW = Increase
+        d = delta * self.step_size
         self.pos += d
         m = g.eqx_motor if self.target == 0 else g.aov_motor
         if m:
@@ -476,6 +477,13 @@ class MotorEditorMode(Mode):
             limit = 10 if self.target == 0 else 10
             m.set_speed_limit(limit)
             m.set_nearest_degrees(self.pos)
+            
+    def on_encoder_press(self):
+        # Toggle precision
+        if self.step_size == 1.0:
+            self.step_size = 0.1
+        else:
+            self.step_size = 1.0
             
     def on_confirm(self):
         if self.target == 0: g.eqx_position_deg = self.pos
@@ -494,6 +502,9 @@ class MotorEditorMode(Mode):
         w = len(pos_str) * 8
         disp.fb.fill_rect(20, 24, w+4, 10, 1)
         disp.fb.text(pos_str, 22, 25, 0)
+        
+        mode_str = "Coarse (1.0)" if self.step_size == 1.0 else "Fine (0.1)"
+        disp.text(mode_str, 0, 40)
         
         disp.text("Dial to Move Motor", 0, 45)
         disp.text("Confirm to Save", 0, 56)
