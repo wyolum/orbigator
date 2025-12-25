@@ -106,41 +106,35 @@ class OrbitMode(Mode):
         g.orbital_period_min = period_min
         
         # 4. Calculate elapsed time since last save using high-res system time
-        now = time.time()
+        now = utils.get_timestamp()
         
         elapsed = now - saved_ts if saved_ts > 0 else 0
-        print(f"Time Check: SysNow={now}, SavedTS={saved_ts}, Gap={elapsed}s")
+        print(f"Time Check: HighResNow={now:.3f}, SavedTS={saved_ts:.3f}, Gap={elapsed:.3f}s")
         
         if 0 < elapsed < 86400: # Only catch up if gap is reasonable (less than 1 day)
             # Calculate target absolute positions (where we SHOULD be physically)
-            # We add the expected motion to the absolute saved base
             target_aov_abs = saved_aov + (aov_rate * elapsed)
             target_eqx_abs = saved_eqx + (eqx_rate_sec * elapsed)
             
-            # Use modulo to get the 0-360 phase for the motor command
+            # Use modulo for the motor command phase
             target_aov_phase = target_aov_abs % 360
             target_eqx_phase = target_eqx_abs % 360
             
-            print(f"  Catching up to: AoV={target_aov_abs:.2f}°, EQX={target_eqx_abs:.2f}°")
+            print(f"  Catching up to: AoV={target_aov_abs:.3f}°, EQX={target_eqx_abs:.3f}°")
             
-            # Set safe catch-up speed (Profile Velocity 10 = Safety Max)
+            # Set safe catch-up speed
             if g.aov_motor: g.aov_motor.set_speed_limit(10)
             if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
             
-            # Move motors to target via SHORTEST path
+            # Move motors
             if g.aov_motor: g.aov_motor.set_nearest_degrees(target_aov_phase)
             if g.eqx_motor: g.eqx_motor.set_nearest_degrees(target_eqx_phase)
             
-            # Wait a moment for small catch-up moves to trigger? 
-            # (Dynamixel usually processes immediately)
-            
-            # Update tracking baselines to the NEW absolute positions
-            # Use the target values directly to avoid any "lag" induced by physical movement delay
+            # Anchor current session to this snapshot
             g.run_start_aov_deg = target_aov_abs
             g.run_start_eqx_deg = target_eqx_abs
         else:
             print("Catch-up skipped or large gap.")
-            # Use reconstructed pos
             g.run_start_aov_deg = g.aov_position_deg
             g.run_start_eqx_deg = g.eqx_position_deg
             
@@ -178,7 +172,7 @@ class OrbitMode(Mode):
             return
         
         # Use high-resolution system time for smooth integration
-        now = time.time()
+        now = utils.get_timestamp()
         elapsed = now - g.run_start_time
         
         g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)

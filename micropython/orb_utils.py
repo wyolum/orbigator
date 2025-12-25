@@ -77,24 +77,33 @@ def sync_system_time(rtc):
     except Exception as e:
         print("Sync time failed:", e)
 
+# Global time reference for high-res timestamping
+_time_ref = None
+
 def get_timestamp(rtc=None):
     """
-    Get current unix timestamp. 
-    Uses system time which is higher resolution than the external RTC.
-    Syncs if it looks too old.
+    Get high-resolution unix timestamp.
+    Pico's time.time() is only 1s resolution. This adds ticks_ms for sub-second precision.
     """
-    try:
-        t = time.time()
-        # If system time is reset (epoch 2000), try to sync once
-        if t < 1000000 and rtc: # Arbitrary small number for reset clock
-             sync_system_time(rtc)
-             t = time.time()
-        return t
-    except Exception:
-        return time.time()
+    global _time_ref
+    if _time_ref is None:
+        # One-time sync: wait for second flip to align ticks to time()
+        start_s = time.time()
+        for _ in range(1000): # Safety timeout (1s)
+            now_s = time.time()
+            if now_s > start_s:
+                _time_ref = (now_s, time.ticks_ms())
+                break
+            time.sleep_ms(1)
+        if _time_ref is None:
+            _time_ref = (time.time(), time.ticks_ms())
+            
+    base_s, base_ms = _time_ref
+    return base_s + time.ticks_diff(time.ticks_ms(), base_ms) / 1000.0
 
 def set_datetime(year, month, day, hour, minute, second, rtc=None):
     """Set the RTC and system time."""
+    global _time_ref
     try:
         import machine
         # (Y, M, D, WD, H, M, S, SS)
@@ -102,6 +111,8 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
         if rtc:
             rtc.datetime(t)
         machine.RTC().datetime(t)
+        # Invalidate time ref to force re-sync
+        _time_ref = None
         print(f"Time set to: {year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}")
         return True
     except Exception as e:
@@ -111,16 +122,17 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
     try:
+        now = get_timestamp()
         config = {
             "altitude_km": g.orbital_altitude_km,
             "inclination_deg": g.orbital_inclination_deg,
             "eqx_deg": g.eqx_position_deg,
             "aov_deg": g.aov_position_deg,
-            "timestamp": get_timestamp(g.rtc)
+            "timestamp": now
         }
         with open(CONFIG_FILE, "w") as f:
             json.dump(config, f)
-        print("State saved:", config)
+        print(f"State saved: AoV={g.aov_position_deg:.3f} at TS={now:.3f}")
     except Exception as e:
         print("Error saving state:", e)
 
