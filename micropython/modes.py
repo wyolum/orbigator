@@ -463,9 +463,10 @@ class MotorEditorMode(Mode):
     def on_encoder_rotate(self, delta):
         d = delta # CW = Increase
         self.pos += d
-        # Live movement for alignment
-        m = g.eqx_motor if self.target == 0 else g.aov_motor
         if m:
+            # Respect safe speed limits: 10 for EQX, 10 for AoV
+            limit = 10 if self.target == 0 else 10
+            m.set_speed_limit(limit)
             m.set_nearest_degrees(self.pos)
             
     def on_confirm(self):

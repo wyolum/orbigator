@@ -78,7 +78,7 @@ g.aov_motor = aov_motor
 eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 g.eqx_motor = eqx_motor
 
-aov_motor.set_speed_limit(10)
+aov_motor.set_speed_limit(10) # 1 was too slow?
 eqx_motor.set_speed_limit(10) # Capped at 10 for safety
 
 # ---------------- Encoder + Buttons ----------------
