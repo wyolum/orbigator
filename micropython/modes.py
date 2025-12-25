@@ -43,8 +43,8 @@ class MenuMode(Mode):
         self.items = ["Orbit!", "Align EQX", "Align AoV", "Set Period", "Settings"]
     
     def on_encoder_rotate(self, delta):
-        # Invert: CW (delta < 0) = Move Down (selection increases)
-        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        # Default: CW (delta > 0) = Move Down (selection increases)
+        move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         print(f"Menu: {self.items[self.selection]}")
     
@@ -69,6 +69,10 @@ class MenuMode(Mode):
         page_size = 4
         start_idx = max(0, min(self.selection - page_size // 2, len(self.items) - page_size))
         
+        # Scroll indicators
+        if start_idx > 0: disp.text("^", 120, 16)
+        if start_idx + page_size < len(self.items): disp.text("v", 120, 52)
+
         for i in range(start_idx, min(start_idx + page_size, len(self.items))):
             item = self.items[i]
             prefix = ">" if i == self.selection else " "
@@ -147,7 +151,7 @@ class OrbitMode(Mode):
         print(f"Orbit logic active: AoV={g.aov_rate_deg_sec:.6f} deg/s, EQX={g.eqx_rate_deg_sec:.6f} deg/s")
     
     def on_encoder_rotate(self, delta):
-        d = -delta # Invert: CW = Nudge Forward
+        d = delta # CW = Nudge Forward
         if self.nudge_target == 0:
             g.run_start_aov_deg += d * 1.0
             print(f"AoV nudge: {d:+.0f} deg")
@@ -229,8 +233,8 @@ class PeriodEditorMode(Mode):
         self.field = 0 # 0=H, 1=M, 2=S
     
     def on_encoder_rotate(self, delta):
-        # Invert: CW = increase
-        d = -delta
+        # CW = increase
+        d = delta
         if self.field == 0:
             self.hh = max(0, min(23, self.hh + d))
         elif self.field == 1:
@@ -309,8 +313,8 @@ class SettingsMode(Mode):
         self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
-        # Invert: CW = Move Down
-        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        # Default: CW = Move Down
+        move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         
     def on_confirm(self):
@@ -341,6 +345,10 @@ class SettingsMode(Mode):
         page_size = 4
         start_idx = max(0, min(self.selection - page_size // 2, len(self.items) - page_size))
         
+        # Scroll indicators
+        if start_idx > 0: disp.text("^", 120, 16)
+        if start_idx + page_size < len(self.items): disp.text("v", 120, 52)
+        
         for i in range(start_idx, min(start_idx + page_size, len(self.items))):
             item = self.items[i]
             prefix = ">" if i == self.selection else " "
@@ -354,7 +362,7 @@ class AltitudeEditorMode(Mode):
         self.alt = int(g.orbital_altitude_km)
         
     def on_encoder_rotate(self, delta):
-        d = -delta * 10 # Invert: CW = increase
+        d = delta * 10 # CW = increase
         self.alt = max(200, min(2000, self.alt + d))
         
     def on_confirm(self):
@@ -384,7 +392,7 @@ class InclinationEditorMode(Mode):
         self.inc_x10 = int(g.orbital_inclination_deg * 10)
         
     def on_encoder_rotate(self, delta):
-        d = -delta # Invert: CW = increase
+        d = delta # CW = increase
         # Range 0 to 180 (most common 0 to 99)
         self.inc_x10 = max(0, min(1800, self.inc_x10 + d))
         
@@ -422,7 +430,7 @@ class DatetimeEditorMode(Mode):
         self.field = 0 # 0=Y, 1=M, 2=D, 3=H, 4=Min
         
     def on_encoder_rotate(self, delta):
-        d = -delta # Invert: CW = increase
+        d = delta # CW = increase
         if self.field == 0: self.year = max(2024, min(2099, self.year + d))
         elif self.field == 1: self.month = (self.month - 1 + d) % 12 + 1
         elif self.field == 2: self.day = (self.day - 1 + d) % 31 + 1
@@ -474,7 +482,7 @@ class MotorEditorMode(Mode):
         self.label = "SET EQX ANGLE" if target == 0 else "SET AOV ANGLE"
         
     def on_encoder_rotate(self, delta):
-        d = -delta # CW = Increase
+        d = delta # CW = Increase
         self.pos += d
         # Live movement for alignment
         m = g.eqx_motor if self.target == 0 else g.aov_motor
