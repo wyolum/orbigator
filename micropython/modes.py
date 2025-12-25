@@ -64,11 +64,16 @@ class MenuMode(Mode):
     def render(self, disp):
         disp.fill(0)
         disp.text("MAIN MENU", 0, 0)
-        for i, item in enumerate(self.items):
+        
+        # Page size: 4 items (16 to 64px)
+        page_size = 4
+        start_idx = max(0, min(self.selection - page_size // 2, len(self.items) - page_size))
+        
+        for i in range(start_idx, min(start_idx + page_size, len(self.items))):
+            item = self.items[i]
             prefix = ">" if i == self.selection else " "
-            y = 16 + i * 12
-            if y < 64:
-                disp.text(f"{prefix} {item}", 0, y)
+            y = 16 + (i - start_idx) * 12
+            disp.text(f"{prefix} {item}", 0, y)
         disp.show()
 
 
@@ -331,9 +336,15 @@ class SettingsMode(Mode):
     def render(self, disp):
         disp.fill(0)
         disp.text("SETTINGS", 0, 0)
-        for i, item in enumerate(self.items):
+        
+        # Page size: 4 items
+        page_size = 4
+        start_idx = max(0, min(self.selection - page_size // 2, len(self.items) - page_size))
+        
+        for i in range(start_idx, min(start_idx + page_size, len(self.items))):
+            item = self.items[i]
             prefix = ">" if i == self.selection else " "
-            y = 16 + i * 12
+            y = 16 + (i - start_idx) * 12
             disp.text(f"{prefix} {item}", 0, y)
         disp.show()
 
