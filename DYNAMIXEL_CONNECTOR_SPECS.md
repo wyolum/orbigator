@@ -9,6 +9,8 @@ The DYNAMIXEL XL-330 uses a **3-pin JST-GH family connector** on the servo PCB.
 - **Polarization**: Keyed housing to prevent reverse mating
 - **Often called**: JST GH series (Note: XH is incorrect — GH is the one Robotis uses)
 
+![Official DYNAMIXEL Pinout](images/dynamixel_official_pinout.png)
+
 📌 **Why This Matters**: Generic servo wires (like typical RC servo cables) will not lock in reliably. They can wiggle out over time inside mechanical motion systems like the Orbigator globe.
 
 ---
