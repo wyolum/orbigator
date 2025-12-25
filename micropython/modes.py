@@ -111,42 +111,10 @@ class OrbitMode(Mode):
         elapsed = now - saved_ts if saved_ts > 0 else 0
         print(f"Time Check: HighResNow={now:.3f}, SavedTS={saved_ts:.3f}, Gap={elapsed:.3f}s")
         
-        if 0 < elapsed < 86400: # Only catch up if gap is positive and reasonable (less than 1 day)
-            # Calculate target absolute positions (where we SHOULD be physically)
-            # RELATIVE CATCH-UP: Anchor to where the motor IS, plus the time missed.
-            # This avoids jumping if the saved state was slightly offset from reality.
-            # g.aov_position_deg was reconstructed from the motor in load_state(), so use it.
-            
-            target_aov_abs = g.aov_position_deg + (aov_rate * elapsed)
-            target_eqx_abs = g.eqx_position_deg + (eqx_rate_sec * elapsed)
-            
-            # Use modulo for the motor command phase
-            target_aov_phase = target_aov_abs % 360
-            target_eqx_phase = target_eqx_abs % 360
-            
-            print(f"  Catching up to: AoV={target_aov_abs:.3f}°, EQX={target_eqx_abs:.3f}°")
-            
-            # Set safe catch-up speed
-            if g.aov_motor: g.aov_motor.set_speed_limit(10)
-            if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
-            
-            # Move motors
-            if g.aov_motor: g.aov_motor.set_nearest_degrees(target_aov_phase)
-            if g.eqx_motor: g.eqx_motor.set_nearest_degrees(target_eqx_phase)
-            
-            # Anchor current session to this snapshot
-            g.run_start_aov_deg = target_aov_abs
-            g.run_start_eqx_deg = target_eqx_abs
-        else:
-            print("Catch-up skipped (elapsed <= 0 or too large).")
-            # If time moved backwards or gap is huge, DON'T jump to some weird calculated spot.
+        if True: # Always skip catch-up for "Pause/Resume" behavior
+            print("Catch-up skipped (Pause/Resume mode).")
             # Just verify where we are and start integrating from here.
-            
-            # Check if reconstruction gave us reasonable values compared to saved?
-            # Actually, if we skip catchup, we just want to start smoothly from CURRENT physical pos.
-            
-            # But g.aov_position_deg was reconstructed from get_angle_degrees() in load_state
-            # So this is safe.
+            # This ensures NO movement on re-entry.
             g.run_start_aov_deg = g.aov_position_deg
             g.run_start_eqx_deg = g.eqx_position_deg
             
