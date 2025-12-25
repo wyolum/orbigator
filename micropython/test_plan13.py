@@ -67,6 +67,51 @@ def test_plan13():
             print(f"  Altitude:   {altitude_km:.1f} km")
             print(f"  Range:      {range_km:.1f} km")
             
+            # Distance variation over one orbit
+            print("\n" + "="*60)
+            print("Distance to ISS over one complete orbit:")
+            print("="*60)
+            
+            # Compute orbital period from TLE mean motion (rev/day)
+            # tledata is (name, line1, line2)
+            line2 = tledata[2]
+            mean_motion = float(line2[52:63])  # rev/day
+            period_min = 1440.0 / mean_motion
+            samples = 10
+            ranges = []
+            
+            for i in range(samples + 1):
+                offset_min = (i / samples) * period_min
+                offset_sec = int(offset_min * 60)
+                
+                # Compute new time
+                new_sec = (second + offset_sec) % 60
+                new_min = (minute + (second + offset_sec) // 60) % 60
+                new_hr = (hour + (minute + (second + offset_sec) // 60) // 60) % 24
+                
+                satp.settime(year, month, day, new_hr, new_min, new_sec)
+                _, _, az, el, _, _ = satp.sat_predict(tledata)
+                
+                # Compute range at this time
+                dx = satp.sat.S[0] - satp.curpos.O[0]
+                dy = satp.sat.S[1] - satp.curpos.O[1]
+                dz = satp.sat.S[2] - satp.curpos.O[2]
+                r = math.sqrt(dx*dx + dy*dy + dz*dz)
+                ranges.append(r)
+                
+                visible = "VIS" if el > 0 else ""
+                print(f"  +{offset_min:5.1f} min: {r:7.1f} km  "
+                      f"Az={az:5.0f}° El={el:5.0f}°  {visible}")
+            
+            min_rg = min(ranges)
+            max_rg = max(ranges)
+            variation = max_rg - min_rg
+            
+            print(f"\n  Orbital Period:  {period_min:.2f} minutes")
+            print(f"  Min Range:       {min_rg:.1f} km")
+            print(f"  Max Range:       {max_rg:.1f} km")
+            print(f"  Variation:       {variation:.1f} km ({variation/min_rg*100:.1f}%)")
+            
             print("\n✓ Plan13 works! ISS position calculated successfully!")
             print(f"\nThe ISS is currently over ({satlat:.1f}°, {satlon:.1f}°)")
             print(f"From your location, it's at Az={sataz:.0f}° El={satel:.0f}°")
