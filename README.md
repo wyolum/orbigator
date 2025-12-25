@@ -17,6 +17,7 @@ The project has recently reached a major milestone with the implementation of a 
 - **Revolution-Based Persistence**: To protect the Pico 2 flash memory, orbital state is saved precisely once per full motor revolution.
 - **Shortest-Path Catch-up**: On power-up, the system calculates the time elapsed via the RTC and performs an efficient "chase" move (max 180°) to sync to the current orbital target.
 - **Hardware Safety**: Stict motor speed limits (Safety Max = 10) protect the mechanical assembly and ensure magnets stay securely on the globe.
+- **RTC Reset Protection**: On boot, if the clock is detected as reset (e.g. dead battery), the system automatically prompts you to set the Zulu time before starting tracker operations.
 - **Intuitive UI**: Consistent encoder logic (Clockwise = Navigate Down / Increase Value) and a safety-locked "Confirm" button during tracking.
 
 ## How It Works
