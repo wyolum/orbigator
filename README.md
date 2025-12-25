@@ -4,9 +4,9 @@
 
 ## About This Project
 
-Orbigator is an open‑source mechanical model (orrery) that physically demonstrates how a satellite orbits the Earth. It uses a Raspberry Pi Pico 2 and precision DYNAMIXEL servo motors to move a pointer around a real globe, tracking a satellite's ground track in real-time.
+Orbigator is an open‑source mechanical model that physically demonstrates how a satellite orbits the Earth. It uses a Raspberry Pi Pico 2 and precision DYNAMIXEL servo motors to move a pointer around a real globe, tracking a satellite's ground track in real-time.
 
-The system computes complex orbital mechanics—including Kepler's laws and J2 perturbation effects—to determine the satellite's instantaneous position and precession.
+The system computes complex orbital mechanics—including Kepler's laws and J2 perturbation effects—to determine the satellite's instantaneous position relative to the Earth's surface.
 
 ## Key Features (V1.1 Dec 2025)
 
