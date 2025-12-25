@@ -167,6 +167,6 @@ while True:
     # 5. Update and Render
     current_mode.update(now)
     
-    if time.ticks_diff(now, last_display_update) >= 1000:
+    if time.ticks_diff(now, last_display_update) >= 200:
         last_display_update = now
         current_mode.render(disp)

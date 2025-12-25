@@ -119,6 +119,9 @@ class OrbitMode(Mode):
             g.run_start_eqx_deg = g.eqx_position_deg
             
         g.run_start_time = now
+        g.run_start_ticks = time.ticks_ms()
+        self.last_debug_print = time.ticks_ms()
+        self.debug_counter = 0
         
         # Initial rev tracking for persistence
         self.last_saved_rev_eqx = int(g.eqx_position_deg // 360)
@@ -151,9 +154,9 @@ class OrbitMode(Mode):
         if not self.initialized:
             return
         
-        # Use high-resolution system time for smooth integration
-        now = utils.get_timestamp()
-        elapsed = now - g.run_start_time
+        # Use high-resolution ticks for smooth integration (avoids FP precision loss from Unix timestamp)
+        now_ticks = time.ticks_ms()
+        elapsed = time.ticks_diff(now_ticks, g.run_start_ticks) / 1000.0
         
         g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)
         g.eqx_position_deg = g.run_start_eqx_deg + (g.eqx_rate_deg_sec * elapsed)
@@ -163,7 +166,11 @@ class OrbitMode(Mode):
         if g.eqx_motor:
             g.eqx_motor.set_angle_degrees(g.eqx_position_deg)
             
-        # Revolution-based persistence: Save state when a motor passes 360° boundary
+        if self.debug_counter > 500: # Approx every 5 seconds (assuming 10ms loop time? No, high speed loop)
+            # Actually use time check for printing
+            pass
+            
+        # Debug logging removed for production
         cur_rev_eqx = int(g.eqx_position_deg // 360)
         cur_rev_aov = int(g.aov_position_deg // 360)
         

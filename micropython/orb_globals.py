@@ -28,5 +28,6 @@ eqx_position_deg = 0.0
 
 # Run tracking
 run_start_time = 0
+run_start_ticks = 0
 run_start_aov_deg = 0.0
 run_start_eqx_deg = 0.0

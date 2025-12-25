@@ -78,28 +78,19 @@ def sync_system_time(rtc):
         print("Sync time failed:", e)
 
 # Global time reference for high-res timestamping
-_time_ref = None
+_time_ref = (time.time(), time.ticks_ms())
 
 def get_timestamp(rtc=None):
     """
     Get high-resolution unix timestamp.
     Pico's time.time() is only 1s resolution. This adds ticks_ms for sub-second precision.
     """
-    global _time_ref
-    if _time_ref is None:
-        # One-time sync: wait for second flip to align ticks to time()
-        start_s = time.time()
-        for _ in range(1000): # Safety timeout (1s)
-            now_s = time.time()
-            if now_s > start_s:
-                _time_ref = (now_s, time.ticks_ms())
-                break
-            time.sleep_ms(1)
-        if _time_ref is None:
-            _time_ref = (time.time(), time.ticks_ms())
-            
     base_s, base_ms = _time_ref
-    return base_s + time.ticks_diff(time.ticks_ms(), base_ms) / 1000.0
+    
+    diff_ms = time.ticks_diff(time.ticks_ms(), base_ms)
+    elapsed_s = diff_ms / 1000.0
+    
+    return base_s + elapsed_s
 
 def set_datetime(year, month, day, hour, minute, second, rtc=None):
     """Set the RTC and system time."""
