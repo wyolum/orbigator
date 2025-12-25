@@ -29,7 +29,13 @@ You must use crimp pins made specifically for the GH series (26-30 AWG).
 - **Verified Link**: [DigiKey - SSHL-002T-P0.2](https://www.digikey.com/en/products/detail/jst-sales-america-inc/SSHL-002T-P0.2-608779/608779)
 - **Important**: Crimp them onto your wires with a proper tool — do not solder directly to the housing.
 
-### 3. Matching Servo Cable Assemblies
+### 3. JST-GH PCB Mounting Headers
+If you are designing your own PCB or breakout board, use these SMT headers to mate with the servo cables.
+- **Top Entry (Vertical)**: [JST BM03B-GHS-TBT](https://www.digikey.com/en/products/detail/jst-sales-america-inc/BM03B-GHS-TBT/807833)
+- **Side Entry (Horizontal)**: [JST SM03B-GHS-TBT](https://www.digikey.com/en/products/detail/jst-sales-america-inc/SM03B-GHS-TBT/807831)
+- **Note**: These are SMT (Surface Mount) components. Through-hole versions are not standard for the GH series.
+
+### 4. Matching Servo Cable Assemblies
 Pre-assembled 3-wire GH connector cables (often sold as Robotis servo harnesses).
 - **Example**: [Robotis 500mm Extension Cable](https://www.robotis.us/robot-cable-wp-500mm-extension-cable/)
 - **Robotis P/N**: Robot Cable-WP 3P 500mm
