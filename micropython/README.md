@@ -2,42 +2,50 @@
 
 This directory contains the firmware for the Orbigator orbital mechanics simulator project running on a Raspberry Pi Pico 2.
 
-## Main Firmware
+## Main Firmware Architecture
 
-### `orbigator.py`
-The main application file. Implements a 4-state orbital simulator:
+The firmware uses a mode-based architecture for clean UI state management and precise orbital tracking.
 
-- **State 0: Set Altitude**
-  - Adjust orbital altitude from 200km to 2000km (10km increments)
-  - Displays computed orbital period
-- **State 1: Set EQX (Longitude of Ascending Node)**
-  - Adjust EQX angle (1° increments)
-  - Motor moves to position (shortest path)
-- **State 2: Set AOV (Argument of Vertex/True Anomaly)**
-  - Adjust AOV angle (1° increments)
-  - Motor moves to position (shortest path)
-- **State 3: RUN Simulation**
-  - Simulates orbital motion in real-time
-  - **AOV Motor**: Rotates at orbital period rate (1 rev / period)
-  - **EQX Motor**: Rotates at precession rate (J2 perturbation + Earth rotation)
-  - Motors auto-power-off after 250ms idle to save power
+### Core Modules
+- **`orbigator.py`**: The main entry point. Initializes hardware (motors, display, RTC, encoder) and runs the main event loop.
+- **`modes.py`**: Defines the UI states (Orbit, Menu, Setting Editors).
+- **`orb_utils.py`**: Core logic for orbital mechanics (Kepler's Laws, J2 Precession), persistence, and motor position reconstruction.
+- **`orb_globals.py`**: Central hub for shared state to break circular dependencies.
+- **`dynamixel_motor.py`**: Abstraction layer for DYNAMIXEL XL330-M288-T motors.
 
-**Controls:**
-- **Encoder**: Adjust values / positions
-- **Button**: Cycle through states (0 -> 1 -> 2 -> 3 -> 0)
+## Key Features
 
-## Test & Utility Files
+### 1. Robust State Persistence
+The system saves its orbital state (altitude, inclination, absolute motor positions, and timestamp) to `orbigator_config.json`.
+- **Flash Protection**: To prevent flash wear, saves only occur when a motor completes a full 360° revolution.
+- **Absolute Reconstruction**: On boot, the system reads the raw 0-4095 position from the DYNAMIXEL motors and reconstructs their multi-turn absolute position based on the last saved state.
 
-- **`button_test.py`**: Tests the encoder rotation and button press. Useful for verifying wiring.
-- **`confirm_back_test.py`**: Tests the dedicated CONFIRM (GP26) and BACK (GP27) buttons.
-- **`lan_aov_toggle_integration_test.py`**: Earlier integration test with a 3-state system (EQX control, AOV control, Continuous run).
+### 2. Intelligent Catch-up
+On startup, the system:
+1. Calculates the time elapsed since the last save using the DS3231 RTC.
+2. Determines the new target orbital positions.
+3. Performs a **shortest-path catch-up move** (max 180°) at a safe speed limit to snap the system into the current real-time state.
 
-## Hardware Pinout
+### 3. Hardware Safety
+- **Speed Caps**: All motors are strictly capped at a **Safety Maximum speed of 10** (Profile Velocity) to prevent mechanical damage or magnets flying off.
+- **Soft Limits**: The UI ensures parameters stay within realistic bounds (e.g., altitude 200km - 2000km).
 
-**Motors:**
-- **EQX (DRV8834)**: STEP=GP14, DIR=GP15, nSLEEP=GP12, nENBL=GP13, M0=GP10, M1=GP11
-- **AOV (ULN2003)**: IN1=GP2, IN2=GP3, IN3=GP22, IN4=GP26
+## User Interface (UI)
+- **Time Display**: Zulu/UTC format (e.g., `13:24:11Z`).
+- **Rotary Encoder**: 
+  - **Clockwise**: Navigate Down / Increase Value / Nudge Forward.
+  - **Counter-Clockwise**: Navigate Up / Decrease Value / Nudge Backward.
+- **Button**: Use the encoder press to toggle targets (AoV vs EQX) or confirm selections.
+- **Safety**: The 'Confirm' button is disabled during Orbiting mode to prevent accidental interruptions.
 
-**User Interface:**
-- **Encoder**: A=GP6, B=GP7, SW=GP8 (all pull-ups)
-- **OLED**: I2C0 SDA=GP4, SCL=GP5 (SH1106 or SSD1306)
+## Hardware Configuration
+- **DYNAMIXEL EQX (ID 1)**: Rotates the orbital plane (10.909:1 gear ratio).
+- **DYNAMIXEL AoV (ID 2)**: Direct-drive for satellite position.
+- **Buffer**: 74HC126 for half-duplex UART communication.
+- **RTC**: DS3231 for accurate timekeeping.
+
+## Uploading Firmware
+Use `mpremote` or Thonny to upload the entire contents of this directory to your Pico 2.
+```bash
+mpremote fs cp orb_globals.py orb_utils.py modes.py dynamixel_motor.py orbigator.py :
+```
