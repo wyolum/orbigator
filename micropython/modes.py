@@ -498,13 +498,30 @@ class MotorEditorMode(Mode):
         disp.fill(0)
         disp.text(self.label, 0, 0)
         norm_pos = (self.pos + 180) % 360 - 180
-        pos_str = f"{norm_pos:.1f} deg"
-        w = len(pos_str) * 8
-        disp.fb.fill_rect(20, 24, w+4, 10, 1)
-        disp.fb.text(pos_str, 22, 25, 0)
         
-        mode_str = "Coarse (1.0)" if self.step_size == 1.0 else "Fine (0.1)"
-        disp.text(mode_str, 0, 40)
+        # Split into whole degrees and tenths
+        whole = int(norm_pos)
+        tenths = int(abs(norm_pos * 10) % 10)
+        
+        # Format strings
+        whole_str = f"{whole:4d}"
+        tenths_str = f".{tenths}"
+        
+        # Display with selective inversion
+        x_pos = 20
+        if self.step_size == 1.0:  # Coarse mode - highlight whole degrees
+            w = len(whole_str) * 8
+            disp.fb.fill_rect(x_pos, 24, w, 10, 1)
+            disp.fb.text(whole_str, x_pos, 25, 0)
+            disp.text(tenths_str, x_pos + w, 25)
+        else:  # Fine mode - highlight tenths
+            disp.text(whole_str, x_pos, 25)
+            w_whole = len(whole_str) * 8
+            w_tenths = len(tenths_str) * 8
+            disp.fb.fill_rect(x_pos + w_whole, 24, w_tenths, 10, 1)
+            disp.fb.text(tenths_str, x_pos + w_whole, 25, 0)
+        
+        disp.text("deg", x_pos + len(whole_str) * 8 + len(tenths_str) * 8 + 4, 25)
         
         disp.text("Dial to Move Motor", 0, 45)
         disp.text("Confirm to Save", 0, 56)
