@@ -31,8 +31,8 @@ You must use crimp pins made specifically for the GH series (26-30 AWG).
 
 ### 3. JST-GH PCB Mounting Headers
 If you are designing your own PCB or breakout board, use these SMT headers to mate with the servo cables.
-- **Top Entry (Vertical)**: [JST BM03B-GHS-TBT](https://www.mouser.com/ProductDetail/JST-Commercial/BM03B-GHS-TBT-LF-SN?qs=QpmGXVUTftEnIxI4wR66yA%3D%3D)
-- **Side Entry (Horizontal)**: [JST SM03B-GHS-TB](https://www.mouser.com/ProductDetail/JST-Commercial/SM03B-GHS-TB-LF-SN?qs=QpmGXVUTftHjNxI4wR66yA%3D%3D)
+- **Top Entry (Vertical)**: [JST BM03B-GHS-TBT](https://www.mouser.com/ProductDetail/JST/BM03B-GHS-TBT-LF-SN)
+- **Side Entry (Horizontal)**: [JST SM03B-GHS-TB](https://www.mouser.com/ProductDetail/JST/SM03B-GHS-TB-LF-SN)
 - **Note**: These are SMT (Surface Mount) components. Through-hole versions are not standard for the GH series.
 
 ### 4. Matching Servo Cable Assemblies
