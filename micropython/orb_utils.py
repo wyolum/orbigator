@@ -64,6 +64,123 @@ def compute_motor_rates(altitude_km):
     eqx_deg_per_sec = eqx_rate_deg_day / 86400.0
     return aov_deg_per_sec, eqx_deg_per_sec, eqx_rate_deg_day, period_min
 
+# ============ Elliptical Orbit Support ============
+
+def solve_kepler_equation(mean_anomaly, eccentricity, tolerance=1e-6, max_iterations=10):
+    """
+    Solve Kepler's equation for eccentric anomaly using Newton-Raphson iteration.
+    
+    Kepler's equation: M = E - e*sin(E)
+    Where: M = mean anomaly, E = eccentric anomaly, e = eccentricity
+    
+    Args:
+        mean_anomaly: Mean anomaly in radians
+        eccentricity: Orbital eccentricity (0.0 = circular, 0.9 = highly elliptical)
+        tolerance: Convergence tolerance (default 1e-6)
+        max_iterations: Maximum iterations (default 10)
+    
+    Returns:
+        Eccentric anomaly in radians
+    """
+    # Initial guess: E = M
+    E = mean_anomaly
+    
+    for _ in range(max_iterations):
+        # Newton-Raphson: E_new = E - f(E)/f'(E)
+        # f(E) = E - e*sin(E) - M
+        # f'(E) = 1 - e*cos(E)
+        sin_E = math.sin(E)
+        cos_E = math.cos(E)
+        f = E - eccentricity * sin_E - mean_anomaly
+        f_prime = 1.0 - eccentricity * cos_E
+        
+        E_new = E - f / f_prime
+        
+        # Check convergence
+        if abs(E_new - E) < tolerance:
+            return E_new
+        
+        E = E_new
+    
+    # Return best estimate if not converged
+    return E
+
+def compute_true_anomaly(eccentric_anomaly, eccentricity):
+    """
+    Compute true anomaly from eccentric anomaly.
+    
+    Args:
+        eccentric_anomaly: Eccentric anomaly in radians
+        eccentricity: Orbital eccentricity
+    
+    Returns:
+        True anomaly in radians
+    """
+    # tan(ν/2) = sqrt((1+e)/(1-e)) * tan(E/2)
+    sqrt_term = math.sqrt((1.0 + eccentricity) / (1.0 - eccentricity))
+    true_anomaly = 2.0 * math.atan(sqrt_term * math.tan(eccentric_anomaly / 2.0))
+    return true_anomaly
+
+def compute_orbital_radius(semi_major_axis, eccentricity, true_anomaly):
+    """
+    Compute orbital radius at given true anomaly.
+    
+    Args:
+        semi_major_axis: Semi-major axis in km
+        eccentricity: Orbital eccentricity
+        true_anomaly: True anomaly in radians
+    
+    Returns:
+        Orbital radius in km
+    """
+    # r = a(1 - e²) / (1 + e*cos(ν))
+    numerator = semi_major_axis * (1.0 - eccentricity**2)
+    denominator = 1.0 + eccentricity * math.cos(true_anomaly)
+    return numerator / denominator
+
+def compute_elliptical_position(elapsed_sec, period_sec, eccentricity, periapsis_deg):
+    """
+    Compute orbital position for elliptical orbit.
+    
+    Args:
+        elapsed_sec: Time since periapsis passage (seconds)
+        period_sec: Orbital period (seconds)
+        eccentricity: Orbital eccentricity (0.0 to 0.9)
+        periapsis_deg: Argument of periapsis (degrees, 0-360)
+    
+    Returns:
+        Tuple of (aov_position_deg, instantaneous_rate_deg_sec)
+    """
+    if eccentricity < 0.001:  # Treat as circular for very small eccentricity
+        # Simple circular motion
+        mean_motion = 2.0 * math.pi / period_sec  # rad/s
+        aov_position_deg = math.degrees(mean_motion * elapsed_sec) + periapsis_deg
+        rate_deg_sec = 360.0 / period_sec
+        return aov_position_deg % 360.0, rate_deg_sec
+    
+    # Compute mean anomaly (angle if orbit were circular)
+    mean_motion = 2.0 * math.pi / period_sec  # rad/s
+    mean_anomaly = mean_motion * elapsed_sec  # radians
+    
+    # Solve Kepler's equation for eccentric anomaly
+    eccentric_anomaly = solve_kepler_equation(mean_anomaly, eccentricity)
+    
+    # Compute true anomaly (actual angle in orbit)
+    true_anomaly = compute_true_anomaly(eccentric_anomaly, eccentricity)
+    
+    # Convert to degrees and add periapsis offset
+    aov_position_deg = (math.degrees(true_anomaly) + periapsis_deg) % 360.0
+    
+    # Compute instantaneous angular velocity
+    # For elliptical orbits: dν/dt = (n * sqrt(1-e²)) / (1 + e*cos(ν))²
+    # where n = mean motion
+    cos_nu = math.cos(true_anomaly)
+    denominator = (1.0 + eccentricity * cos_nu)**2
+    angular_velocity = (mean_motion * math.sqrt(1.0 - eccentricity**2)) / denominator
+    rate_deg_sec = math.degrees(angular_velocity)
+    
+    return aov_position_deg, rate_deg_sec
+
 def sync_system_time(rtc):
     """Sync the Pico internal clock to the external RTC."""
     try:
@@ -117,6 +234,8 @@ def save_state():
         config = {
             "altitude_km": g.orbital_altitude_km,
             "inclination_deg": g.orbital_inclination_deg,
+            "eccentricity": g.orbital_eccentricity,
+            "periapsis_deg": g.orbital_periapsis_deg,
             "eqx_deg": g.eqx_position_deg,
             "aov_deg": g.aov_position_deg,
             "timestamp": now
@@ -135,6 +254,8 @@ def load_state():
         
         g.orbital_altitude_km = config.get("altitude_km", 400.0)
         g.orbital_inclination_deg = config.get("inclination_deg", 51.6)
+        g.orbital_eccentricity = config.get("eccentricity", 0.0)
+        g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
         
         # Reconstruct absolute positions
         last_eqx_deg = config.get("eqx_deg", 0.0)

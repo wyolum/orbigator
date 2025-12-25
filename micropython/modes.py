@@ -162,7 +162,20 @@ class OrbitMode(Mode):
         now_ticks = time.ticks_ms()
         elapsed = time.ticks_diff(now_ticks, g.run_start_ticks) / 1000.0
         
-        g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)
+        # Compute AoV position (supports elliptical orbits)
+        if g.orbital_eccentricity > 0.001:
+            # Elliptical orbit: use Kepler's equation
+            period_sec = g.orbital_period_min * 60.0
+            aov_pos, aov_rate = utils.compute_elliptical_position(
+                elapsed, period_sec, g.orbital_eccentricity, g.orbital_periapsis_deg
+            )
+            g.aov_position_deg = g.run_start_aov_deg + aov_pos
+            g.aov_rate_deg_sec = aov_rate  # Update instantaneous rate for display
+        else:
+            # Circular orbit: simple constant velocity
+            g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)
+        
+        # EQX always uses constant velocity (Earth rotation + J2 precession)
         g.eqx_position_deg = g.run_start_eqx_deg + (g.eqx_rate_deg_sec * elapsed)
         
         if g.aov_motor:
@@ -312,7 +325,7 @@ class SettingsMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Zulu Time", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -326,14 +339,18 @@ class SettingsMode(Mode):
         elif self.selection == 1:
             return InclinationEditorMode()
         elif self.selection == 2:
-            return DatetimeEditorMode()
+            return EccentricityEditorMode()
         elif self.selection == 3:
+            return PeriapsisEditorMode()
+        elif self.selection == 4:
+            return DatetimeEditorMode()
+        elif self.selection == 5:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 4:
+        elif self.selection == 6:
             return MenuMode()
         return None
     
@@ -546,6 +563,78 @@ class MotorEditorMode(Mode):
         
         disp.text("Dial to Move Motor", 0, 45)
         disp.text("Confirm to Save", 0, 56)
+        disp.show()
+
+class EccentricityEditorMode(Mode):
+    """Editor for orbital eccentricity."""
+    def __init__(self):
+        # Store as 100x integer for 0.01 precision (0 to 90 = 0.00 to 0.90)
+        self.ecc_x100 = int(g.orbital_eccentricity * 100)
+        
+    def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
+        d = delta  # CW = increase
+        # Range 0 to 90 (0.00 to 0.90)
+        self.ecc_x100 = max(0, min(90, self.ecc_x100 + d))
+        
+    def on_confirm(self):
+        g.orbital_eccentricity = float(self.ecc_x100) / 100.0
+        utils.save_state()
+        return SettingsMode()
+        
+    def on_back(self):
+        return SettingsMode()
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET ECCENTRICITY", 0, 0)
+        ecc = float(self.ecc_x100) / 100.0
+        ecc_str = f"{ecc:.2f}"
+        w = len(ecc_str) * 8
+        disp.fb.fill_rect(40, 24, w+4, 10, 1)
+        disp.fb.text(ecc_str, 42, 25, 0)
+        
+        # Show orbit type
+        if ecc < 0.01:
+            orbit_type = "Circular"
+        elif ecc < 0.3:
+            orbit_type = "Elliptical"
+        else:
+            orbit_type = "Highly Ellip"
+        disp.text(orbit_type, 30, 40)
+        
+        disp.text("Step: 0.01", 10, 50)
+        disp.text("Confirm to Save", 0, 58)
+        disp.show()
+
+class PeriapsisEditorMode(Mode):
+    """Editor for argument of periapsis."""
+    def __init__(self):
+        self.periapsis = int(g.orbital_periapsis_deg)
+        
+    def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
+        d = delta * 5  # CW = increase, 5 degree steps
+        self.periapsis = (self.periapsis + d) % 360
+        
+    def on_confirm(self):
+        g.orbital_periapsis_deg = float(self.periapsis)
+        utils.save_state()
+        return SettingsMode()
+        
+    def on_back(self):
+        return SettingsMode()
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET PERIAPSIS", 0, 0)
+        per_str = f"{self.periapsis} deg"
+        w = len(per_str) * 8
+        disp.fb.fill_rect(30, 24, w+4, 10, 1)
+        disp.fb.text(per_str, 32, 25, 0)
+        disp.text("(Closest point)", 10, 40)
+        disp.text("Step: 5 deg", 10, 50)
+        disp.text("Confirm to Save", 0, 58)
         disp.show()
 
 class MotorOfflineMode(Mode):

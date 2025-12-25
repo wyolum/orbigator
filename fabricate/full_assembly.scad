@@ -322,21 +322,13 @@ module aov_motor_assy(inc, aov){
     }
   }
 }
-/*
-  difference(){
-  outside_box();
-  translate([0,0,-4])scale([.98, .98, 1])outside_box();
-  sphere(d=globe_d+2);
-}
-*/
-//translate([170, 0, -150])rotate([0,10,0])main_assy();
 module inside_box(){
   hull(){
     color("red")translate([0,-40,-174])side_panel();
     color("red")translate([0, 40,-174])side_panel();
   }
 }
-module outside_box(){
+module display_assy(){
   difference(){
     minkowski(){
       inside_box();
@@ -359,7 +351,6 @@ module side_panel(){
     //polygon([[40, 2], [40, 29], [130, 29], [199, 17], [199, 2]]);
     polygon([[40, 2], [40, 29], [130-50, 29], [199-50, 17], [199-50, 2]]);
 }
-//outside_box();
 module display_panel(){
   rotate([0,0,0])translate([globe_d/2+5,0,24])rotate([0, 10, 0]){
     difference(){
@@ -374,9 +365,11 @@ if(false){
   color("cornflowerblue")Ring();
   eqx_motor_assy();
   color("lightslategrey")base_with_1010_hole();
+  //display_assy();
   //aov_motor_assy(65, 350);
   //color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
   //color("black")translate([0,0,-100])cube([10, 10, 150], center=true);
+  //globe();
 }
 else{
   //Ring();
@@ -387,12 +380,21 @@ else{
  }
 
 module globe(){
-  color("blue", alpha=.3)
+  color("blue", alpha=.1)
     difference(){
     sphere(d=globe_d);
     sphere(d=globe_d - 4);
     translate([-500, -500, -150-100])cube([1000, 1000, 100]);
   }
 }
-color("lightslategrey")base_with_1010_hole();
-outside_box();
+module south_pole(){
+  color("purple")
+    difference(){
+    sphere(d=globe_d);
+    translate([-500, -500, -150])cube([1000, 1000, 1000]);
+    translate([0,0,-400])cylinder(r=50, h=1000);
+    scale([1.01, 1.01, 1])Ring();
+  }
+}
+south_pole();
+//globe();
