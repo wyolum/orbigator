@@ -49,23 +49,30 @@ module idler_gear(){
 }
 //idler_gear();
 
-// 2) Generate a 6-tooth spur gear:
-module drive_gear(){
+// 2) Generate a spur gear:
+module drive_gear(shaft_diam=5.4){
   color("grey")
     difference(){
     union(){
       rotate([0, 0, 0])
-	spur_gear(circ_pitch=pitch, teeth=n, thickness=h, shaft_diam=5.3,
+	spur_gear(circ_pitch=pitch, teeth=n, thickness=h,
+		  shaft_diam=shaft_diam,
 		  herringbone=false, helical=0);
       //color("grey")translate([0, 0, -h/2-3])cylinder(d=30, h=3);
-      translate([0, -2.25, 0])
-	color("black")cube([5, 1, h], center=true);
+      translate([0, -2.30, 1])
+	color("black")cube([5, 1, h+2], center=true);
+      translate([0,0,h/2])difference(){
+	cylinder(r=8, h=2);
+	translate([0,0,-1])cylinder(d=shaft_diam, h=4);
+      }
     }
-    rotate([0, 0, 233])translate([2.5, 0, -50])cylinder(d=1, h=100);
+    rotate([0, 0, 220])translate([2.5, 0, -50])cylinder(d=1, h=100);
     mirror([1, 0, 0])
-      rotate([0, 0, 233])translate([2.5, 0, -50])cylinder(d=1, h=100);
-    translate([0, 0,.76])cylinder(d1=0, d2=6.5, h=3.25);
-    translate([0, 0,-4.1])cylinder(d2=0, d1=6.5, h=3.25);
+      rotate([0, 0, 220])translate([2.5, 0, -50])cylinder(d=1, h=100);
+    translate([0, 0,2.76])cylinder(d1=0 + shaft_diam - 5.3,
+				   d2=6.5 + shaft_diam - 5.3, h=3.25);
+    translate([0, 0,-4.1])cylinder(d2=0 + shaft_diam - 5.3,
+				   d1=6.5 + shaft_diam - 5.3, h=3.25);
   }
   //cylinder(d=8, h=20);
 }
@@ -86,7 +93,7 @@ module Ring(){
   difference(){
     for(theta = [0, 90, 180, 270]){
       rotate([0, 0, theta])
-	translate([R+2.25, 0, -155])cylinder(d=4, h=9, $fn=4);
+	translate([R+2.25, 0, -155])cylinder(d=4, h=6, $fn=4);
     }
     cylinder(r=R+2.25, h=350, center=true);
   }
@@ -99,7 +106,7 @@ module Ring(){
     }
     
     difference(){
-      ring_gear(circ_pitch=pitch,teeth=N,thickness=h);
+      translate([0,0,-2])ring_gear(circ_pitch=pitch,teeth=N,thickness=6);
       translate([0,0,-5])cylinder(r1=r+7.5, r2=r+7.5-5 , h=5);
     }
     
@@ -117,7 +124,7 @@ module eqx_motor_assy(){
     //translate([0, r, 17.8 - h/2])nema11();
     translate([0, r, 17.8 - h/2])rotate([0,180,0])dynamixel_xl330();
     translate([0, r, 17.8 - h/2])rotate([0,180,0])dynamixel_drive_shaft();
-    translate([0, r, 0])drive_gear();
+    translate([0, r, -2.8])drive_gear();
   }
 }
 
@@ -154,7 +161,6 @@ module base_arms(){
     rotate([0, 0, theta])base_arm();
   }
 }
-
 
 module base_assy(){
   dd = 23/2;
@@ -205,18 +211,19 @@ module new_base_assy(){
   translate([0,0,-150]){
     difference(){
       union(){
-
-	translate([-22/2, -10, h/2+1])cube([22, 62, 10]);
+	translate([-25/2, -10, h/2+1])cube([25, 45, 10]);
 	translate([-35/2, -10, -hh])cube([35, 25, hh+10]);
 	rotate([0,0,30])gear_support();
 	rotate([0,0,-90])gear_support();
 	rotate([0,0,-210])gear_support();
 	// front post to clamp sun gear
 	translate([0,-r, -24])cylinder(d=10, h=18, center=false);
-	translate([0,-r, -24+18])cylinder(d1=8, d2=8, h=10, center=false);
+	translate([0,-r, -24+18])cylinder(d1=8, d2=8, h=7.1, center=false);
 	
       }
-      translate([0, r, -50])cylinder(d=15, h=100);
+      translate([0, r, -50])cylinder(d=22, h=100);
+      rotate([7, 0, 0])translate([-28/2+2, 15.5, h/2+1-12])cube([28, 70, 10]);
+
     }
     TT = 14;
     if(true){// base enclosure
@@ -236,24 +243,31 @@ module new_base_assy(){
 
 module base_with_1010_hole(){
   dd = 23/2;
+  motor_width = 20;           // Width of motor body
+  motor_depth = 34;           // Depth of motor body
+  motor_height = 23;        // Height of motor body (excluding horn)
+  
   difference(){
     new_base_assy();
-    translate([0, r, 17.8 - h/2-150])rotate([0,180,0])dynamixel_mounting_screws();
+    translate([0, r, 17.8 - h/2-150])
+      rotate([0,180,0])dynamixel_mounting_screws();
 
     cube([10.2, 10.2, 1000],center=true);
     translate([5, 5, 0])cylinder(d=3, h=1000, center=true);
     translate([-5, 5, 0])cylinder(d=3, h=1000, center=true);
     translate([-5, -5, 0])cylinder(d=3, h=1000, center=true);
     translate([5, -5, 0])cylinder(d=3, h=1000, center=true);
-    translate([0, 0, -150 - 19])rotate([0,0,45])
+    translate([0, 0, -150 - 24.1])rotate([0,0,45])
       cylinder(d1=20, d2=0, h=20/2, $fn=4);
     translate([0, 0, -150 + 6])rotate([0,0,45])
       cylinder(d2=20, d1=0, h=20/2, $fn=4);
     translate([0,0,-150]){
-      rotate([-90, 0, 0])cylinder(d=2.5, h=100);
-      translate([0, 8, 0])rotate([-90, 0, 0])cylinder(d=6, h=100);
+      // eqx motor cutout
+      translate([0,34,25])
+	cube([motor_width+.5, motor_depth+1, motor_height], center=true);
+      // hole for t-slot screw to 1010
       translate([0, 0, -13])rotate([-90, 0, 0])cylinder(d=2.5, h=100);
-      translate([0, 8, -13])rotate([-90, 0, 0])cylinder(d=6, h=100);
+      translate([0, 8, -13])rotate([-90, 0, 0])cylinder(d=10, h=100);
 
        // big holes in bottom
        translate([35,0,-50])scale([1,1.7,1])cylinder(d=35, h=100);
@@ -262,7 +276,7 @@ module base_with_1010_hole(){
        translate([15,-35, -50])cylinder(d=20, h=100);
        
        translate([0,-r, -50])cylinder(d=4.5, h=100);
-       translate([0,r, -50])cube([25, 25, 100], center=true);
+       translate([0,r-7, -50])cube([25, 38, 100], center=true);
        translate([0,-r, -30+4])cylinder(d=10, h=5, center=false);
 
        //pivot mount screw hole
@@ -345,7 +359,7 @@ module side_panel(){
     //polygon([[40, 2], [40, 29], [130, 29], [199, 17], [199, 2]]);
     polygon([[40, 2], [40, 29], [130-50, 29], [199-50, 17], [199-50, 2]]);
 }
-outside_box();
+//outside_box();
 module display_panel(){
   rotate([0,0,0])translate([globe_d/2+5,0,24])rotate([0, 10, 0]){
     difference(){
@@ -354,13 +368,15 @@ module display_panel(){
     }
   }
 }
-if(true){
+//color("lightslategrey")base_with_1010_hole();
+
+if(false){
   color("cornflowerblue")Ring();
   eqx_motor_assy();
   color("lightslategrey")base_with_1010_hole();
-  aov_motor_assy(65, 350);
-  color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
-  color("black")translate([0,0,-100])cube([10, 10, 150], center=true);
+  //aov_motor_assy(65, 350);
+  //color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+  //color("black")translate([0,0,-100])cube([10, 10, 150], center=true);
 }
 else{
   //Ring();
@@ -378,6 +394,5 @@ module globe(){
     translate([-500, -500, -150-100])cube([1000, 1000, 100]);
   }
 }
-  
-
-globe();
+color("lightslategrey")base_with_1010_hole();
+outside_box();

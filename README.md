@@ -8,6 +8,21 @@ Orbigator is a small, open‑source device that physically demonstrates how a sa
 
 The system computes orbital mechanics using Kepler's laws and J2 perturbation effects to determine the satellite's instantaneous position. By controlling two motors—one for the Equator crossing (LAN) and one for the Argument of Vehicle (AoV)—Orbigator accurately tracks orbital motion including precession effects.
 
+## Recent Milestone (Dec 2025): Persistence & Catch-up
+
+The project has recently been upgraded with robust state management to ensure it stays in sync with real-time orbits even across power cycles.
+
+- **Revolution-Based Persistence**: To protect the Pico 2 flash from wear, the system now saves its orbital state exactly once per full motor revolution (360° or 4096 ticks).
+- **Shortest-Path Catch-up**: On boot, the system checks the DS3231 RTC. If a gap is detected, it calculates the "lost" orbital distance and performs a "chase" move.
+  - **Optimization**: The chase always takes the shortest path (max 180° move) to snap to the current target phase.
+  - **Hardware Re-Anchoring**: Automatic reconstruction of absolute turn counts from raw motor readings (0-4095 range) on startup.
+- **Dynamic Orbital Inclination**: The orbital plane precession (J2 effect) now accounts for user-settable inclination (0.1° precision), allowing accurate tracking of ISS, Polar, or Sun-Sync orbits.
+- **Hardware Safety & UI Refinements**: 
+  - All motors are strictly capped at a **Safety Maximum speed of 10**.
+  - Time is represented in **Zulu format** (e.g., `13:24:11Z`).
+  - Consistent dial logic (Clockwise = Navigate Down / Increase Value).
+  - Safety buttons: "Confirm" is disabled during tracking to prevent accidental mode exits.
+
 ## How It Works
 
 At its core, Orbigator combines open hardware and open software:
@@ -22,7 +37,7 @@ At its core, Orbigator combines open hardware and open software:
 
 - **Electrical interface** – The circuit uses a 74HC126 tri-state buffer for half-duplex UART communication with the DYNAMIXEL motors. Complete wiring diagrams are in `ORBIGATOR_PIN_ASSIGNMENTS.txt` and `ORBIGATOR_CIRCUIT_DIAGRAM.txt`. A KiCad-compatible netlist is provided in `orbigator_kicad_netlist.py`.
 
-- **User interface** – An OLED display (SH1106/SSD1306) and rotary encoder allow interactive parameter adjustment. A DS3231 RTC maintains accurate timekeeping for orbital propagation.
+- **User interface** – An OLED display (SH1106) and rotary encoder allow interactive parameter adjustment via a mode-based menu system. A DS3231 RTC maintains accurate timekeeping for orbital propagation.
 
 ### Example Assembly
 
@@ -42,7 +57,7 @@ At its core, Orbigator combines open hardware and open software:
 
 | Directory | Contents |
 |-----------|----------|
-| `micropython/` | MicroPython firmware including `orbigator.py` (main control), `dynamixel_motor.py` (motor driver), and utility scripts |
+| `micropython/` | MicroPython firmware including `orbigator.py` (main), `modes.py` (UI), `orb_utils.py` (logic), `dynamixel_motor.py` (driver) |
 | `fabricate/` | OpenSCAD source files for 3D printing mechanical components, including full assembly and individual parts |
 | `schematics/` | SVG drawings of gears, motor mounts and the equatorial base used for fabrication |
 | `images/` | Renderings and fabrication drawings used in this README |
@@ -52,17 +67,17 @@ At its core, Orbigator combines open hardware and open software:
 - **`ORBIGATOR_PIN_ASSIGNMENTS.txt`** - Complete GPIO pin assignments for Pico 2
 - **`ORBIGATOR_CIRCUIT_DIAGRAM.txt`** - ASCII circuit diagram showing all connections
 - **`orbigator_kicad_netlist.py`** - KiCad-compatible netlist for schematic creation
-- **`README_DYNAMIXEL_MOTORS.md`** - Quick start guide for DYNAMIXEL motor setup
-- **`EXTENDED_POSITION_MODE_GUIDE.md`** - Best practices for Extended Position Mode
-- **`pins.py`** - Python module with pin definitions for easy import
+- **`DYNAMIXEL_DRYLAB_SETUP.md`** - Comprehensive guide to motor configuration and wiring
+- **`EXTENDED_POSITION_MODE_GUIDE.md`** - Best practices for continuous rotation
+- **`SPEED_LIMIT_QUICKREF.md`** - Critical safety guidelines for motor speeds
 
 ## Getting Started
 
-1. **Review the wiring** - Start with `ORBIGATOR_PIN_ASSIGNMENTS.txt` for complete pin assignments
-2. **Configure motor IDs** - Use `micropython/dynamixel_setup.py` to set motor IDs (1 for EQX, 2 for AoV)
-3. **Upload firmware** - Copy `micropython/orbigator.py` and dependencies to your Pico 2
-4. **Assemble mechanics** - 3D print parts from `fabricate/` directory
-5. **Test and calibrate** - Run the interactive setup to configure orbital parameters
+1. **Review the wiring** - Start with `ORBIGATOR_PIN_ASSIGNMENTS.txt`
+2. **Configure motor IDs** - Set unique IDs (1 for EQX, 2 for AoV)
+3. **Upload firmware** - Copy the `micropython/` directory to your Pico 2
+4. **Sync Time** - Use `mpremote setrtc` to initialize the onboard clock
+5. **Calibrate** - Run `orbigator.py` and set your preferred altitude and period via the menu
 
 ## Why Analog?
 
@@ -70,7 +85,7 @@ Learning about orbital mechanics can be abstract when done purely on a screen. S
 
 ## Contributing
 
-Contributions are welcome! Feel free to open issues or pull requests to improve the design, firmware or documentation. Ideas for supporting multiple satellites or automating TLE updates would be especially appreciated.
+Contributions are welcome! Feel free to open issues or pull requests to improve the design, firmware or documentation.
 
 ## License
 

@@ -43,8 +43,11 @@ def compute_altitude_from_period(period_min):
     altitude = a - EARTH_RADIUS
     return altitude, a
 
-def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
+def compute_eqx_rate_j2(altitude_km, inclination_deg=None):
     """Compute EQX rate in Earth-fixed frame (deg/day)."""
+    if inclination_deg is None:
+        inclination_deg = g.orbital_inclination_deg
+        
     a = altitude_km + EARTH_RADIUS
     inc_rad = math.radians(inclination_deg)
     n = math.sqrt(EARTH_MU / (a**3))
@@ -85,18 +88,9 @@ def get_timestamp(rtc=None):
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
     try:
-        # Get absolute ticks from motors if possible
-        eqx_ticks = 0
-        aov_ticks = 0
-        if g.eqx_motor: 
-            val = g.eqx_motor.get_angle_degrees() # This might be degrees, we need ticks
-            # Better to use the raw tick count for persistence if available
-            # However, Orbigator's DynamixelMotor class stores degrees.
-            # Let's ensure OrbitMode updates g.eqx_position_deg and g.aov_position_deg
-            pass
-
         config = {
             "altitude_km": g.orbital_altitude_km,
+            "inclination_deg": g.orbital_inclination_deg,
             "eqx_deg": g.eqx_position_deg,
             "aov_deg": g.aov_position_deg,
             "timestamp": get_timestamp(g.rtc)
@@ -114,22 +108,14 @@ def load_state():
             config = json.load(f)
         
         g.orbital_altitude_km = config.get("altitude_km", 400.0)
+        g.orbital_inclination_deg = config.get("inclination_deg", 51.6)
         
         # Reconstruct absolute positions
         last_eqx_deg = config.get("eqx_deg", 0.0)
         last_aov_deg = config.get("aov_deg", 0.0)
         
-        # Convert degrees to ticks for reconstruction
-        # (Assuming 4096 ticks per motor revolution, ignoring gear ratio for absolute motor state)
-        # Gear ratio is handled in the motor class, but persistence is usually absolute motor pos
-        
         if g.eqx_motor:
-            # Read current hardware ticks (0-4095)
-            # We need a way to read raw ticks. If not in the class, we use degrees modulo 360.
             current_raw_deg = g.eqx_motor.get_angle_degrees() % 360
-            last_raw_deg = last_eqx_deg % 360
-            
-            # Reconstruction logic in degrees (closest-match rev)
             revs = int(last_eqx_deg // 360)
             candidates = [
                 (revs - 1) * 360 + current_raw_deg,
@@ -137,11 +123,15 @@ def load_state():
                 (revs + 1) * 360 + current_raw_deg
             ]
             g.eqx_position_deg = min(candidates, key=lambda x: abs(x - last_eqx_deg))
+            
+            # Sync back to motor object
+            g.eqx_motor.output_degrees = g.eqx_position_deg
+            g.eqx_motor.motor_degrees = g.eqx_position_deg * g.eqx_motor.gear_ratio
+            
             print(f"  EQX: Saved={last_eqx_deg:.2f}, RawNow={current_raw_deg:.2f}, Final={g.eqx_position_deg:.2f}")
             
         if g.aov_motor:
             current_raw_deg = g.aov_motor.get_angle_degrees() % 360
-            # Reconstruction logic for AoV
             revs = int(last_aov_deg // 360)
             candidates = [
                 (revs - 1) * 360 + current_raw_deg,
@@ -149,6 +139,11 @@ def load_state():
                 (revs + 1) * 360 + current_raw_deg
             ]
             g.aov_position_deg = min(candidates, key=lambda x: abs(x - last_aov_deg))
+            
+            # Sync back to motor object
+            g.aov_motor.output_degrees = g.aov_position_deg
+            g.aov_motor.motor_degrees = g.aov_position_deg * g.aov_motor.gear_ratio
+            
             print(f"  AoV: Saved={last_aov_deg:.2f}, RawNow={current_raw_deg:.2f}, Final={g.aov_position_deg:.2f}")
 
         print("State loaded and positions reconstructed.")

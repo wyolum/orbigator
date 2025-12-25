@@ -15,6 +15,7 @@ disp = None
 # Orbital parameters
 orbital_altitude_km = 400.0
 orbital_period_min = 92.0
+orbital_inclination_deg = 51.6
 
 # Motor rates
 aov_rate_deg_sec = 0.0

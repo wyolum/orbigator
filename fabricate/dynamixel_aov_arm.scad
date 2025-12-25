@@ -49,7 +49,7 @@ module penny_compartment(offset_distance, angle=0, height) {
       // Penny cavity
       translate([0, 0, -2])
         translate([-offset_distance, 0, 0])
-          cylinder(d=penny_d, h=height);
+          cylinder(d=penny_d, h=height*2);
       // Inner clearance
       translate([0, 0, -2])
         translate([-offset_distance, 0, 0])
@@ -66,14 +66,14 @@ module aov_arm() {
         
         // Arm extending to globe edge
         hull() {
-          cylinder(d=arm_base_diameter, h=arm_height);
+          cylinder(d=arm_base_diameter+2, h=arm_height);
           translate([globe_ir - 1, -2, 0])
             cube([0.1, 4, arm_height]);
         }
         
         // Arm extending to counterweight
         hull() {
-          cylinder(d=arm_base_diameter, h=arm_height);
+          cylinder(d=arm_base_diameter+2, h=arm_height);
           translate([-penny_radius + 5, -2, 0])
             cube([0.1, 4, arm_height]);
         }
@@ -85,13 +85,17 @@ module aov_arm() {
           penny_compartment(penny_radius, -penny_angle, penny_compartment_height);
       }
       
-      // Mounting holes for motor horn (4 holes at 45° intervals)
+      // Mounting holes for motor horn (4 holes at 90° intervals)
       // These align with horn_mount_holes from dynamixel_motor.scad
       for(i = [1:4]) {
-        rotate([0, 0, 45 + 90 * i])
-          translate([6, 0, -1])  // 6mm = horn_mount_radius
-            cylinder(d=2, h=30, $fn=30);  // Slightly larger than horn_mount_hole_dia (2mm)
+        rotate([0, 0, 90 * i])
+          translate([6, 0, -1]){  // 6mm = horn_mount_radius
+            cylinder(d=2.4, h=30, $fn=30);  // Slightly larger than horn_mount_hole_dia (2mm)
+	    translate([0,0,3.5])cylinder(d1=2.4, d2=3, h=1, $fn=30);  // Slightly larger than horn_mount_hole_dia (2mm)
+	}
       }
+      translate([0,0,3.25])cylinder(d=arm_base_diameter, h=arm_height); // Extra height for screw clearance
+
     }
     
     // Globe engagement feature (partial ring that grips globe)

@@ -37,6 +37,13 @@ kicad/
 - **RTC Backup**: 0.47F supercapacitor with 47Ω charging resistor (recommended)
 - **DATA Bus Pull-up**: 10kΩ resistor to +5V for DYNAMIXEL communication
 
+> **Note for Anool**: For the RTC (DS3231), you can choose between:
+> 1. Using a ChronoDot module breakout (simple pinout connection)
+> 2. Integrating the DS3231 chip directly with battery backup (CR2032)
+> 3. Integrating the DS3231 chip directly with supercapacitor backup (0.47F)
+> 
+> The choice is yours based on board space, cost, and maintenance preferences.
+
 ### Power Requirements
 - **3.3V Rail**: Pico 2, 74HC126, OLED, RTC (low current)
 - **5V Rail**: DYNAMIXEL motors (4-5A external supply required)

@@ -43,7 +43,7 @@ class MenuMode(Mode):
         self.items = ["Orbit!", "Set Period", "Settings"]
     
     def on_encoder_rotate(self, delta):
-        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         print(f"Menu: {self.items[self.selection]}")
     
@@ -137,19 +137,20 @@ class OrbitMode(Mode):
         print(f"Orbit logic active: AoV={g.aov_rate_deg_sec:.6f} deg/s, EQX={g.eqx_rate_deg_sec:.6f} deg/s")
     
     def on_encoder_rotate(self, delta):
+        d = delta # CW = Nudge Forward
         if self.nudge_target == 0:
-            g.run_start_aov_deg += delta * 1.0
-            print(f"AoV nudge: {delta:+.0f} deg")
+            g.run_start_aov_deg += d * 1.0
+            print(f"AoV nudge: {d:+.0f} deg")
         else:
-            g.run_start_eqx_deg += delta * 1.0
-            print(f"EQX nudge: {delta:+.0f} deg")
+            g.run_start_eqx_deg += d * 1.0
+            print(f"EQX nudge: {d:+.0f} deg")
     
     def on_encoder_press(self):
         self.nudge_target = (self.nudge_target + 1) % 2
         print(f"Nudge: {'EQX' if self.nudge_target == 1 else 'AoV'}")
     
     def on_confirm(self):
-        return MenuMode()
+        return None
         
     def on_back(self):
         return MenuMode()
@@ -183,12 +184,12 @@ class OrbitMode(Mode):
         target = "X" if self.nudge_target == 1 else "A"
         disp.text(f"ORBITING  [{target}]", 0, 0)
         
-        # Display UTC if available
-        now_str = "UTC: --:--:--"
+        # Display Zulu time if available
+        now_str = "Zulu: --:--:--Z"
         if g.rtc:
              t = g.rtc.datetime()
              if t:
-                  now_str = "UTC: {:02d}:{:02d}:{:02d}".format(t[4], t[5], t[6])
+                  now_str = "Zulu: {:02d}:{:02d}:{:02d}Z".format(t[4], t[5], t[6])
         disp.text(now_str, 0, 10)
         
         p_min = g.orbital_period_min
@@ -218,8 +219,8 @@ class PeriodEditorMode(Mode):
         self.field = 0 # 0=H, 1=M, 2=S
     
     def on_encoder_rotate(self, delta):
-        # Reverse delta for intuitive "up = increase"
-        d = -delta
+        # Intuitive "up = increase"
+        d = delta
         if self.field == 0:
             self.hh = max(0, min(23, self.hh + d))
         elif self.field == 1:
@@ -295,22 +296,24 @@ class SettingsMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Set Altitude", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
-        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        move = 1 if delta > 0 else -1 if delta < 0 else 0
         self.selection = (self.selection + move) % len(self.items)
         
     def on_confirm(self):
         if self.selection == 0:
             return AltitudeEditorMode()
         elif self.selection == 1:
+            return InclinationEditorMode()
+        elif self.selection == 2:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 2:
+        elif self.selection == 3:
             return MenuMode()
         return None
     
@@ -332,7 +335,7 @@ class AltitudeEditorMode(Mode):
         self.alt = int(g.orbital_altitude_km)
         
     def on_encoder_rotate(self, delta):
-        d = -delta * 10
+        d = delta * 10
         self.alt = max(200, min(2000, self.alt + d))
         
     def on_confirm(self):
@@ -352,5 +355,35 @@ class AltitudeEditorMode(Mode):
         disp.fb.fill_rect(40, 24, w+4, 10, 1)
         disp.fb.text(alt_str, 42, 25, 0)
         disp.text("Step: 10 km", 10, 45)
+        disp.text("Confirm to Save", 10, 56)
+        disp.show()
+
+class InclinationEditorMode(Mode):
+    """Editor for orbital inclination."""
+    def __init__(self):
+        # Store as 10x integer for easy encoder step (0.1 deg)
+        self.inc_x10 = int(g.orbital_inclination_deg * 10)
+        
+    def on_encoder_rotate(self, delta):
+        d = delta # up = increase
+        # Range 0 to 180 (most common 0 to 99)
+        self.inc_x10 = max(0, min(1800, self.inc_x10 + d))
+        
+    def on_confirm(self):
+        g.orbital_inclination_deg = float(self.inc_x10) / 10.0
+        utils.save_state()
+        return SettingsMode()
+        
+    def on_back(self):
+        return SettingsMode()
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET INCLINATION", 0, 0)
+        inc_str = f"{self.inc_x10/10.0:.1f} deg"
+        w = len(inc_str) * 8
+        disp.fb.fill_rect(30, 24, w+4, 10, 1)
+        disp.fb.text(inc_str, 32, 25, 0)
+        disp.text("Step: 0.1 deg", 10, 45)
         disp.text("Confirm to Save", 10, 56)
         disp.show()
