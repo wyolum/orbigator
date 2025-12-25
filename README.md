@@ -44,6 +44,7 @@ The project has recently reached a major milestone with the implementation of a 
 - [DYNAMIXEL_DRYLAB_SETUP.md](DYNAMIXEL_DRYLAB_SETUP.md) - Comprehensive guide to motor configuration and wiring
 - [EXTENDED_POSITION_MODE_GUIDE.md](EXTENDED_POSITION_MODE_GUIDE.md) - Best practices for continuous rotation
 - [SPEED_LIMIT_QUICKREF.md](SPEED_LIMIT_QUICKREF.md) - Critical safety guidelines for motor speeds
+- [DYNAMIXEL_CONNECTOR_SPECS.md](DYNAMIXEL_CONNECTOR_SPECS.md) - Pinout and connector details for XL-330 servos
 
 ## Getting Started
 
