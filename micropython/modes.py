@@ -470,6 +470,7 @@ class MotorEditorMode(Mode):
     def on_encoder_rotate(self, delta):
         d = delta # CW = Increase
         self.pos += d
+        m = g.eqx_motor if self.target == 0 else g.aov_motor
         if m:
             # Respect safe speed limits: 10 for EQX, 10 for AoV
             limit = 10 if self.target == 0 else 10
@@ -488,7 +489,8 @@ class MotorEditorMode(Mode):
     def render(self, disp):
         disp.fill(0)
         disp.text(self.label, 0, 0)
-        pos_str = f"{self.pos:.1f} deg"
+        norm_pos = (self.pos + 180) % 360 - 180
+        pos_str = f"{norm_pos:.1f} deg"
         w = len(pos_str) * 8
         disp.fb.fill_rect(20, 24, w+4, 10, 1)
         disp.fb.text(pos_str, 22, 25, 0)

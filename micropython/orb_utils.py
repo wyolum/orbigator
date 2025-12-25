@@ -141,36 +141,50 @@ def load_state():
         last_aov_deg = config.get("aov_deg", 0.0)
         
         if g.eqx_motor:
-            current_raw_deg = g.eqx_motor.get_angle_degrees() % 360
-            revs = int(last_eqx_deg // 360)
-            candidates = [
-                (revs - 1) * 360 + current_raw_deg,
-                (revs) * 360 + current_raw_deg,
-                (revs + 1) * 360 + current_raw_deg
-            ]
-            g.eqx_position_deg = min(candidates, key=lambda x: abs(x - last_eqx_deg))
+            raw_motor_val = g.eqx_motor.get_angle_degrees()
+            # Trust motor RAM if valid multi-turn data exists (Soft Reboot)
+            if abs(raw_motor_val) > 360:
+                g.eqx_position_deg = raw_motor_val
+                current_raw_deg = raw_motor_val
+            else:
+                # Reconstruct from modulo (Power Cycle)
+                current_raw_deg = raw_motor_val % 360
+                revs = int(last_eqx_deg // 360)
+                candidates = [
+                    (revs - 1) * 360 + current_raw_deg,
+                    (revs) * 360 + current_raw_deg,
+                    (revs + 1) * 360 + current_raw_deg
+                ]
+                g.eqx_position_deg = min(candidates, key=lambda x: abs(x - last_eqx_deg))
             
             # Sync back to motor object
             g.eqx_motor.output_degrees = g.eqx_position_deg
             g.eqx_motor.motor_degrees = g.eqx_position_deg * g.eqx_motor.gear_ratio
             
-            print(f"  EQX: Saved={last_eqx_deg:.2f}, RawNow={current_raw_deg:.2f}, Final={g.eqx_position_deg:.2f}")
+            print(f"  EQX: Saved={last_eqx_deg:.2f}, RawNow={raw_motor_val:.2f}, Final={g.eqx_position_deg:.2f}")
             
         if g.aov_motor:
-            current_raw_deg = g.aov_motor.get_angle_degrees() % 360
-            revs = int(last_aov_deg // 360)
-            candidates = [
-                (revs - 1) * 360 + current_raw_deg,
-                (revs) * 360 + current_raw_deg,
-                (revs + 1) * 360 + current_raw_deg
-            ]
-            g.aov_position_deg = min(candidates, key=lambda x: abs(x - last_aov_deg))
+            raw_motor_val = g.aov_motor.get_angle_degrees()
+            # Trust motor RAM if valid multi-turn data exists (Soft Reboot)
+            if abs(raw_motor_val) > 360:
+                g.aov_position_deg = raw_motor_val
+                current_raw_deg = raw_motor_val
+            else:
+                # Reconstruct from modulo (Power Cycle)
+                current_raw_deg = raw_motor_val % 360
+                revs = int(last_aov_deg // 360)
+                candidates = [
+                    (revs - 1) * 360 + current_raw_deg,
+                    (revs) * 360 + current_raw_deg,
+                    (revs + 1) * 360 + current_raw_deg
+                ]
+                g.aov_position_deg = min(candidates, key=lambda x: abs(x - last_aov_deg))
             
             # Sync back to motor object
             g.aov_motor.output_degrees = g.aov_position_deg
             g.aov_motor.motor_degrees = g.aov_position_deg * g.aov_motor.gear_ratio
             
-            print(f"  AoV: Saved={last_aov_deg:.2f}, RawNow={current_raw_deg:.2f}, Final={g.aov_position_deg:.2f}")
+            print(f"  AoV: Saved={last_aov_deg:.2f}, RawNow={raw_motor_val:.2f}, Final={g.aov_position_deg:.2f}")
 
         print("State loaded and positions reconstructed.")
         return config.get("timestamp", 0), last_eqx_deg, last_aov_deg

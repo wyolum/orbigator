@@ -137,7 +137,7 @@ while True:
         current_mode.on_encoder_rotate(delta)
         
     # 2. Poll Encoder Press (SW)
-    sw_val = SW.value()
+    sw_val = enc_btn.value()
     if sw_val == 0 and last_sw_btn == 1:
         if time.ticks_diff(now, last_btn_time) > DEBOUNCE_MS:
             last_btn_time = now
