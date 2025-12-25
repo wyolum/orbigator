@@ -45,8 +45,8 @@ W0 = WE / 86400.0          # Earth's rotation rate, radians/sec
 
 #Sidereal and Solar data. Rarely needs changing. Valid to year ~2030
 #https://www.ngdc.noaa.gov/geomag/WMM/soft.shtml World Magnetic Model
-YG = 2014.0                # GHAA, Year YG, Jan 0.0
-G0 = 99.5828               # -"-
+YG = 2025.0                # GHAA, Year YG, Jan 0.0 (UPDATED FOR 2025)
+G0 = 125.1006              # GHAA at Jan 0.0, 2025
 MAS0 = 356.4105            # MA Sun and rate, deg, deg/day MEAN_ANOMALY
 MASD = 0.98560028          # -"-
 INS = radians(23.4375)     # Sun's inclination
