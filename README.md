@@ -36,6 +36,15 @@ The project has recently reached a major milestone with the implementation of a 
 | `kicad/` | PCB design files, schematics, and manufacturing outputs |
 | `images/` | Renderings and fabrication drawings |
 
+## Key Documentation
+
+- [ORBIGATOR_PIN_ASSIGNMENTS.txt](ORBIGATOR_PIN_ASSIGNMENTS.txt) - Complete GPIO pin assignments for Pico 2
+- [ORBIGATOR_CIRCUIT_DIAGRAM.txt](ORBIGATOR_CIRCUIT_DIAGRAM.txt) - ASCII circuit diagram showing all connections
+- [orbigator_kicad_netlist.py](orbigator_kicad_netlist.py) - KiCad-compatible netlist for schematic creation
+- [DYNAMIXEL_DRYLAB_SETUP.md](DYNAMIXEL_DRYLAB_SETUP.md) - Comprehensive guide to motor configuration and wiring
+- [EXTENDED_POSITION_MODE_GUIDE.md](EXTENDED_POSITION_MODE_GUIDE.md) - Best practices for continuous rotation
+- [SPEED_LIMIT_QUICKREF.md](SPEED_LIMIT_QUICKREF.md) - Critical safety guidelines for motor speeds
+
 ## Getting Started
 
 1. **Hardware**: Pulse-check the `ORBIGATOR_PIN_ASSIGNMENTS.txt` and `ORBIGATOR_CIRCUIT_DIAGRAM.txt`.
