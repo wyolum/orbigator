@@ -5,11 +5,11 @@ Test Plan13 with REAL ISS TLE from CelesTrak format
 from plan13 import satpredict, tle_fields
 import time
 
-# Real ISS TLE from CelesTrak (properly formatted)
+# Real ISS TLE from n2yo.com (Dec 25, 2024)
 # This is the exact format Plan13 expects
 ISS_TLE = """ISS (ZARYA)
-1 25544U 98067A   24360.50000000  .00016717  00000-0  29767-3 0  9992
-2 25544  51.6416 208.3910 0005419  34.5884  60.2346 15.50103472479879
+1 25544U 98067A   25359.56752749  .00014081  00000-0  25591-3 0  9998
+2 25544  51.6318  78.9495 0003224 299.9641  60.1027 15.49813539544848
 """
 
 def test_plan13():
@@ -35,7 +35,10 @@ def test_plan13():
         # Set time
         satp.settime(year, month, day, hour, minute, second)
         
-        # Parse TLE and predict
+        # Parse TLE - need to split into lines and pass as list
+        tle_lines = [line.strip() for line in ISS_TLE.strip().split('\n') if line.strip()]
+        
+        # Parse and predict
         for tledata in tle_fields(ISS_TLE).nextsatellite():
             satlat, satlon, sataz, satel, satx, saty = satp.sat_predict(tledata)
             
