@@ -104,7 +104,25 @@ def _enc_isr(_):
 
 enc_a.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 enc_b.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
-sw_irq_configured = False # Debounce logic handles SW manually
+
+# ---------------- Button ISRs (Interrupt-Driven) ----------------
+# Event queue for button presses
+button_events = []
+last_btn_time = 0
+
+def _button_isr(pin):
+    global last_btn_time, button_events
+    now = time.ticks_ms()
+    # Debounce: ignore events within DEBOUNCE_MS of last event
+    if time.ticks_diff(now, last_btn_time) > DEBOUNCE_MS:
+        last_btn_time = now
+        # Queue the event (identify which button by pin number)
+        button_events.append(pin)
+
+# Attach ISRs to all buttons (active LOW, trigger on falling edge)
+enc_btn.irq(trigger=Pin.IRQ_FALLING, handler=_button_isr)
+BACK_BTN.irq(trigger=Pin.IRQ_FALLING, handler=_button_isr)
+CONFIRM_BTN.irq(trigger=Pin.IRQ_FALLING, handler=_button_isr)
 
 # ---------------- State and Loop ----------------
 # Check for RTC reset (e.g. battery failure)
@@ -116,10 +134,6 @@ else:
 current_mode.enter()
 
 last_detent = 0
-last_sw_btn = 1
-last_back_btn = 1
-last_confirm_btn = 1
-last_btn_time = 0
 last_display_update = 0
 
 print("Orbigator Ready.")
@@ -135,40 +149,27 @@ while True:
         delta = d - last_detent
         last_detent = d
         current_mode.on_encoder_rotate(delta)
-        
-    # 2. Poll Encoder Press (SW)
-    sw_val = enc_btn.value()
-    if sw_val == 0 and last_sw_btn == 1:
-        if time.ticks_diff(now, last_btn_time) > DEBOUNCE_MS:
-            last_btn_time = now
-            current_mode.on_encoder_press()
-    last_sw_btn = sw_val
     
-    # 3. Poll Back Button (GP9)
-    back_val = BACK_BTN.value()
-    if back_val == 0 and last_back_btn == 1:
-        if time.ticks_diff(now, last_btn_time) > DEBOUNCE_MS:
-            last_btn_time = now
+    # 2. Process Button Events (ISR-driven)
+    while button_events:
+        pin = button_events.pop(0)
+        
+        if pin == enc_btn:
+            current_mode.on_encoder_press()
+        elif pin == BACK_BTN:
             new_mode = current_mode.on_back()
             if new_mode:
                 current_mode.exit()
                 current_mode = new_mode
                 current_mode.enter()
-    last_back_btn = back_val
-    
-    # 4. Poll Confirm Button (GP10)
-    confirm_val = CONFIRM_BTN.value()
-    if confirm_val == 0 and last_confirm_btn == 1:
-        if time.ticks_diff(now, last_btn_time) > DEBOUNCE_MS:
-            last_btn_time = now
+        elif pin == CONFIRM_BTN:
             new_mode = current_mode.on_confirm()
             if new_mode:
                 current_mode.exit()
                 current_mode = new_mode
                 current_mode.enter()
-    last_confirm_btn = confirm_val
     
-    # 5. Check Motor Health
+    # 3. Check Motor Health
     if not g.motor_health_ok and g.motor_offline_id is not None:
         # Transition to offline mode
         motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
