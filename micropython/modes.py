@@ -111,10 +111,14 @@ class OrbitMode(Mode):
         elapsed = now - saved_ts if saved_ts > 0 else 0
         print(f"Time Check: HighResNow={now:.3f}, SavedTS={saved_ts:.3f}, Gap={elapsed:.3f}s")
         
-        if 0 < elapsed < 86400: # Only catch up if gap is reasonable (less than 1 day)
+        if 0 < elapsed < 86400: # Only catch up if gap is positive and reasonable (less than 1 day)
             # Calculate target absolute positions (where we SHOULD be physically)
-            target_aov_abs = saved_aov + (aov_rate * elapsed)
-            target_eqx_abs = saved_eqx + (eqx_rate_sec * elapsed)
+            # RELATIVE CATCH-UP: Anchor to where the motor IS, plus the time missed.
+            # This avoids jumping if the saved state was slightly offset from reality.
+            # g.aov_position_deg was reconstructed from the motor in load_state(), so use it.
+            
+            target_aov_abs = g.aov_position_deg + (aov_rate * elapsed)
+            target_eqx_abs = g.eqx_position_deg + (eqx_rate_sec * elapsed)
             
             # Use modulo for the motor command phase
             target_aov_phase = target_aov_abs % 360
@@ -134,7 +138,15 @@ class OrbitMode(Mode):
             g.run_start_aov_deg = target_aov_abs
             g.run_start_eqx_deg = target_eqx_abs
         else:
-            print("Catch-up skipped or large gap.")
+            print("Catch-up skipped (elapsed <= 0 or too large).")
+            # If time moved backwards or gap is huge, DON'T jump to some weird calculated spot.
+            # Just verify where we are and start integrating from here.
+            
+            # Check if reconstruction gave us reasonable values compared to saved?
+            # Actually, if we skip catchup, we just want to start smoothly from CURRENT physical pos.
+            
+            # But g.aov_position_deg was reconstructed from get_angle_degrees() in load_state
+            # So this is safe.
             g.run_start_aov_deg = g.aov_position_deg
             g.run_start_eqx_deg = g.eqx_position_deg
             
