@@ -10,11 +10,12 @@ Best practices for Extended Position Control Mode (Mode 4):
 
 from machine import UART, Pin
 import time
+import pins
 
 # UART setup
-uart = UART(0, baudrate=57600, bits=8, parity=None, stop=1)
-uart.init(tx=Pin(0), rx=Pin(1))
-dir_pin = Pin(2, Pin.OUT, value=0)
+uart = UART(pins.DYNAMIXEL_UART_ID, baudrate=57600, bits=8, parity=None, stop=1)
+uart.init(tx=Pin(pins.DYNAMIXEL_TX_PIN), rx=Pin(pins.DYNAMIXEL_RX_PIN))
+dir_pin = Pin(pins.DYNAMIXEL_DIR_PIN, Pin.OUT, value=0)
 
 # CRC Table
 CRC_TABLE = [

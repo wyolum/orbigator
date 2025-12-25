@@ -10,6 +10,8 @@ from dynamixel_motor import DynamixelMotor
 from dynamixel_extended_utils import set_extended_mode
 import orb_globals as g
 import orb_utils as utils
+import orb_utils as utils
+import pins
 from modes import MenuMode, OrbitMode, DatetimeEditorMode
 
 # ---------------- Hardware Config ----------------
@@ -23,7 +25,7 @@ DEBOUNCE_MS = 200
 
 # ---------------- OLED Init ----------------
 OLED_W, OLED_H = 128, 64
-i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=100_000)
+i2c = I2C(pins.I2C_ID, sda=Pin(pins.I2C_SDA_PIN), scl=Pin(pins.I2C_SCL_PIN), freq=100_000)
 addrs = i2c.scan()
 
 class SH1106_I2C:
@@ -78,29 +80,31 @@ g.aov_motor = aov_motor
 eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 g.eqx_motor = eqx_motor
 
-aov_motor.set_speed_limit(10) # 1 was too slow?
+aov_motor.set_speed_limit(3) # Capped at 3 for safety
 eqx_motor.set_speed_limit(10) # Capped at 10 for safety
 
 # ---------------- Encoder + Buttons ----------------
-A  = Pin(6, Pin.IN, Pin.PULL_UP)
-B  = Pin(7, Pin.IN, Pin.PULL_UP)
-SW = Pin(8, Pin.IN, Pin.PULL_UP)
-BACK_BTN = Pin(9, Pin.IN, Pin.PULL_UP)
-CONFIRM_BTN = Pin(10, Pin.IN, Pin.PULL_UP)
+# ---------------- Encoder + Buttons ----------------
+enc_a = Pin(pins.ENC_A_PIN, Pin.IN, Pin.PULL_UP)
+enc_b = Pin(pins.ENC_B_PIN, Pin.IN, Pin.PULL_UP)
+enc_btn = Pin(pins.ENC_BTN_PIN, Pin.IN, Pin.PULL_UP)
+BACK_BTN = Pin(pins.BACK_BTN_PIN, Pin.IN, Pin.PULL_UP)
+CONFIRM_BTN = Pin(pins.CONFIRM_BTN_PIN, Pin.IN, Pin.PULL_UP)
 
-state = (A.value()<<1) | B.value()
+state = (enc_a.value()<<1) | enc_b.value()
 raw_count = 0
 TRANS = (0,+1,-1,0,  -1,0,0,+1,  +1,0,0,-1,  0,-1,+1,0)
 
 def _enc_isr(_):
     global state, raw_count
-    s = (A.value()<<1) | B.value()
+    s = (enc_a.value()<<1) | enc_b.value()
     d = TRANS[(state<<2)|s]
     raw_count -= d
     state = s
 
-A.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
-B.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
+enc_a.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
+enc_b.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
+sw_irq_configured = False # Debounce logic handles SW manually
 
 # ---------------- State and Loop ----------------
 # Check for RTC reset (e.g. battery failure)
