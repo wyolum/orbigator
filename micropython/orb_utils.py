@@ -64,24 +64,32 @@ def compute_motor_rates(altitude_km):
     eqx_deg_per_sec = eqx_rate_deg_day / 86400.0
     return aov_deg_per_sec, eqx_deg_per_sec, eqx_rate_deg_day, period_min
 
-def get_timestamp(rtc=None):
-    """Get current unix timestamp from RTC or system time."""
+def sync_system_time(rtc):
+    """Sync the Pico internal clock to the external RTC."""
     try:
-        if rtc:
-            t = rtc.datetime()
-            if t is None or t[0] < 2024:
-                # External RTC is dead/reset, try internal Pico RTC
-                import machine
-                t = machine.RTC().datetime()
-                if t[0] < 2024:
-                    # Both are reset
-                    return time.time()
-            
-            # Rearrange to (YY, MM, DD, HH, MM, SS, WD, YD) for time.mktime
-            mk_tuple = (t[0], t[1], t[2], t[4], t[5], t[6], t[3], 0)
-            return time.mktime(mk_tuple)
-        else:
-            return time.time()
+        if not rtc: return
+        import machine
+        # RTC: (YY, MM, DD, WD, HH, MM, SS, SS)
+        t = rtc.datetime()
+        if t and t[0] >= 2024:
+            machine.RTC().datetime(t)
+            print(f"System time synced to RTC: {t[0]}-{t[1]}-{t[2]} {t[4]:02d}:{t[5]:02d}:{t[6]:02d}")
+    except Exception as e:
+        print("Sync time failed:", e)
+
+def get_timestamp(rtc=None):
+    """
+    Get current unix timestamp. 
+    Uses system time which is higher resolution than the external RTC.
+    Syncs if it looks too old.
+    """
+    try:
+        t = time.time()
+        # If system time is reset (epoch 2000), try to sync once
+        if t < 1000000 and rtc: # Arbitrary small number for reset clock
+             sync_system_time(rtc)
+             t = time.time()
+        return t
     except Exception:
         return time.time()
 

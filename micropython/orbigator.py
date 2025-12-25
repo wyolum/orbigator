@@ -61,7 +61,9 @@ except Exception:
 try:
     rtc = DS3231(i2c)
     g.rtc = rtc
-    print("RTC found and initialized.")
+    utils.sync_system_time(rtc)
+    if rtc.datetime() is not None:
+        print("RTC found and initialized.")
 except Exception:
     print("RTC init failed.")
     g.rtc = None

@@ -92,52 +92,55 @@ class OrbitMode(Mode):
     
     def enter(self):
         """Initialize orbital tracking and catch up if needed."""
-        # 1. Load state and reconstruct positions from hardware
+        # 1. Sync internal Pico RTC to external RTC to ensure we have high-res local time
+        utils.sync_system_time(g.rtc)
+        
+        # 2. Load state and reconstruct positions from hardware
         saved_ts, saved_eqx, saved_aov = utils.load_state()
         
-        # 2. Calculate current rates
+        # 3. Calculate current rates
         aov_rate, eqx_rate_sec, eqx_rate_day, period_min = utils.compute_motor_rates(g.orbital_altitude_km)
         g.aov_rate_deg_sec = aov_rate
         g.eqx_rate_deg_sec = eqx_rate_sec
         g.eqx_rate_deg_day = eqx_rate_day
         g.orbital_period_min = period_min
         
-        # 3. Calculate elapsed time since last save
-        now = utils.get_timestamp(g.rtc)
+        # 4. Calculate elapsed time since last save using high-res system time
+        now = time.time()
         
-        if g.rtc:
-            ymd = g.rtc.datetime()
-            print(f"Current RTC Time: {ymd[0]}-{ymd[1]}-{ymd[2]} {ymd[4]}:{ymd[5]}:{ymd[6]}")
-            
         elapsed = now - saved_ts if saved_ts > 0 else 0
-        print(f"Time Check: Now={now}, Saved={saved_ts}, Gap={elapsed}s")
+        print(f"Time Check: SysNow={now}, SavedTS={saved_ts}, Gap={elapsed}s")
         
-        if elapsed > 0:
-            # Calculate target phases (where we SHOULD be physically based on the RTC)
-            target_aov_phase = (saved_aov + (aov_rate * elapsed)) % 360
-            target_eqx_phase = (saved_eqx + (eqx_rate_sec * elapsed)) % 360
+        if 0 < elapsed < 86400: # Only catch up if gap is reasonable (less than 1 day)
+            # Calculate target absolute positions (where we SHOULD be physically)
+            # We add the expected motion to the absolute saved base
+            target_aov_abs = saved_aov + (aov_rate * elapsed)
+            target_eqx_abs = saved_eqx + (eqx_rate_sec * elapsed)
             
-            print(f"  Target Phase: AoV={target_aov_phase:.1f}°, EQX={target_eqx_phase:.1f}°")
+            # Use modulo to get the 0-360 phase for the motor command
+            target_aov_phase = target_aov_abs % 360
+            target_eqx_phase = target_eqx_abs % 360
+            
+            print(f"  Catching up to: AoV={target_aov_abs:.2f}°, EQX={target_eqx_abs:.2f}°")
             
             # Set safe catch-up speed (Profile Velocity 10 = Safety Max)
             if g.aov_motor: g.aov_motor.set_speed_limit(10)
             if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
             
-            # Move motors to target via SHORTEST path (never > 180°)
-            print("  Executing shortest-path catch-up moves...")
+            # Move motors to target via SHORTEST path
             if g.aov_motor: g.aov_motor.set_nearest_degrees(target_aov_phase)
             if g.eqx_motor: g.eqx_motor.set_nearest_degrees(target_eqx_phase)
             
-            # Restore safe speed limits
-            if g.aov_motor: g.aov_motor.set_speed_limit(10)
-            if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
+            # Wait a moment for small catch-up moves to trigger? 
+            # (Dynamixel usually processes immediately)
             
             # Update tracking baselines to the NEW absolute positions
-            g.run_start_aov_deg = g.aov_motor.output_degrees if g.aov_motor else 0.0
-            g.run_start_eqx_deg = g.eqx_motor.output_degrees if g.eqx_motor else 0.0
+            # Use the target values directly to avoid any "lag" induced by physical movement delay
+            g.run_start_aov_deg = target_aov_abs
+            g.run_start_eqx_deg = target_eqx_abs
         else:
-            print("Catch-up skipped (elapsed <= 0).")
-            # First boot or no config: use reconstructed pos
+            print("Catch-up skipped or large gap.")
+            # Use reconstructed pos
             g.run_start_aov_deg = g.aov_position_deg
             g.run_start_eqx_deg = g.eqx_position_deg
             
@@ -174,7 +177,8 @@ class OrbitMode(Mode):
         if not self.initialized:
             return
         
-        now = utils.get_timestamp(g.rtc)
+        # Use high-resolution system time for smooth integration
+        now = time.time()
         elapsed = now - g.run_start_time
         
         g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)
