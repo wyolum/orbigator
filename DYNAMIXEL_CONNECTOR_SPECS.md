@@ -37,7 +37,8 @@ If you are designing your own PCB or breakout board, use these SMT headers to ma
 
 ### 4. Matching Servo Cable Assemblies
 Pre-assembled 3-wire GH connector cables (often sold as Robotis servo harnesses).
-- **Example**: [Robotis 500mm Extension Cable](https://www.robotis.us/robot-cable-wp-500mm-extension-cable/)
+- **Pro Tip**: The **standard 180mm (7.09") cables** that ship with the XL-330 are actually the perfect length for the internal Orbigator assembly — they provide just enough slack for movement without cluttering the globe interior.
+- **Extension**: [Robotis 500mm Extension Cable](https://www.robotis.us/robot-cable-wp-500mm-extension-cable/)
 - **Robotis P/N**: Robot Cable-WP 3P 500mm
 
 ---
