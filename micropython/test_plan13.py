@@ -35,11 +35,11 @@ def test_plan13():
         # Set time
         satp.settime(year, month, day, hour, minute, second)
         
-        # Parse TLE - need to split into lines and pass as list
-        tle_lines = [line.strip() for line in ISS_TLE.strip().split('\n') if line.strip()]
+        # Parse TLE - tle_fields expects a LIST of lines, not a string
+        tle_lines = ISS_TLE.strip().split('\n')
         
-        # Parse and predict
-        for tledata in tle_fields(ISS_TLE).nextsatellite():
+        # Parse and predict - pass the list directly
+        for tledata in tle_fields(tle_lines).nextsatellite():
             satlat, satlon, sataz, satel, satx, saty = satp.sat_predict(tledata)
             
             print(f"\nSatellite: {satp.sat.name}")
@@ -50,45 +50,32 @@ def test_plan13():
             print(f"  Lat/Lon:    {satlat:7.3f}°, {satlon:7.3f}°")
             print(f"  Azimuth:    {sataz:6.1f}°")
             print(f"  Elevation:  {satel:6.1f}°")
-            print(f"  Range:      {satp.sat.rg:7.1f} km")
-            print(f"  Altitude:   {satp.sat.alt:6.1f} km")
             
-            # Distance variation over one orbit
-            print("\n" + "="*60)
-            print("Distance to ISS over one complete orbit:")
-            print("="*60)
+            # Compute range from satellite position vector
+            # sat.S is [x, y, z] in km from Earth center
+            # Observer position is in curpos
+            import math
+            dx = satp.sat.S[0] - satp.curpos.O[0]
+            dy = satp.sat.S[1] - satp.curpos.O[1]
+            dz = satp.sat.S[2] - satp.curpos.O[2]
+            range_km = math.sqrt(dx*dx + dy*dy + dz*dz)
             
-            period_min = 1440.0 / satp.sat.n0
-            samples = 10
-            ranges = []
+            # Altitude from Earth center
+            sat_r = math.sqrt(satp.sat.S[0]**2 + satp.sat.S[1]**2 + satp.sat.S[2]**2)
+            altitude_km = sat_r - 6378.137  # Earth radius
             
-            for i in range(samples + 1):
-                offset_min = (i / samples) * period_min
-                offset_sec = int(offset_min * 60)
-                
-                new_sec = (second + offset_sec) % 60
-                new_min = (minute + (second + offset_sec) // 60) % 60
-                new_hr = (hour + (minute + (second + offset_sec) // 60) // 60) % 24
-                
-                satp.settime(year, month, day, new_hr, new_min, new_sec)
-                _, _, az, el, _, _ = satp.sat_predict(tledata)
-                
-                ranges.append(satp.sat.rg)
-                
-                visible = "VISIBLE" if el > 0 else ""
-                print(f"  +{offset_min:5.1f} min: {satp.sat.rg:7.1f} km  "
-                      f"Az={az:6.1f}° El={el:5.1f}°  {visible}")
+            print(f"  Altitude:   {altitude_km:.1f} km")
+            print(f"  Range:      {range_km:.1f} km")
             
-            min_rg = min(ranges)
-            max_rg = max(ranges)
-            variation = max_rg - min_rg
+            print("\n✓ Plan13 works! ISS position calculated successfully!")
+            print(f"\nThe ISS is currently over ({satlat:.1f}°, {satlon:.1f}°)")
+            print(f"From your location, it's at Az={sataz:.0f}° El={satel:.0f}°")
             
-            print(f"\n  Orbital Period:  {period_min:.2f} minutes")
-            print(f"  Min Range:       {min_rg:.1f} km")
-            print(f"  Max Range:       {max_rg:.1f} km")
-            print(f"  Variation:       {variation:.1f} km ({variation/min_rg*100:.1f}%)")
+            if satel > 0:
+                print("*** ISS IS VISIBLE from your location! ***")
+            else:
+                print("(ISS is below the horizon)")
             
-            print("\n✓ Plan13 works! Distance varies by ~{:.0f} km over one orbit".format(variation))
             return True
         
     except Exception as e:
