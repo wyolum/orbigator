@@ -93,7 +93,7 @@ class OrbitMode(Mode):
     def enter(self):
         """Initialize orbital tracking and catch up if needed."""
         # 1. Load state and reconstruct positions from hardware
-        saved_ts = utils.load_state()
+        saved_ts, saved_eqx, saved_aov = utils.load_state()
         
         # 2. Calculate current rates
         aov_rate, eqx_rate_sec, eqx_rate_day, period_min = utils.compute_motor_rates(g.orbital_altitude_km)
@@ -113,9 +113,9 @@ class OrbitMode(Mode):
         print(f"Time Check: Now={now}, Saved={saved_ts}, Gap={elapsed}s")
         
         if elapsed > 0:
-            # Calculate target phases (where we SHOULD be physically)
-            target_aov_phase = (g.aov_position_deg + (aov_rate * elapsed)) % 360
-            target_eqx_phase = (g.eqx_position_deg + (eqx_rate_sec * elapsed)) % 360
+            # Calculate target phases (where we SHOULD be physically based on the RTC)
+            target_aov_phase = (saved_aov + (aov_rate * elapsed)) % 360
+            target_eqx_phase = (saved_eqx + (eqx_rate_sec * elapsed)) % 360
             
             print(f"  Target Phase: AoV={target_aov_phase:.1f}°, EQX={target_eqx_phase:.1f}°")
             
@@ -167,6 +167,7 @@ class OrbitMode(Mode):
         return None
         
     def on_back(self):
+        utils.save_state()
         return MenuMode()
     
     def update(self, dt):

@@ -162,7 +162,7 @@ def load_state():
             print(f"  AoV: Saved={last_aov_deg:.2f}, RawNow={current_raw_deg:.2f}, Final={g.aov_position_deg:.2f}")
 
         print("State loaded and positions reconstructed.")
-        return config.get("timestamp", 0)
+        return config.get("timestamp", 0), last_eqx_deg, last_aov_deg
     except Exception as e:
         print("No config or error loading:", e)
-        return 0
+        return 0, 0, 0
