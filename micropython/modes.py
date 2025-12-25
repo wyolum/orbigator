@@ -296,7 +296,7 @@ class SettingsMode(Mode):
     
     def __init__(self):
         self.selection = 0
-        self.items = ["Set Altitude", "Set Inclination", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Zulu Time", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         move = 1 if delta > 0 else -1 if delta < 0 else 0
@@ -308,12 +308,14 @@ class SettingsMode(Mode):
         elif self.selection == 1:
             return InclinationEditorMode()
         elif self.selection == 2:
+            return DatetimeEditorMode()
+        elif self.selection == 3:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 3:
+        elif self.selection == 4:
             return MenuMode()
         return None
     
@@ -386,4 +388,63 @@ class InclinationEditorMode(Mode):
         disp.fb.text(inc_str, 32, 25, 0)
         disp.text("Step: 0.1 deg", 10, 45)
         disp.text("Confirm to Save", 10, 56)
+        disp.show()
+
+class DatetimeEditorMode(Mode):
+    """Editor for system date and time."""
+    def __init__(self, next_mode=None):
+        self.next_mode = next_mode if next_mode else SettingsMode()
+        t = utils.get_timestamp(g.rtc)
+        # Pico 2000 epoch: (Y, M, D, H, M, S, WD, YD)
+        lt = time.localtime(t)
+        self.year = lt[0] if lt[0] >= 2024 else 2024
+        self.month = lt[1]
+        self.day = lt[2]
+        self.hour = lt[3]
+        self.minute = lt[4]
+        self.field = 0 # 0=Y, 1=M, 2=D, 3=H, 4=Min
+        
+    def on_encoder_rotate(self, delta):
+        d = delta
+        if self.field == 0: self.year = max(2024, min(2099, self.year + d))
+        elif self.field == 1: self.month = (self.month - 1 + d) % 12 + 1
+        elif self.field == 2: self.day = (self.day - 1 + d) % 31 + 1
+        elif self.field == 3: self.hour = (self.hour + d) % 24
+        elif self.field == 4: self.minute = (self.minute + d) % 60
+        
+    def on_confirm(self):
+        if self.field < 4:
+            self.field += 1
+            return None
+        # Save time
+        utils.set_datetime(self.year, self.month, self.day, self.hour, self.minute, 0, g.rtc)
+        # Force a state save to update the config timestamp
+        utils.save_state()
+        return self.next_mode
+        
+    def on_back(self):
+        if self.field > 0:
+            self.field -= 1
+            return None
+        return self.next_mode
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET ZULU TIME", 0, 0)
+        
+        date_str = "{:04d}-{:02d}-{:02d}".format(self.year, self.month, self.day)
+        time_str = "{:02d}:{:02d}Z".format(self.hour, self.minute)
+        
+        disp.text(f"D: {date_str}", 0, 20)
+        disp.text(f"T: {time_str}", 0, 32)
+        
+        # Visual cursor
+        if self.field <= 2: # Date fields
+             x = 24 + (self.field * 24 if self.field == 0 else 40 + (self.field-1)*24)
+             # Simplify: just show field name
+             pass
+        
+        fields = ["Year", "Month", "Day", "Hour", "Minute"]
+        disp.text(f"Edit: {fields[self.field]}", 0, 48)
+        disp.text("Confirm >> Next", 0, 58)
         disp.show()

@@ -10,7 +10,7 @@ from dynamixel_motor import DynamixelMotor
 from dynamixel_extended_utils import set_extended_mode
 import orb_globals as g
 import orb_utils as utils
-from modes import MenuMode, OrbitMode
+from modes import MenuMode, OrbitMode, DatetimeEditorMode
 
 # ---------------- Hardware Config ----------------
 AOV_MOTOR_ID = 2
@@ -101,7 +101,12 @@ A.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 B.irq(trigger=Pin.IRQ_RISING|Pin.IRQ_FALLING, handler=_enc_isr)
 
 # ---------------- State and Loop ----------------
-current_mode = OrbitMode()
+# Check for RTC reset (e.g. battery failure)
+if time.time() < 60:
+    print("RTC Reset detected! Prompting for time.")
+    current_mode = DatetimeEditorMode(next_mode=OrbitMode())
+else:
+    current_mode = OrbitMode()
 current_mode.enter()
 
 last_detent = 0

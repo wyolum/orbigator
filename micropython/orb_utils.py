@@ -85,6 +85,21 @@ def get_timestamp(rtc=None):
     except Exception:
         return time.time()
 
+def set_datetime(year, month, day, hour, minute, second, rtc=None):
+    """Set the RTC and system time."""
+    try:
+        import machine
+        # (Y, M, D, WD, H, M, S, SS)
+        t = (year, month, day, 0, hour, minute, second, 0)
+        if rtc:
+            rtc.datetime(t)
+        machine.RTC().datetime(t)
+        print(f"Time set to: {year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}")
+        return True
+    except Exception as e:
+        print("Error setting time:", e)
+        return False
+
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
     try:
