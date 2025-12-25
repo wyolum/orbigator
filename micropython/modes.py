@@ -1,0 +1,356 @@
+"""
+Orbigator UI Modes
+Mode-based architecture for clean UI state management
+"""
+
+import orb_globals as g
+import orb_utils as utils
+import time
+
+class Mode:
+    """Base class for UI modes."""
+    
+    def on_encoder_rotate(self, delta):
+        pass
+    
+    def on_encoder_press(self):
+        pass
+    
+    def on_confirm(self):
+        return None
+    
+    def on_back(self):
+        return None
+    
+    def update(self, dt):
+        pass
+    
+    def render(self, disp):
+        pass
+    
+    def enter(self):
+        pass
+    
+    def exit(self):
+        pass
+
+
+class MenuMode(Mode):
+    """Main menu mode."""
+    
+    def __init__(self):
+        self.selection = 0
+        self.items = ["Orbit!", "Set Period", "Settings"]
+    
+    def on_encoder_rotate(self, delta):
+        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        self.selection = (self.selection + move) % len(self.items)
+        print(f"Menu: {self.items[self.selection]}")
+    
+    def on_confirm(self):
+        if self.selection == 0:
+            return OrbitMode()
+        elif self.selection == 1:
+            return PeriodEditorMode()
+        elif self.selection == 2:
+            return SettingsMode()
+        return None
+    
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("MAIN MENU", 0, 0)
+        for i, item in enumerate(self.items):
+            prefix = ">" if i == self.selection else " "
+            y = 16 + i * 12
+            if y < 64:
+                disp.text(f"{prefix} {item}", 0, y)
+        disp.show()
+
+
+class OrbitMode(Mode):
+    """Orbital motion mode."""
+    
+    def __init__(self):
+        self.nudge_target = 0
+        self.initialized = False
+        self.last_saved_rev_eqx = 0
+        self.last_saved_rev_aov = 0
+    
+    def enter(self):
+        """Initialize orbital tracking and catch up if needed."""
+        # 1. Load state and reconstruct positions from hardware
+        saved_ts = utils.load_state()
+        
+        # 2. Calculate current rates
+        aov_rate, eqx_rate_sec, eqx_rate_day, period_min = utils.compute_motor_rates(g.orbital_altitude_km)
+        g.aov_rate_deg_sec = aov_rate
+        g.eqx_rate_deg_sec = eqx_rate_sec
+        g.eqx_rate_deg_day = eqx_rate_day
+        g.orbital_period_min = period_min
+        
+        # 3. Calculate elapsed time since last save
+        now = utils.get_timestamp(g.rtc)
+        
+        if g.rtc:
+            ymd = g.rtc.datetime()
+            print(f"Current RTC Time: {ymd[0]}-{ymd[1]}-{ymd[2]} {ymd[4]}:{ymd[5]}:{ymd[6]}")
+            
+        elapsed = now - saved_ts if saved_ts > 0 else 0
+        print(f"Time Check: Now={now}, Saved={saved_ts}, Gap={elapsed}s")
+        
+        if elapsed > 0:
+            # Calculate target phases (where we SHOULD be physically)
+            target_aov_phase = (g.aov_position_deg + (aov_rate * elapsed)) % 360
+            target_eqx_phase = (g.eqx_position_deg + (eqx_rate_sec * elapsed)) % 360
+            
+            print(f"  Target Phase: AoV={target_aov_phase:.1f}°, EQX={target_eqx_phase:.1f}°")
+            
+            # Set safe catch-up speed (Profile Velocity 10 = Safety Max)
+            if g.aov_motor: g.aov_motor.set_speed_limit(10)
+            if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
+            
+            # Move motors to target via SHORTEST path (never > 180°)
+            print("  Executing shortest-path catch-up moves...")
+            if g.aov_motor: g.aov_motor.set_nearest_degrees(target_aov_phase)
+            if g.eqx_motor: g.eqx_motor.set_nearest_degrees(target_eqx_phase)
+            
+            # Restore safe speed limits
+            if g.aov_motor: g.aov_motor.set_speed_limit(10)
+            if g.eqx_motor: g.eqx_motor.set_speed_limit(10)
+            
+            # Update tracking baselines to the NEW absolute positions
+            g.run_start_aov_deg = g.aov_motor.output_degrees if g.aov_motor else 0.0
+            g.run_start_eqx_deg = g.eqx_motor.output_degrees if g.eqx_motor else 0.0
+        else:
+            print("Catch-up skipped (elapsed <= 0).")
+            # First boot or no config: use reconstructed pos
+            g.run_start_aov_deg = g.aov_position_deg
+            g.run_start_eqx_deg = g.eqx_position_deg
+            
+        g.run_start_time = now
+        
+        # Initial rev tracking for persistence
+        self.last_saved_rev_eqx = int(g.eqx_position_deg // 360)
+        self.last_saved_rev_aov = int(g.aov_position_deg // 360)
+        
+        self.initialized = True
+        print(f"Orbit logic active: AoV={g.aov_rate_deg_sec:.6f} deg/s, EQX={g.eqx_rate_deg_sec:.6f} deg/s")
+    
+    def on_encoder_rotate(self, delta):
+        if self.nudge_target == 0:
+            g.run_start_aov_deg += delta * 1.0
+            print(f"AoV nudge: {delta:+.0f} deg")
+        else:
+            g.run_start_eqx_deg += delta * 1.0
+            print(f"EQX nudge: {delta:+.0f} deg")
+    
+    def on_encoder_press(self):
+        self.nudge_target = (self.nudge_target + 1) % 2
+        print(f"Nudge: {'EQX' if self.nudge_target == 1 else 'AoV'}")
+    
+    def on_confirm(self):
+        return MenuMode()
+        
+    def on_back(self):
+        return MenuMode()
+    
+    def update(self, dt):
+        if not self.initialized:
+            return
+        
+        now = utils.get_timestamp(g.rtc)
+        elapsed = now - g.run_start_time
+        
+        g.aov_position_deg = g.run_start_aov_deg + (g.aov_rate_deg_sec * elapsed)
+        g.eqx_position_deg = g.run_start_eqx_deg + (g.eqx_rate_deg_sec * elapsed)
+        
+        if g.aov_motor:
+            g.aov_motor.set_angle_degrees(g.aov_position_deg)
+        if g.eqx_motor:
+            g.eqx_motor.set_angle_degrees(g.eqx_position_deg)
+            
+        # Revolution-based persistence: Save state when a motor passes 360° boundary
+        cur_rev_eqx = int(g.eqx_position_deg // 360)
+        cur_rev_aov = int(g.aov_position_deg // 360)
+        
+        if cur_rev_eqx != self.last_saved_rev_eqx or cur_rev_aov != self.last_saved_rev_aov:
+            utils.save_state()
+            self.last_saved_rev_eqx = cur_rev_eqx
+            self.last_saved_rev_aov = cur_rev_aov
+    
+    def render(self, disp):
+        disp.fill(0)
+        target = "X" if self.nudge_target == 1 else "A"
+        disp.text(f"ORBITING  [{target}]", 0, 0)
+        
+        # Display UTC if available
+        now_str = "UTC: --:--:--"
+        if g.rtc:
+             t = g.rtc.datetime()
+             if t:
+                  now_str = "UTC: {:02d}:{:02d}:{:02d}".format(t[4], t[5], t[6])
+        disp.text(now_str, 0, 10)
+        
+        p_min = g.orbital_period_min
+        p_mi = int(p_min)
+        p_si = int((p_min - p_mi) * 60)
+        if p_mi >= 60:
+            h = p_mi // 60
+            m = p_mi % 60
+            disp.text(f"T: {h:02d}h {m:02d}m {p_si:02d}s", 0, 22)
+        else:
+            disp.text(f"T: {p_mi:02d}m {p_si:02d}s", 0, 22)
+        
+        disp.text(f"Alt: {g.orbital_altitude_km:.3f} km", 0, 34)
+        disp.text(f"AoV: {g.aov_position_deg % 360:.1f} deg", 0, 46)
+        disp.text(f"EQX: {g.eqx_position_deg % 360:.1f} deg", 0, 56)
+        disp.show()
+
+
+class PeriodEditorMode(Mode):
+    """Editor for orbital period in hh:mm:ss format."""
+    
+    def __init__(self):
+        total_sec = int(g.orbital_period_min * 60)
+        self.hh = total_sec // 3600
+        self.mm = (total_sec % 3600) // 60
+        self.ss = total_sec % 60
+        self.field = 0 # 0=H, 1=M, 2=S
+    
+    def on_encoder_rotate(self, delta):
+        # Reverse delta for intuitive "up = increase"
+        d = -delta
+        if self.field == 0:
+            self.hh = max(0, min(23, self.hh + d))
+        elif self.field == 1:
+            self.mm = (self.mm + d) % 60
+        elif self.field == 2:
+            self.ss = (self.ss + d) % 60
+            
+    def on_encoder_press(self):
+        self.field = (self.field + 1) % 3
+        
+    def on_confirm(self):
+        if self.field < 2:
+            self.field += 1
+            return None
+        # Save and return
+        new_period_min = (self.hh * 3600 + self.mm * 60 + self.ss) / 60.0
+        if new_period_min > 0:
+            g.orbital_period_min = new_period_min
+            g.orbital_altitude_km, _ = utils.compute_altitude_from_period(new_period_min)
+            utils.save_state()
+        return MenuMode()
+    
+    def on_back(self):
+        if self.field > 0:
+            self.field -= 1
+            return None
+        return MenuMode()
+    
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET PERIOD", 0, 0)
+        
+        h_str = "{:02d}".format(self.hh)
+        m_str = "{:02d}".format(self.mm)
+        s_str = "{:02d}".format(self.ss)
+        
+        x_base = 30
+        y_pos = 25
+        
+        # HH
+        if self.field == 0:
+            disp.fb.fill_rect(x_base, y_pos-1, 16, 10, 1)
+            disp.fb.text(h_str, x_base, y_pos, 0)
+        else:
+            disp.fb.text(h_str, x_base, y_pos, 1)
+        
+        disp.fb.text(":", x_base+16, y_pos, 1)
+        
+        # MM
+        if self.field == 1:
+            disp.fb.fill_rect(x_base+24, y_pos-1, 16, 10, 1)
+            disp.fb.text(m_str, x_base+24, y_pos, 0)
+        else:
+            disp.fb.text(m_str, x_base+24, y_pos, 1)
+            
+        disp.fb.text(":", x_base+40, y_pos, 1)
+        
+        # SS
+        if self.field == 2:
+            disp.fb.fill_rect(x_base+48, y_pos-1, 16, 10, 1)
+            disp.fb.text(s_str, x_base+48, y_pos, 0)
+        else:
+            disp.fb.text(s_str, x_base+48, y_pos, 1)
+            
+        labels = ["Hours", "Minutes", "Seconds"]
+        disp.text(f"Edit: {labels[self.field]}", 10, 45)
+        disp.text("Confirm to Save", 10, 56)
+        disp.show()
+
+
+class SettingsMode(Mode):
+    """Settings menu for secondary parameters."""
+    
+    def __init__(self):
+        self.selection = 0
+        self.items = ["Set Altitude", "Motor ID Test", "Back"]
+    
+    def on_encoder_rotate(self, delta):
+        move = -1 if delta > 0 else 1 if delta < 0 else 0
+        self.selection = (self.selection + move) % len(self.items)
+        
+    def on_confirm(self):
+        if self.selection == 0:
+            return AltitudeEditorMode()
+        elif self.selection == 1:
+            print("Running Motor ID Test...")
+            if g.eqx_motor: g.eqx_motor.flash_led(1)
+            time.sleep_ms(500)
+            if g.aov_motor: g.aov_motor.flash_led(2)
+            return None
+        elif self.selection == 2:
+            return MenuMode()
+        return None
+    
+    def on_back(self):
+        return MenuMode()
+    
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SETTINGS", 0, 0)
+        for i, item in enumerate(self.items):
+            prefix = ">" if i == self.selection else " "
+            y = 16 + i * 12
+            disp.text(f"{prefix} {item}", 0, y)
+        disp.show()
+
+class AltitudeEditorMode(Mode):
+    """Editor for orbital altitude."""
+    def __init__(self):
+        self.alt = int(g.orbital_altitude_km)
+        
+    def on_encoder_rotate(self, delta):
+        d = -delta * 10
+        self.alt = max(200, min(2000, self.alt + d))
+        
+    def on_confirm(self):
+        g.orbital_altitude_km = float(self.alt)
+        g.orbital_period_min = utils.compute_period_from_altitude(g.orbital_altitude_km)
+        utils.save_state()
+        return SettingsMode()
+        
+    def on_back(self):
+        return SettingsMode()
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET ALTITUDE", 0, 0)
+        alt_str = f"{self.alt} km"
+        w = len(alt_str) * 8
+        disp.fb.fill_rect(40, 24, w+4, 10, 1)
+        disp.fb.text(alt_str, 42, 25, 0)
+        disp.text("Step: 10 km", 10, 45)
+        disp.text("Confirm to Save", 10, 56)
+        disp.show()

@@ -753,10 +753,49 @@ print("Orbigator - Orbital Mechanics Simulator")
 print("State 0: Set Altitude | State 1: Set EQX")
 print("State 2: Set AOV | State 3: Run")
 
+
+def poll_back_button():
+    """Check for back button press (non-blocking, debounced)."""
+    global back_btn_last, last_back_time, current_state
+    
+    now = time.ticks_ms()
+    current = BACK_BTN.value()
+    
+    if current == 0 and back_btn_last == 1:
+        if time.ticks_diff(now, last_back_time) > DEBOUNCE_MS:
+            last_back_time = now
+            if current_state > 0:
+                current_state = 0
+                print("← Back to Main Menu")
+                back_btn_last = current
+                return True
+    
+    back_btn_last = current
+    return False
+
+def poll_confirm_button():
+    """Check for confirm button press (non-blocking, debounced)."""
+    global confirm_btn_last, last_confirm_time, current_state
+    
+    now = time.ticks_ms()
+    current = CONFIRM_BTN.value()
+    
+    if current == 0 and confirm_btn_last == 1:
+        if time.ticks_diff(now, last_confirm_time) > DEBOUNCE_MS:
+            last_confirm_time = now
+            print("✓ Confirm pressed")
+            confirm_btn_last = current
+            return True
+    
+    confirm_btn_last = current
+    return False
+
 while True:
     time.sleep_ms(20)
     
     poll_button()
+    poll_back_button()
+    poll_confirm_button()
     
     if current_state == 3:
         # State 3: Run simulation with RTC-based motion

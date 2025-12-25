@@ -23,7 +23,7 @@ class DynamixelMotor:
     TICKS_PER_MOTOR_DEGREE = 4096.0 / 360.0  # Motor encoder resolution
     ADDR_GOAL_POSITION = 116
     ADDR_LED = 65  # LED control register
-    ADDR_PROFILE_VELOCITY = 112  # Speed limit (0=unlimited, higher=slower)
+    ADDR_PROFILE_VELOCITY = 112  # Speed limit (0=unlimited, higher=faster)
     
     def __init__(self, motor_id, name, gear_ratio=1.0):
         """
@@ -60,20 +60,22 @@ class DynamixelMotor:
         Set maximum speed limit for the motor.
         
         This prevents the satellite pointer from moving too fast.
-        Lower values = faster movement, higher values = slower movement.
+        Higher values = faster movement, lower values = slower movement.
         
         Args:
             velocity: Profile velocity (0-32767)
-                     0 = no limit (FAST, not recommended!)
-                     50-100 = moderate speed (good for testing)
-                     100-200 = slow, safe speed (recommended for display)
+                     0 = no limit (DANGEROUS: Magnets will fly off!)
+                     20-50 = Very fast (Too fast for globe)
+                     10 = Safety Maximum (Use for catch-up)
+                     5 = Moderate speed
+                     1-2 = Smooth simulation speed
         
         Returns:
             True if successful, False otherwise
         """
         success = write_dword(self.motor_id, self.ADDR_PROFILE_VELOCITY, velocity)
         if success:
-            print(f"  Speed limit set: velocity={velocity} (higher=slower)")
+            print(f"  Speed limit set: velocity={velocity} (higher=faster)")
         else:
             print(f"Warning: Failed to set speed limit for motor {self.motor_id}")
         return success
