@@ -10,6 +10,8 @@ COMPONENT OVERVIEW
 - SH1106/SSD1306 OLED display (128x64)
 - DS3231 RTC (ChronoDot)
 - Rotary encoder with push button
+- Back button (on combo board)
+- Confirm button (on combo board)
 - 10kΩ pull-up resistor (DYNAMIXEL DATA line)
 
 ========================================================
@@ -33,6 +35,11 @@ GP6  (Pin 9)  → Encoder A (with internal pull-up)
 GP7  (Pin 10) → Encoder B (with internal pull-up)
 GP8  (Pin 11) → Encoder Switch (with internal pull-up)
 
+USER INTERFACE BUTTONS
+----------------------
+GP9  (Pin 12) → Back Button (with internal pull-up)
+GP10 (Pin 14) → Confirm Button (with internal pull-up)
+
 POWER
 -----
 3V3(OUT) (Pin 36) → 74HC126 VCC (Pin 14)
@@ -40,7 +47,7 @@ GND      (Pin 3, 8, 13, 18, 23, 28, 33, 38) → Common ground
 
 UNUSED PINS (Available for Future Expansion)
 ---------------------------------------------
-GP3, GP9-GP22, GP26-GP28
+GP3, GP11-GP22, GP26-GP28
 
 ========================================================
 SN74HC126N TRI-STATE BUFFER CONNECTIONS
@@ -185,7 +192,7 @@ Operating Mode:
 - Extended Position Control Mode (Mode 4)
 
 Encoder:
-- DETENT_DIV: 2 (counts per detent)
+- DETENT_DIV: 4 (counts per detent)
 - Direction: Reversed in ISR
 
 I2C:

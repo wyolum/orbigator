@@ -438,7 +438,9 @@ def compute_eqx_rate_j2(altitude_km, inclination_deg=51.6):
     
     # Add Earth's rotation (360° per sidereal day)
     # Total rate in Earth-fixed frame
-    eqx_total_deg_day = eqx_j2_deg_day + EARTH_ROTATION_DEG_DAY
+    # NEGATED: Motor horn faces down, so positive rotation = west (wrong!)
+    # We want eastward rotation (sun rises in east), so negate the rate
+    eqx_total_deg_day = -(eqx_j2_deg_day + EARTH_ROTATION_DEG_DAY)
     
     return eqx_total_deg_day
 
