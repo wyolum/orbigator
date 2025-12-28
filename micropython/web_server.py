@@ -10,7 +10,6 @@ import gc
 
 # Import Orbigator globals and utilities
 import orb_globals as g
-from modes import MenuMode, OrbitMode, SGP4Mode
 import orb_utils as utils
 from satellite_catalog import get_satellite_count, get_satellite_name, get_satellite_norad
 
@@ -107,6 +106,7 @@ class WebServer:
             return {'error': 'Invalid mode'}, 400
         
         # Request mode change in main thread
+        from modes import MenuMode, OrbitMode, SGP4Mode
         if mode == 'menu':
             g.next_mode = MenuMode()
         elif mode == 'orbit':

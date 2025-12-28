@@ -13,7 +13,7 @@ use <dynamixel_motor.scad>
 inch = 25.4;
 
 // Globe parameters
-globe_d = 13 * inch;
+globe_d = 299; // was 13 * inch;
 globe_r = globe_d/2;
 globe_thickness = 2;
 globe_ir = globe_r - globe_thickness;

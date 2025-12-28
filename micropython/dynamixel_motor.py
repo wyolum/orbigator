@@ -24,6 +24,9 @@ class DynamixelMotor:
     ADDR_GOAL_POSITION = 116
     ADDR_LED = 65  # LED control register
     ADDR_PROFILE_VELOCITY = 112  # Speed limit (0=unlimited, higher=faster)
+    ADDR_POSITION_D_GAIN = 80
+    ADDR_POSITION_I_GAIN = 82
+    ADDR_POSITION_P_GAIN = 84
     
     def __init__(self, motor_id, name, gear_ratio=1.0):
         """
@@ -170,7 +173,7 @@ class DynamixelMotor:
         Convenience wrapper around set_angle_degrees(0).
         """
         print(f"Homing Motor {self.motor_id} ({self.name})...")
-        return self.set_angle_degrees(0)
+        return self.set_nearest_degrees(0)
     
     def set_nearest_degrees(self, target_degrees):
         """
@@ -284,3 +287,68 @@ class DynamixelMotor:
     
     def __repr__(self):
         return f"DynamixelMotor(id={self.motor_id}, name='{self.name}', output={self.output_degrees:.1f}°, gear_ratio={self.gear_ratio:.3f})"
+
+    def stop(self):
+        """Stop motor in place by setting goal to current present position."""
+        # Force a fresh read from hardware
+        current_pos = self.update_present_position(force=True)
+        if current_pos is not None:
+            # Command the motor to stay at this exact spot
+            self.set_angle_degrees(current_pos)
+            print(f"STOPPED: Motor {self.motor_id} ({self.name}) holding at {current_pos:.2f}°")
+            return True
+        return False
+
+    def relax(self):
+        """Disable torque so the motor can be moved freely by hand."""
+        # ADDR_TORQUE_ENABLE = 64
+        if write_byte(self.motor_id, 64, 0):
+            print(f"RELAXED: Motor {self.motor_id} ({self.name}) torque disabled.")
+            return True
+        return False
+        
+    def get_pid_gains(self):
+        """Read current PID gains from the motor."""
+        from dynamixel_extended_utils import read_word
+        p = read_word(self.motor_id, self.ADDR_POSITION_P_GAIN)
+        i = read_word(self.motor_id, self.ADDR_POSITION_I_GAIN)
+        d = read_word(self.motor_id, self.ADDR_POSITION_D_GAIN)
+        return p, i, d
+        
+    def set_pid_gains(self, p=None, i=None, d=None):
+        """
+        Set PID gains for the position control loop.
+        
+        Args:
+            p: Proportional gain (default 800)
+            i: Integral gain (default 0)
+            d: Derivative gain (default 0)
+        """
+        from dynamixel_extended_utils import write_word
+        
+        success = True
+        if p is not None:
+            if not write_word(self.motor_id, self.ADDR_POSITION_P_GAIN, p):
+                success = False
+                print(f"  ✗ Failed to set P gain for motor {self.motor_id}")
+        
+        if i is not None:
+            if not write_word(self.motor_id, self.ADDR_POSITION_I_GAIN, i):
+                success = False
+                print(f"  ✗ Failed to set I gain for motor {self.motor_id}")
+                
+        if d is not None:
+            if not write_word(self.motor_id, self.ADDR_POSITION_D_GAIN, d):
+                success = False
+                print(f"  ✗ Failed to set D gain for motor {self.motor_id}")
+                
+        if success:
+            print(f"  ✓ PID gains updated for motor {self.motor_id}: P={p}, I={i}, D={d}")
+        return success
+
+    def enable_torque(self):
+        """Re-enable torque to resume computer control."""
+        if write_byte(self.motor_id, 64, 1):
+            print(f"ACTIVE: Motor {self.motor_id} ({self.name}) torque enabled.")
+            return True
+        return False

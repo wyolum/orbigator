@@ -113,6 +113,16 @@ def write_byte(servo_id, address, value):
     response = send_and_receive(bytes(packet))
     return response is not None and len(response) >= 9 and response[8] == 0
 
+def write_word(servo_id, address, value):
+    """Write a 2-byte value"""
+    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x07, 0x00, 0x03])
+    packet.extend([address & 0xFF, (address >> 8) & 0xFF])
+    packet.extend([value & 0xFF, (value >> 8) & 0xFF])
+    crc = calc_crc(packet)
+    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+    response = send_and_receive(bytes(packet))
+    return response is not None and len(response) >= 9 and response[8] == 0
+
 def write_dword(servo_id, address, value):
     """Write a 4-byte value"""
     packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x09, 0x00, 0x03])
@@ -122,6 +132,21 @@ def write_dword(servo_id, address, value):
     packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
     response = send_and_receive(bytes(packet))
     return response is not None and len(response) >= 9 and response[8] == 0
+
+def read_word(servo_id, address):
+    """Read a 2-byte value"""
+    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x07, 0x00, 0x02])
+    packet.extend([address & 0xFF, (address >> 8) & 0xFF, 0x02, 0x00])  # Read 2 bytes
+    crc = calc_crc(packet)
+    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+    response = send_and_receive(bytes(packet))
+    
+    if response is not None and len(response) >= 11 and response[8] == 0:
+        # Extract 2-byte value from response
+        value = response[9] | (response[10] << 8)
+        # Handle signed 16-bit integer if needed (gains are 0-16383, so unsigned is fine)
+        return value
+    return None
 
 def read_dword(servo_id, address):
     """Read a 4-byte value (for position)"""

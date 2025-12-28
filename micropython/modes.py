@@ -23,7 +23,7 @@ class Mode:
         pass
     
     def on_encoder_press(self):
-        pass
+        return self.on_confirm()
     
     def on_confirm(self):
         return None
@@ -114,8 +114,15 @@ class OrbitMode(Mode):
         self.propagator = None
         self.last_saved_rev_eqx = 0
         self.last_saved_rev_aov = 0
+        self.last_command_ticks = 0
+        self.last_target_aov = 0.0
+        self.last_target_eqx = 0.0
+        self.last_unix = 0  # Cache for propagator math
+        self.tracking = True # Toggle with Confirm button
+        self.last_aov_angle = 0.0
+        self.last_eqx_angle = 0.0
     
-    def enter(self):
+    def enter(self) :
         """Initialize orbital tracking and catch up if needed."""
         g.current_mode_id = "ORBIT"
         
@@ -234,23 +241,61 @@ class OrbitMode(Mode):
         self.nudge_target = (self.nudge_target + 1) % 2
     
     def on_confirm(self):
+        self.tracking = not self.tracking
+        if not self.tracking:
+            if g.aov_motor: g.aov_motor.stop()
+            if g.eqx_motor: g.eqx_motor.stop()
         return None
         
     def on_back(self):
-        utils.save_state()
+        # Note: on_back shouldn't call save_state() directly as orbigator.py 
+        # handles it after the mode transition is confirmed.
         return MenuMode()
     
-    def update(self, dt):
-        if not self.initialized: return
-        now = utils.get_timestamp()
-        g.aov_position_deg, g.eqx_position_deg = self.propagator.get_aov_eqx(now)
+    def update(self, now_ms):
+        if not self.initialized or not self.tracking: return
         
-        if g.eqx_motor:
-            g.eqx_motor.update_present_position()
-            g.eqx_motor.set_nearest_degrees(g.eqx_position_deg % 360)
-        if g.aov_motor:
-            g.aov_motor.update_present_position()
-            g.aov_motor.set_nearest_degrees(g.aov_position_deg % 360)
+        # 1. Update target orientation from propagator (cache by second)
+        now_unix = utils.get_timestamp()
+        if now_unix != self.last_unix:
+            self.last_aov_angle, self.last_eqx_angle = self.propagator.get_aov_eqx(now_unix)
+            self.last_unix = now_unix
+        
+        # Use cached values
+        aov_angle = self.last_aov_angle
+        eqx_angle = self.last_eqx_angle
+        
+        # 2. Throttled Motor Update (strictly 1Hz)
+        if self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 1000:
+            # Diagnostic: Check for mathematical jumps in the propagator targets
+            diff_aov = abs(aov_angle - self.last_target_aov)
+            diff_eqx = abs(eqx_angle - self.last_target_eqx)
+            
+            if self.last_command_ticks != 0: # Skip first run diagnostic
+                # Ignore jumps that look like a 360->0 or 0->360 wrap
+                is_wrap_aov = diff_aov > 350
+                is_wrap_eqx = diff_eqx > 350
+                
+                if (diff_aov > 2.0 and not is_wrap_aov) or (diff_eqx > 2.0 and not is_wrap_eqx):
+                    dt_ms = time.ticks_diff(now_ms, self.last_command_ticks)
+                    print(f"\n[MOTION ALERT] @ TS:{now_unix} (dt={dt_ms}ms)")
+                    print(f"  AoV: {self.last_target_aov:8.2f} -> {aov_angle:8.2f} (Δ={diff_aov:7.2f}°, Turn {int(aov_angle//360)})")
+                    print(f"  EQX: {self.last_target_eqx:8.2f} -> {eqx_angle:8.2f} (Δ={diff_eqx:7.2f}°, Turn {int(eqx_angle//360)})")
+            
+            self.last_target_aov = aov_angle
+            self.last_target_eqx = eqx_angle
+            self.last_command_ticks = now_ms
+            
+            if g.eqx_motor:
+                g.eqx_motor.set_nearest_degrees(eqx_angle % 360)
+                g.eqx_motor.update_present_position(force=True) # Poll hardware after move
+            if g.aov_motor:
+                g.aov_motor.set_nearest_degrees(aov_angle % 360)
+                g.aov_motor.update_present_position(force=True) # Poll hardware after move
+
+            # Update shared state for display
+            g.aov_position_deg = aov_angle
+            g.eqx_position_deg = eqx_angle
 
         # Persistence check
         cur_rev_eqx = int(g.eqx_position_deg // 360)
@@ -311,7 +356,9 @@ class OrbitMode(Mode):
             if diff_eqx > 2.0:
                 catching_up = True
             
-        if catching_up:
+        if not self.tracking:
+            disp.text("** PAUSED **", 16, 31)
+        elif catching_up:
             disp.text("** CATCHING UP **", 0, 31)
             # Add small debug info for troubleshooting
             # disp.text(f"A:{diff_aov if g.aov_motor else 0:.1f} E:{diff_eqx if g.eqx_motor else 0:.1f}", 0, 42)
@@ -497,11 +544,15 @@ class HomingMode(Mode):
         aov = g.aov_motor.present_output_degrees if g.aov_motor else 0
         eqx = g.eqx_motor.present_output_degrees if g.eqx_motor else 0
         
-        # Consider complete if both within 2 degrees of 0
-        if abs(aov) < 2.0 and abs(eqx) < 2.0:
+        # Consider complete if both within 1 degrees of 0
+        if abs(aov) < 1.0 and abs(eqx) < 1.0:
             self.success = True
             
     def on_back(self):
+        if not self.success:
+            g.aov_motor.stop()
+            g.eqx_motor.stop()
+            
         return SettingsMode()
         
     def on_confirm(self):
@@ -511,8 +562,8 @@ class HomingMode(Mode):
         disp.fill(0)
         
         # Show actual positions
-        aov = g.aov_motor.present_output_degrees if g.aov_motor else 0
-        eqx = g.eqx_motor.present_output_degrees if g.eqx_motor else 0
+        aov = utils.wrap_phase_deg(g.aov_motor.present_output_degrees if g.aov_motor else 0)
+        eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
         
         if self.success:
             disp.text("HOMING COMPLETE", 0, 10)
@@ -808,6 +859,11 @@ class SGP4Mode(Mode):
         self.alt_km = 0.0
         self.fetching = False
         self.propagator = None
+        self.last_target_aov = 0.0
+        self.last_target_eqx = 0.0
+        self.last_unix = 0 # Cache for propagator math
+        self.last_aov_angle = 0.0
+        self.last_eqx_angle = 0.0
         
         # Check WiFi availability
         try:
@@ -1054,36 +1110,56 @@ class SGP4Mode(Mode):
         """Return to menu."""
         return MenuMode()
     
-    def update(self, dt):
+    def update(self, now_ms):
         """Update satellite position and motors."""
         if not self.propagator or not self.tracking:
             return
         
-        # Get positions from propagator
-        now = utils.get_timestamp()
-        aov_angle, eqx_angle = self.propagator.get_aov_eqx(now)
+        # 1. Update target orientation from propagator (cache by second)
+        now_unix = utils.get_timestamp()
+        if now_unix != self.last_unix:
+            self.last_aov_angle, self.last_eqx_angle = self.propagator.get_aov_eqx(now_unix)
+            
+            self.lat_deg = self.last_aov_angle - 90.0
+            self.lon_deg = self.last_eqx_angle - 180.0
+            self.alt_km = self.propagator.get_altitude()
+            
+            g.aov_position_deg = self.last_aov_angle
+            g.eqx_position_deg = self.last_eqx_angle
+            self.last_unix = now_unix
         
-        self.lat_deg = aov_angle - 90.0
-        self.lon_deg = eqx_angle - 180.0
-        self.alt_km = self.propagator.get_altitude()
+        # Use cached values for motor commands
+        aov_angle = self.last_aov_angle
+        eqx_angle = self.last_eqx_angle
         
-        # Map to motors
-        # AoV = Latitude (-90 to +90 -> 0 to 180 degrees motor angle)
-        # EQX = Longitude (-180 to +180 -> 0 to 360 degrees motor angle)
-        
-        aov_angle = self.lat_deg + 90.0  # Map -90..90 to 0..180
-        eqx_angle = self.lon_deg + 180.0  # Map -180..180 to 0..360
-        
-        g.aov_position_deg = aov_angle
-        g.eqx_position_deg = eqx_angle
-        
-        if g.aov_motor:
-            g.aov_motor.update_present_position() # Throttled polling
-            g.aov_motor.set_nearest_degrees(aov_angle)
-        
-        if g.eqx_motor:
-            g.eqx_motor.update_present_position() # Throttled polling
-            g.eqx_motor.set_nearest_degrees(eqx_angle)
+        # 2. Throttled Motor Update (strictly 1Hz)
+        if self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 1000:
+            # Diagnostic: Check for mathematical jumps in the propagator targets
+            diff_aov = abs(aov_angle - self.last_target_aov)
+            diff_eqx = abs(eqx_angle - self.last_target_eqx)
+            
+            if self.last_command_ticks != 0: # Skip first run diagnostic
+                # Ignore jumps that look like a 360->0 or 0->360 wrap
+                is_wrap_aov = diff_aov > 350
+                is_wrap_eqx = diff_eqx > 350
+                
+                if (diff_aov > 2.0 and not is_wrap_aov) or (diff_eqx > 2.0 and not is_wrap_eqx):
+                    dt_ms = time.ticks_diff(now_ms, self.last_command_ticks)
+                    print(f"\n[SGP4 JUMP] {self.satellite_name} @ {now_unix} (dt={dt_ms}ms)")
+                    print(f"  AoV: {self.last_target_aov:7.2f} -> {aov_angle:7.2f} (Δ={diff_aov:6.2f}°)")
+                    print(f"  EQX: {self.last_target_eqx:7.2f} -> {eqx_angle:7.2f} (Δ={diff_eqx:6.2f}°)")
+            
+            self.last_target_aov = aov_angle
+            self.last_target_eqx = eqx_angle
+            self.last_command_ticks = now_ms
+            
+            if g.aov_motor:
+                g.aov_motor.set_nearest_degrees(aov_angle)
+                g.aov_motor.update_present_position(force=True) # Poll hardware after move
+            
+            if g.eqx_motor:
+                g.eqx_motor.set_nearest_degrees(eqx_angle)
+                g.eqx_motor.update_present_position(force=True) # Poll hardware after move
     
     def render(self, disp):
         """Render SGP4 mode display."""

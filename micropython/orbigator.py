@@ -86,22 +86,38 @@ except Exception:
     disp = DummyDisp(); g.disp = disp
 
 # ---------------- RTC Init ----------------
-try:
-    # First try as DS3232 (has SRAM)
-    rtc = DS323x(i2c, has_sram=True)
-    # Probe SRAM to confirm it's really a DS3232
-    if rtc.read_sram(rtc.SRAM_START, 1) is None:
-        print("RTC: No SRAM detected, falling back to DS3231 mode.")
-        rtc.has_sram = False
-    else:
-        print("RTC: DS3232 detected (SRAM available).")
-    
-    g.rtc = rtc
-    utils.sync_system_time(rtc)
-    if rtc.datetime() is not None:
-        print("RTC found and initialized.")
-except Exception:
-    print("RTC init failed.")
+RTC_ADDR = 0x68
+if RTC_ADDR in addrs:
+    try:
+        # First try as DS3232 (has SRAM)
+        rtc = DS323x(i2c, addr=RTC_ADDR, has_sram=True)
+        # Probe SRAM stickiness to confirm it's real memory (DS3232 only)
+        test_val = 0x5A
+        rtc.write_sram(rtc.SRAM_START, bytes([test_val]))
+        read_back = rtc.read_sram(rtc.SRAM_START, 1)
+        
+        if read_back and read_back[0] == test_val:
+            # Second test value to be absolutely sure
+            rtc.write_sram(rtc.SRAM_START, bytes([0xA5]))
+            read_back = rtc.read_sram(rtc.SRAM_START, 1)
+            if read_back and read_back[0] == 0xA5:
+                print("RTC: DS3232 detected (SRAM verified).")
+                rtc.has_sram = True
+            else:
+                rtc.has_sram = False
+        else:
+            print("RTC: No SRAM persistence, falling back to DS3231 mode.")
+            rtc.has_sram = False
+        
+        g.rtc = rtc
+        utils.sync_system_time(rtc)
+        if rtc.datetime() is not None:
+            print("RTC found and initialized.")
+    except Exception as e:
+        print(f"RTC found in scan but init failed: {e}")
+        g.rtc = None
+else:
+    print("RTC: No device found at 0x68 (DS3231/DS3232 absent).")
     g.rtc = None
 
 # ---------------- Encoder + Buttons ----------------
@@ -222,7 +238,9 @@ g.aov_motor = aov_motor
 eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 g.eqx_motor = eqx_motor
 
+aov_motor.set_pid_gains(p=600, d=0)
 aov_motor.set_speed_limit(2) # Capped at 2 or 3 for safety
+eqx_motor.set_pid_gains(p=600, d=0)
 eqx_motor.set_speed_limit(10) # Capped at 10 for safety
 
 # ---------------- State and Loop ----------------
@@ -312,22 +330,21 @@ while True:
         try:
             pin = button_events.pop(0)
             
+            new_mode = None
             if pin == enc_btn:
-                g.current_mode.on_encoder_press()
-            elif pin == BACK_BTN:
-                new_mode = g.current_mode.on_back()
-                if new_mode:
-                    g.current_mode.exit()
-                    g.current_mode = new_mode
-                    g.current_mode.enter()
-                    utils.save_state() # Proactively save new mode from Back
+                new_mode = g.current_mode.on_encoder_press()
             elif pin == CONFIRM_BTN:
                 new_mode = g.current_mode.on_confirm()
-                if new_mode:
-                    g.current_mode.exit()
-                    g.current_mode = new_mode
-                    g.current_mode.enter()
-                    utils.save_state() # Proactively save new mode from Confirm
+            elif pin == BACK_BTN:
+                new_mode = g.current_mode.on_back()
+                
+            if new_mode:
+                print(f"Transition: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
+                g.current_mode.exit()
+                g.current_mode = new_mode
+                g.current_mode.enter()
+                utils.save_state()
+                print(f"Transition complete.")
         except Exception as e:
             print(f"Error handling button: {e}")
     

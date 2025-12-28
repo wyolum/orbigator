@@ -1,13 +1,13 @@
 /*
  * Dynamixel Motor Model
  * Parametric OpenSCAD model for Dynamixel servo motors
- * Default dimensions based on XL330-M288-T
+ * Default dimensions based on XL330/XC330-M288-T
  * 
  * Author: Generated for Orbigator project
  * Date: 2025-12-13
  */
 
-// Main parameters for XL330-M288-T
+// Main parameters for XL330/XC330-M288-T
 // All dimensions in mm
 motor_width = 20;           // Width of motor body
 motor_depth = 34;           // Depth of motor body

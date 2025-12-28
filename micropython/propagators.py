@@ -84,9 +84,16 @@ class SGP4Propagator(Propagator):
     def __init__(self, sgp4_model):
         self.sgp4 = sgp4_model
         self.last_alt = 0.0
+        # Cache for performance
+        try:
+            import sgp4
+            self._sgp4_mod = sgp4
+        except ImportError:
+            self._sgp4_mod = None
 
     def get_aov_eqx(self, unix_time):
-        import sgp4
+        if not self._sgp4_mod:
+            return 0.0, 0.0
         
         # Calculate time since TLE epoch
         jd_now = utils.get_jd(unix_time)

@@ -13,6 +13,9 @@ SIDEREAL_DAY_SEC = 86164.0905  # seconds
 EARTH_ROTATION_DEG_DAY = 360.0
 CONFIG_FILE = "orbigator_config.json"
 
+def wrap_phase_deg(phase_deg):
+    return (phase_deg + 180) % 360 - 180
+
 def calculate_absolute_position(last_absolute, current_motor_raw):
     """
     Calculate absolute position after a power cycle.
@@ -269,7 +272,7 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_FORMAT = "<4sQfffffffB16sB"
+STATE_FORMAT = "<4sQffffffB16sB"
 STATE_MAGIC = b"ORB!"
 STATE_SIZE = struct.calcsize(STATE_FORMAT)
 
@@ -309,6 +312,8 @@ def save_state():
                     float(g.orbital_eccentricity), float(g.orbital_periapsis_deg),
                     m_id, sat_name.encode('utf-8'), 0
                 )
+                
+                print(f"DEBUG SRAM Save: AoV={g.aov_position_deg:.1f} EQX={g.eqx_position_deg:.1f} Alt={g.orbital_altitude_km:.1f}")
                 
                 # Calculate and insert checksum
                 data_list = bytearray(data)
@@ -364,7 +369,7 @@ def load_state():
                         "mode_id": mode_rev.get(mid, "ORBIT"),
                         "sat_name": sat.decode('utf-8').strip('\x00')
                     }
-                    print("State recovered from RTC SRAM.")
+                    print(f"State recovered from RTC SRAM: AoV={aov:.1f} EQX={eqx:.1f} Alt={alt:.1f}")
                 else:
                     print("RTC SRAM checksum failed.")
             else:
@@ -377,7 +382,7 @@ def load_state():
         try:
             with open(CONFIG_FILE, "r") as f:
                 config = json.load(f)
-            print("State loaded from Flash.")
+            print(f"State loaded from Flash: AoV={config.get('aov_deg'):.1f} Alt={config.get('altitude_km'):.1f}")
         except Exception as e:
             print("No Flash config found:", e)
             return {"timestamp": 0, "mode_id": "ORBIT", "sat_name": None}
