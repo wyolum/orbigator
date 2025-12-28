@@ -11,6 +11,8 @@ eqx_motor = None
 # Hardware objects
 rtc = None
 disp = None
+i2c_lock = None  # Thread lock for I2C bus synchronization
+uart_lock = None # Thread lock for UART bus synchronization
 
 # Orbital parameters
 orbital_altitude_km = 400.0
@@ -33,8 +35,14 @@ run_start_time = 0
 run_start_ticks = 0
 run_start_aov_deg = 0.0
 run_start_eqx_deg = 0.0
+initialized_orbit = False
 
 # Motor health tracking
 motor_health_ok = True  # Global health flag
 motor_offline_id = None  # ID of offline motor (if any)
 motor_offline_error = ""  # Error description
+
+# UI Mode tracking
+current_mode_id = "BOOT" # ORBIT, SGP4, MENU, etc.
+current_mode = None # The actual Mode instance (e.g. OrbitMode())
+next_mode = None # For requesting mode changes from other threads (e.g. Web Server)

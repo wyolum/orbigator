@@ -12,7 +12,7 @@ screen_offset_w = 6;
 
 knob_d = 14.5;
 knob_h = 22;
-knob_offset_l = 52.5 - board_l/2;
+knob_offset_l = 52.5 - board_l/2+1;
 knob_offset_w = 0;
 
 module screen(){
@@ -55,11 +55,22 @@ module display_board(){
   }
 }
 
+module button(){
+  translate([0,0,1])cube([2, 4, 2], center=true);
+}
+module buttons(){
+  translate([knob_offset_w-12, knob_offset_l, 0])color("lightgrey")button();
+  translate([knob_offset_w+12, knob_offset_l, 0])color("lightgrey")button();
+}
+
 module display_assy(){
-  display_board();
-  screen();
-  knob();
-  pins();
+  translate([0,0,-2.5]){
+    display_board();
+    screen();
+    knob();
+    pins();
+    buttons();
+  }
 }
 
 module display_screws(){
@@ -71,5 +82,22 @@ module display_screws(){
   }
 }
 
+module display_spacer(){
+  $fn=30;
+  difference(){
+    cylinder(d=8, h=2.5);
+    translate([0,0,-1])cylinder(d=3.5, h=2.5+2);
+  }
+}
+module display_spacers(){
+  translate([0,0,-2.5])
+  for(i=[-1,1]){
+    for(j=[-1,1]){
+      translate([i * (board_w/2 - hole_offset), j * (board_l/2 - hole_offset), 0])display_spacer();
+    }
+  }
+}
+display_spacers();
+//buttons();
 display_assy();
 //translate([0,0,0])screen_hole();

@@ -173,11 +173,16 @@ def make_packet(servo_id, instruction, params=[]):
     return bytes(packet)
 
 def send_packet(packet):
-    """Send packet to DYNAMIXEL"""
+    """Send packet to DYNAMIXEL with precise half-duplex timing"""
     set_tx_mode()
+    
+    # Calculate transmission time for 57600 baud (approx 174us per byte)
+    tx_time_us = len(packet) * 174 + 50
+    
     uart.write(packet)
-    # Wait for transmission to complete
-    time.sleep_ms(2)
+    
+    # Microsecond delay to allow TX to complete before dropping DIR
+    time.sleep_us(tx_time_us)
     set_rx_mode()
 
 def receive_response(timeout_ms=100, sent_packet=None):
@@ -213,7 +218,7 @@ def receive_response(timeout_ms=100, sent_packet=None):
                                 
                                 # CRITICAL: Only return STATUS packets (0x55), skip echoed commands
                                 if response[i+7] == 0x55:  # STATUS instruction
-                                    return bytes(packet_data)
+                                    return bytes(response[i:i+expected_len])
                                 # If this is the echo, skip it and keep looking
         time.sleep_ms(1)
     

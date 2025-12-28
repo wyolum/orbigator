@@ -11,6 +11,7 @@ Best practices for Extended Position Control Mode (Mode 4):
 from machine import UART, Pin
 import time
 import pins
+import orb_globals as g
 
 # UART setup
 uart = UART(pins.DYNAMIXEL_UART_ID, baudrate=57600, bits=8, parity=None, stop=1)
@@ -60,28 +61,48 @@ def calc_crc(data):
         crc = ((crc << 8) ^ CRC_TABLE[i]) & 0xFFFF
     return crc
 
-def send_and_receive(packet, timeout_ms=150):
-    """Send packet and get response"""
-    while uart.any():
-        uart.read()
-    
-    dir_pin.value(1)
-    time.sleep_ms(10)
-    uart.write(packet)
-    time.sleep_ms(10)
-    dir_pin.value(0)
-    
-    time.sleep_ms(timeout_ms)
-    
-    if uart.any():
-        response = uart.read()
-        for i in range(len(response) - 10):
-            if response[i:i+4] == b'\xFF\xFF\xFD\x00':
-                if i + 7 < len(response) and response[i+7] == 0x55:
-                    pkt_len = response[i+5] + (response[i+6] << 8)
-                    if i + 7 + pkt_len <= len(response):
-                        return response[i:i+7+pkt_len]
-    return None
+def send_and_receive(packet, timeout_ms=100):
+    """Send packet and get response with precise half-duplex timing"""
+    if g.uart_lock:
+        g.uart_lock.acquire()
+        
+    try:
+        # Clear hardware buffers
+        while uart.any():
+            uart.read()
+            
+        # Calculate transmission time for 57600 baud (approx 174us per byte)
+        # 1 bit = 1/57600 = 17.36us. A byte (1 start, 8 data, 1 stop) = 173.6us.
+        tx_time_us = len(packet) * 174 + 50 # Add a small buffer
+        
+        dir_pin.value(1)
+        time.sleep_us(20) # Small setup time
+        uart.write(packet)
+        
+        # Microsecond delay to allow TX to complete before dropping DIR
+        time.sleep_us(tx_time_us)
+        dir_pin.value(0)
+        
+        # Wait for response
+        start = time.ticks_ms()
+        response = bytearray()
+        while time.ticks_diff(time.ticks_ms(), start) < timeout_ms:
+            if uart.any():
+                response.extend(uart.read())
+                # Look for DYNAMIXEL V2.0 status packet header (0xFF 0xFF 0xFD 0x00)
+                # and instruction 0x55 (Status)
+                for i in range(len(response) - 10):
+                    if (response[i:i+4] == b'\xFF\xFF\xFD\x00' and 
+                        response[i+7] == 0x55):
+                        pkt_len = response[i+5] + (response[i+6] << 8)
+                        if i + 7 + pkt_len <= len(response):
+                            return bytes(response[i:i+7+pkt_len])
+            time.sleep_us(500) # Small yield
+            
+        return None
+    finally:
+        if g.uart_lock:
+            g.uart_lock.release()
 
 def write_byte(servo_id, address, value):
     """Write a single byte"""

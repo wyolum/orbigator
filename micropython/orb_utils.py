@@ -181,13 +181,52 @@ def compute_elliptical_position(elapsed_sec, period_sec, eccentricity, periapsis
     
     return aov_position_deg, rate_deg_sec
 
+def compute_mean_from_true_anomaly(true_anomaly_deg, eccentricity):
+    """
+    Compute Mean Anomaly from True Anomaly.
+    Used for resuming elliptical orbits with correct velocity by backdating time.
+    
+    Args:
+        true_anomaly_deg: True Anomaly in degrees (0-360)
+        eccentricity: Orbital eccentricity (0.0 to 0.9)
+        
+    Returns:
+        Mean Anomaly in radians (0 to 2pi)
+    """
+    if eccentricity < 1e-6:
+        return math.radians(true_anomaly_deg)
+        
+    nu = math.radians(true_anomaly_deg)
+    
+    # tan(E/2) = sqrt((1-e)/(1+e)) * tan(nu/2)
+    # Use atan which returns value in [-pi/2, pi/2]
+    # We want E/2 in same quadrant.
+    
+    term1 = math.sqrt((1.0 - eccentricity) / (1.0 + eccentricity))
+    term2 = math.tan(nu / 2.0)
+    
+    E_half = math.atan(term1 * term2)
+    E = 2.0 * E_half
+    
+    # Kepler's Equation: M = E - e*sin(E)
+    M = E - eccentricity * math.sin(E)
+    
+    # Normalize to 0-2pi
+    if M < 0: M += 2 * math.pi
+    return M % (2.0 * math.pi)
+
 def sync_system_time(rtc):
     """Sync the Pico internal clock to the external RTC."""
     try:
         if not rtc: return
         import machine
         # RTC: (YY, MM, DD, WD, HH, MM, SS, SS)
-        t = rtc.datetime()
+        if g.i2c_lock:
+            with g.i2c_lock:
+                t = rtc.datetime()
+        else:
+            t = rtc.datetime()
+            
         if t and t[0] >= 2024:
             machine.RTC().datetime(t)
             print(f"System time synced to RTC: {t[0]}-{t[1]}-{t[2]} {t[4]:02d}:{t[5]:02d}:{t[6]:02d}")
@@ -195,19 +234,18 @@ def sync_system_time(rtc):
         print("Sync time failed:", e)
 
 # Global time reference for high-res timestamping
-_time_ref = (time.time(), time.ticks_ms())
+_time_ref = None
 
 def get_timestamp(rtc=None):
-    """
-    Get high-resolution unix timestamp.
-    Pico's time.time() is only 1s resolution. This adds ticks_ms for sub-second precision.
-    """
-    base_s, base_ms = _time_ref
-    
-    diff_ms = time.ticks_diff(time.ticks_ms(), base_ms)
-    elapsed_s = diff_ms / 1000.0
-    
-    return base_s + elapsed_s
+    """Get stable integer unix timestamp."""
+    return int(time.time())
+
+def get_shortest_path_delta(current_deg, target_deg):
+    """Calculate the shortest delta between two angles (0-360)."""
+    delta = (target_deg - current_deg) % 360
+    if delta > 180:
+        delta -= 360
+    return delta
 
 def set_datetime(year, month, day, hour, minute, second, rtc=None):
     """Set the RTC and system time."""
@@ -217,15 +255,27 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
         # (Y, M, D, WD, H, M, S, SS)
         t = (year, month, day, 0, hour, minute, second, 0)
         if rtc:
-            rtc.datetime(t)
+            if g.i2c_lock:
+                with g.i2c_lock:
+                    rtc.datetime(t)
+            else:
+                rtc.datetime(t)
         machine.RTC().datetime(t)
-        # Invalidate time ref to force re-sync
-        _time_ref = None
         print(f"Time set to: {year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}")
         return True
     except Exception as e:
         print("Error setting time:", e)
         return False
+
+import struct
+
+STATE_FORMAT = "<4sQfffffffB16sB"
+STATE_MAGIC = b"ORB!"
+STATE_SIZE = struct.calcsize(STATE_FORMAT)
+
+def _compute_checksum(data):
+    """Simple 8-bit checksum for data except the last byte."""
+    return sum(data[:-1]) & 0xFF
 
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
@@ -238,77 +288,264 @@ def save_state():
             "periapsis_deg": g.orbital_periapsis_deg,
             "eqx_deg": g.eqx_position_deg,
             "aov_deg": g.aov_position_deg,
+            "mode_id": g.current_mode_id,
+            "sat_name": getattr(g.current_mode, 'satellite_name', None) if g.current_mode_id == "SGP4" else "",
             "timestamp": now
         }
+        
+        # 1. Attempt SRAM save if DS3232
+        if g.rtc and getattr(g.rtc, 'has_sram', False):
+            try:
+                # Map Mode ID to integer
+                mode_map = {"ORBIT": 0, "SGP4": 1, "DATETIME": 2}
+                m_id = mode_map.get(g.current_mode_id, 0)
+                sat_name = str(config["sat_name"])[:16]
+                
+                # Pack binary block (leaving checksum 0 for now)
+                data = struct.pack(STATE_FORMAT, 
+                    STATE_MAGIC, int(now), 
+                    float(g.aov_position_deg), float(g.eqx_position_deg),
+                    float(g.orbital_altitude_km), float(g.orbital_inclination_deg),
+                    float(g.orbital_eccentricity), float(g.orbital_periapsis_deg),
+                    m_id, sat_name.encode('utf-8'), 0
+                )
+                
+                # Calculate and insert checksum
+                data_list = bytearray(data)
+                data_list[-1] = _compute_checksum(data_list)
+                
+                if g.i2c_lock:
+                    with g.i2c_lock:
+                        if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
+                            # SUCCESS: Stop here to avoid flash wear
+                            return
+                else:
+                    if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
+                        return
+            except Exception as e:
+                print("SRAM save error:", e)
+                    
+        # 2. Fallback to Flash
         with open(CONFIG_FILE, "w") as f:
             json.dump(config, f)
-        print(f"State saved: AoV={g.aov_position_deg:.3f} at TS={now:.3f}")
+        print(f"State saved to Flash at TS={now}")
     except Exception as e:
         print("Error saving state:", e)
 
 def load_state():
     """Load orbital parameters and reconstruct motor positions."""
+    config = None
+    
+    # 1. Attempt RTC SRAM recovery
+    if g.rtc and getattr(g.rtc, 'has_sram', False):
+        try:
+            if g.i2c_lock:
+                with g.i2c_lock:
+                    data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
+            else:
+                data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
+                
+            if data and data[:4] == STATE_MAGIC:
+                # Verify checksum
+                if data[-1] == _compute_checksum(data):
+                    # Unpack
+                    mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
+                    
+                    # Decoded Mode
+                    mode_rev = {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}
+                    config = {
+                        "timestamp": ts,
+                        "aov_deg": aov,
+                        "eqx_deg": eqx,
+                        "altitude_km": alt,
+                        "inclination_deg": inc,
+                        "eccentricity": ecc,
+                        "periapsis_deg": per,
+                        "mode_id": mode_rev.get(mid, "ORBIT"),
+                        "sat_name": sat.decode('utf-8').strip('\x00')
+                    }
+                    print("State recovered from RTC SRAM.")
+                else:
+                    print("RTC SRAM checksum failed.")
+            else:
+                print("RTC SRAM magic missing or invalid.")
+        except Exception as e:
+            print("RTC SRAM recovery error:", e)
+
+    # 2. Fallback to Flash recovery
+    if config is None:
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                config = json.load(f)
+            print("State loaded from Flash.")
+        except Exception as e:
+            print("No Flash config found:", e)
+            return {"timestamp": 0, "mode_id": "ORBIT", "sat_name": None}
+
+    # Common reconstruction logic
     try:
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-        
         g.orbital_altitude_km = config.get("altitude_km", 400.0)
         g.orbital_inclination_deg = config.get("inclination_deg", 51.6)
         g.orbital_eccentricity = config.get("eccentricity", 0.0)
         g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
         
-        # Reconstruct absolute positions
+        # Import get_new_pos for shortest path calculation
+        from dynamixel_extended_utils import get_new_pos
+        
         last_eqx_deg = config.get("eqx_deg", 0.0)
         last_aov_deg = config.get("aov_deg", 0.0)
+        timestamp = config.get("timestamp", 0)
         
         if g.eqx_motor:
             raw_motor_val = g.eqx_motor.get_angle_degrees()
-            # Trust motor RAM if valid multi-turn data exists (Soft Reboot)
-            if abs(raw_motor_val) > 360:
-                g.eqx_position_deg = raw_motor_val
-                current_raw_deg = raw_motor_val
-            else:
-                # Reconstruct from modulo (Power Cycle)
-                current_raw_deg = raw_motor_val % 360
-                revs = int(last_eqx_deg // 360)
-                candidates = [
-                    (revs - 1) * 360 + current_raw_deg,
-                    (revs) * 360 + current_raw_deg,
-                    (revs + 1) * 360 + current_raw_deg
-                ]
-                g.eqx_position_deg = min(candidates, key=lambda x: abs(x - last_eqx_deg))
-            
-            # Sync back to motor object
-            g.eqx_motor.output_degrees = g.eqx_position_deg
-            g.eqx_motor.motor_degrees = g.eqx_position_deg * g.eqx_motor.gear_ratio
-            
-            print(f"  EQX: Saved={last_eqx_deg:.2f}, RawNow={raw_motor_val:.2f}, Final={g.eqx_position_deg:.2f}")
+            g.eqx_position_deg = get_new_pos(last_eqx_deg, raw_motor_val % 360)
             
         if g.aov_motor:
             raw_motor_val = g.aov_motor.get_angle_degrees()
-            # Trust motor RAM if valid multi-turn data exists (Soft Reboot)
-            if abs(raw_motor_val) > 360:
-                g.aov_position_deg = raw_motor_val
-                current_raw_deg = raw_motor_val
-            else:
-                # Reconstruct from modulo (Power Cycle)
-                current_raw_deg = raw_motor_val % 360
-                revs = int(last_aov_deg // 360)
-                candidates = [
-                    (revs - 1) * 360 + current_raw_deg,
-                    (revs) * 360 + current_raw_deg,
-                    (revs + 1) * 360 + current_raw_deg
-                ]
-                g.aov_position_deg = min(candidates, key=lambda x: abs(x - last_aov_deg))
+            g.aov_position_deg = get_new_pos(last_aov_deg, raw_motor_val % 360)
             
-            # Sync back to motor object
-            g.aov_motor.output_degrees = g.aov_position_deg
-            g.aov_motor.motor_degrees = g.aov_position_deg * g.aov_motor.gear_ratio
-            
-            print(f"  AoV: Saved={last_aov_deg:.2f}, RawNow={raw_motor_val:.2f}, Final={g.aov_position_deg:.2f}")
-
-        print("State loaded and positions reconstructed.")
-        return config.get("timestamp", 0), last_eqx_deg, last_aov_deg
+        return {
+            "timestamp": timestamp,
+            "mode_id": config.get("mode_id", "ORBIT"),
+            "sat_name": config.get("sat_name", None)
+        }
     except Exception as e:
-        print("No config or error loading:", e)
-        return 0, 0, 0
+        print("Reconstruction error:", e)
+        return {"timestamp": 0, "mode_id": "ORBIT", "sat_name": None}
+
+# ============ SGP4 Support Functions ============
+
+def compute_gmst(unix_timestamp):
+    """
+    Compute Greenwich Mean Sidereal Time from Unix timestamp.
+    
+    Args:
+        unix_timestamp: Unix timestamp (seconds since 1970-01-01 00:00:00 UTC)
+    
+    Returns:
+        GMST in radians
+    """
+    # Julian Date from Unix timestamp
+    # Julian Date from Unix timestamp
+    # MicroPython time.time() starts at 2000-01-01 00:00:00
+    # JD for 2000-01-01 00:00:00 UTC is 2451544.5
+    jd = (unix_timestamp / 86400.0) + 2451544.5
+    
+    # Days since J2000.0
+    d = jd - 2451545.0
+    
+    # GMST at 0h UT (simplified formula, accurate to ~1 arcsecond)
+    gmst_hours = 18.697374558 + 24.06570982441908 * d
+    
+    # Convert to radians and normalize to [0, 2π]
+    gmst_rad = math.radians(gmst_hours * 15.0)  # 15 deg/hour
+    gmst_rad = gmst_rad % (2.0 * math.pi)
+    
+    return gmst_rad
+
+def get_jd(unix_timestamp):
+    """Julian Date from MicroPython unix timestamp (starts at 2000)."""
+    return (unix_timestamp / 86400.0) + 2451544.5
+
+def get_jd_of_tle_epoch(year, day):
+    """
+    Calculate Julian Date for TLE epoch.
+    year is 4-digit (e.g. 1997 or 2025)
+    day is fractional day of year (1.0 = Jan 1 0h)
+    """
+    # Precise formula for JD of Jan 1 0h of the given year
+    y = year
+    m = 1
+    d = 1
+    jd_jan1 = 367*y - (7*(y + (m+9)//12))//4 + (275*m)//9 + d + 1721013.5
+    # Add fractional dayoffset (TLE day 1.0 is Jan 1 0h)
+    return jd_jan1 + (day - 1.0)
+
+def parse_tle_epoch(line1):
+    """
+    Extract epoch year and day from TLE line 1.
+    
+    Args:
+        line1: TLE line 1 string
+    
+    Returns:
+        Tuple of (epoch_year, epoch_day)
+    """
+    epoch_year = int(line1[18:20])
+    if epoch_year < 57:
+        epoch_year += 2000
+    else:
+        raise ValueError("Pre-2000 TLEs are not supported")
+    
+    epoch_day = float(line1[20:32])
+    
+    return (epoch_year, epoch_day)
+
+def load_tle_cache():
+    """
+    Load TLE cache from file.
+    
+    Returns:
+        Dictionary of {satellite_name: {"line1": ..., "line2": ..., "last_fetch": ...}}
+    """
+    try:
+        with open("tle_cache.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
+
+def save_tle_cache(cache):
+    """
+    Save TLE cache to file.
+    
+    Args:
+        cache: Dictionary of TLE data
+    """
+    try:
+        with open("tle_cache.json", "w") as f:
+            json.dump(cache, f)
+        return True
+    except Exception as e:
+        print(f"Error saving TLE cache: {e}")
+        return False
+
+def tle_needs_update(last_fetch_timestamp):
+    """
+    Check if TLE needs updating (>24 hours old).
+    
+    Args:
+        last_fetch_timestamp: Unix timestamp of last fetch
+    
+    Returns:
+        True if update needed, False otherwise
+    """
+    if last_fetch_timestamp == 0:
+        return True
+    
+    now = get_timestamp()
+    age_hours = (now - last_fetch_timestamp) / 3600.0
+    
+    return age_hours > 24.0
+
+def get_tle_age_str(last_fetch_timestamp):
+    """
+    Get human-readable TLE age string.
+    
+    Args:
+        last_fetch_timestamp: Unix timestamp of last fetch
+    
+    Returns:
+        String like "2h" or "3d"
+    """
+    if last_fetch_timestamp == 0:
+        return "never"
+    
+    now = get_timestamp()
+    age_sec = now - last_fetch_timestamp
+    
+    if age_sec < 3600:
+        return f"{int(age_sec/60)}m"
+    elif age_sec < 86400:
+        return f"{int(age_sec/3600)}h"
+    else:
+        return f"{int(age_sec/86400)}d"

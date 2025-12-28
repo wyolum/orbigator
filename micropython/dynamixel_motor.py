@@ -8,7 +8,7 @@ IMPORTANT: When you edit this file, remember to upload the updated file to the P
            for changes to take effect! Use Thonny or mpremote to transfer the file.
 """
 
-from dynamixel_extended_utils import read_present_position, write_dword, write_byte
+from dynamixel_extended_utils import read_present_position, write_dword, write_byte, get_new_pos
 import time
 
 class DynamixelMotor:
@@ -42,6 +42,11 @@ class DynamixelMotor:
         self.consecutive_failures = 0
         self.MAX_FAILURES_BEFORE_OFFLINE = 5
         
+        # Tracking speed limit and physical position
+        self.current_velocity_limit = None
+        self.present_output_degrees = 0.0
+        self.last_present_read_ticks = 0
+        
         # Read current motor position on initialization
         motor_ticks = read_present_position(motor_id)
         
@@ -53,6 +58,8 @@ class DynamixelMotor:
         
         # Track output position (accounting for gear ratio)
         self.output_degrees = self.motor_degrees / gear_ratio
+        self.present_output_degrees = self.output_degrees
+        self.last_present_read_ticks = time.ticks_ms()
         
         print(f"Motor {motor_id} ({name}) initialized:")
         print(f"  Motor position: {self.motor_degrees:.2f}°")
@@ -111,8 +118,13 @@ class DynamixelMotor:
         Returns:
             True if successful, False otherwise
         """
+        # Optimization: Don't write or print if already at target
+        if self.current_velocity_limit == velocity:
+            return True
+            
         success = write_dword(self.motor_id, self.ADDR_PROFILE_VELOCITY, velocity)
         if success:
+            self.current_velocity_limit = velocity
             print(f"  Speed limit set: velocity={velocity} (higher=faster)")
         else:
             print(f"Warning: Failed to set speed limit for motor {self.motor_id}")
@@ -148,8 +160,17 @@ class DynamixelMotor:
             self.motor_degrees = motor_degrees
             return True
         else:
-            print(f"Warning: Failed to set position for motor {self.motor_id} ({self.name})")
+            # If we fail, try to read back the actual position to keep software track in sync
+            self.get_angle_degrees()
             return False
+            
+    def home(self):
+        """
+        Home the motor (move output shaft to 0 degrees).
+        Convenience wrapper around set_angle_degrees(0).
+        """
+        print(f"Homing Motor {self.motor_id} ({self.name})...")
+        return self.set_angle_degrees(0)
     
     def set_nearest_degrees(self, target_degrees):
         """
@@ -158,24 +179,20 @@ class DynamixelMotor:
         This method uses get_new_pos() to calculate the shortest path to the target,
         preventing the motor from wrapping the long way around 0°/360°.
         
-        For example:
-        - Current: 358°, Target: 2° → Moves forward +4° (not backward -356°)
-        - Current: 10°, Target: 350° → Moves backward -20° (not forward +340°)
-        
         Args:
-            target_degrees: Desired output angle in degrees (0-360)
+            target_degrees: Desired output angle in degrees (normally 0-360)
         
         Returns:
             True if successful, False otherwise
         """
-        from dynamixel_extended_utils import get_new_pos
+        # Calculate new absolute position using the standardized utility
+        new_degrees = get_new_pos(self.output_degrees, target_degrees)
         
-        # Get current position
-        current_degrees = self.output_degrees
-        
-        # Calculate shortest path using get_new_pos
-        new_degrees = get_new_pos(current_degrees, target_degrees)
-        
+        # Log large moves for troubleshooting
+        delta = new_degrees - self.output_degrees
+        if abs(delta) > 90:
+            print(f"DEBUG: Large move on {self.name} (ID {self.motor_id}): Δ={delta:.2f}°")
+            
         # Command the motor
         return self.set_angle_degrees(new_degrees)
     
@@ -201,10 +218,29 @@ class DynamixelMotor:
             # Update tracking
             self.motor_degrees = motor_degrees
             self.output_degrees = output_degrees
+            self.present_output_degrees = output_degrees
+            self.last_present_read_ticks = time.ticks_ms()
             
             return output_degrees
         
         return self._retry_operation(_read_operation, "read position")
+
+    def update_present_position(self, force=False):
+        """
+        Poll the motor's actual physical position from hardware.
+        
+        This is throttled to once every 500ms unless force=True to protect
+        bus bandwidth for time-critical motion commands.
+        
+        Returns:
+            Current physical output degrees
+        """
+        now = time.ticks_ms()
+        if not force and time.ticks_diff(now, self.last_present_read_ticks) < 500:
+            return self.present_output_degrees
+            
+        # Read from hardware
+        return self.get_angle_degrees()
     
     def move_relative_degrees(self, delta_output_degrees):
         """

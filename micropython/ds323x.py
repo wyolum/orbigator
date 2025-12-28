@@ -187,11 +187,11 @@ class DS323x:
 # Backward compatibility aliases
 #DS3231 = DS323x  # DS3231 is just DS323x with has_sram=False
 #DS3232 = DS323x  # DS3232 is just DS323x with has_sram=True
-class DS3231(DS33x):
+class DS3231(DS323x):
     def __init__(self, *args, **kw):
         kw['has_sram'] = False
         super().__init__(*args, **kw)
-class DS3232(DS33x):
+class DS3232(DS323x):
     def __init__(self, *args, **kw):
         kw['has_sram'] = True
         super().__init__(*args, **kw)

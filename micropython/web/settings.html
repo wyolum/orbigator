@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Orbigator</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>⚙️ Settings</h1>
+            <nav>
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/orbit.html" class="nav-link">Orbit Mode</a>
+                <a href="/sgp4.html" class="nav-link">Satellite Tracking</a>
+                <a href="/settings.html" class="nav-link active">Settings</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- System Information -->
+        <div class="card mb-2">
+            <div class="card-header">System Information</div>
+            <div class="card-body">
+                <div class="flex justify-between mb-1">
+                    <span>WiFi SSID:</span>
+                    <span id="wifi-ssid" class="text-muted">--</span>
+                </div>
+                <div class="flex justify-between mb-1">
+                    <span>RTC Time:</span>
+                    <span id="rtc-time" class="text-muted">--</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Motor Status:</span>
+                    <span id="motor-status" class="badge badge-success">OK</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="card">
+            <div class="card-header">About Orbigator</div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Orbigator is a precision orbital mechanics demonstrator using Dynamixel motors
+                    to simulate satellite orbits and track real satellites using SGP4 propagation.
+                </p>
+                <p class="text-muted mt-2">
+                    <strong>Features:</strong>
+                </p>
+                <ul class="text-muted" style="margin-left: 1.5rem;">
+                    <li>Real-time satellite tracking (SGP4)</li>
+                    <li>Custom orbital parameter simulation</li>
+                    <li>Elliptical orbit support</li>
+                    <li>Web-based remote control</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        // Load system info
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const status = await api.getStatus();
+                if (status.wifi) {
+                    updateText('wifi-ssid', status.wifi.ssid || '--');
+                }
+                if (status.rtc && status.rtc.time) {
+                    updateText('rtc-time', status.rtc.time);
+                }
+            } catch (error) {
+                console.error('Failed to load system info:', error);
+            }
+        });
+    </script>
+</body>
+
+</html>

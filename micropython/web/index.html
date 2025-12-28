@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orbigator Control</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="header">
+    <div class="container">
+      <h1>🛰️ Orbigator Control</h1>
+      <nav>
+        <a href="/" class="nav-link active">Dashboard</a>
+        <a href="/orbit.html" class="nav-link">Orbit Mode</a>
+        <a href="/sgp4.html" class="nav-link">Satellite Tracking</a>
+        <a href="/settings.html" class="nav-link">Settings</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Status Overview -->
+    <div class="grid">
+      <!-- Current Mode -->
+      <div class="card">
+        <div class="card-header">
+          <span>Current Mode <span id="mode-badge" class="badge badge-success">Orbit</span></span>
+          <button class="btn btn-sm btn-secondary" onclick="updateStatus()">Update</button>
+        </div>
+        <div class="card-body">
+          <div class="flex gap-2 mt-2">
+            <button class="btn btn-primary" onclick="switchMode('orbit')">Orbit Mode</button>
+            <button class="btn btn-primary" onclick="switchMode('sgp4')">SGP4 Mode</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- System Status -->
+      <div class="card">
+        <div class="card-header">System Status</div>
+        <div class="card-body">
+          <div class="flex justify-between mb-1">
+            <span>WiFi:</span>
+            <span id="wifi-status" class="badge badge-success">Connected</span>
+          </div>
+          <div class="flex justify-between mb-1">
+            <span>RTC:</span>
+            <span id="rtc-status" class="badge badge-success">Synced</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Motors:</span>
+            <span id="motor-status" class="badge badge-success">OK</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motor Positions -->
+    <div class="grid mt-2">
+      <div class="card">
+        <div class="card-header">AoV Motor (Latitude)</div>
+        <div class="stat">
+          <div class="stat-value" id="aov-position">0.00°</div>
+          <div class="stat-label">Current Position</div>
+        </div>
+        <div class="flex gap-1 mt-2">
+          <button class="btn btn-secondary" onclick="nudgeMotor('aov', -5)">← 5°</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('aov', -1)">← 1°</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('aov', 1)">1° →</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('aov', 5)">5° →</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">EQX Motor (Longitude)</div>
+        <div class="stat">
+          <div class="stat-value" id="eqx-position">0.00°</div>
+          <div class="stat-label">Current Position</div>
+        </div>
+        <div class="flex gap-1 mt-2">
+          <button class="btn btn-secondary" onclick="nudgeMotor('eqx', -5)">← 5°</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('eqx', -1)">← 1°</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('eqx', 1)">1° →</button>
+          <button class="btn btn-secondary" onclick="nudgeMotor('eqx', 5)">5° →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card mt-2">
+      <div class="card-header">Quick Actions</div>
+      <div class="flex gap-2">
+        <a href="/orbit.html" class="btn btn-primary">Configure Orbit</a>
+        <a href="/sgp4.html" class="btn btn-primary">Track Satellite</a>
+        <a href="/settings.html" class="btn btn-secondary">Settings</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+
+</html>
