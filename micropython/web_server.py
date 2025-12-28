@@ -214,11 +214,19 @@ class WebServer:
             'aov': {
                 'position': round(g.aov_position_deg % 360, 2),
                 'rate': round(g.aov_rate_deg_sec, 6),
-                'health': 'ok'  # TODO: Check motor health
+                'p_gain': g.aov_motor.p_gain if g.aov_motor else None,
+                'i_gain': g.aov_motor.i_gain if g.aov_motor else None,
+                'd_gain': g.aov_motor.d_gain if g.aov_motor else None,
+                'velocity_limit': g.aov_motor.current_velocity_limit if g.aov_motor else None,
+                'health': 'ok'
             },
             'eqx': {
                 'position': round(g.eqx_position_deg % 360, 2),
                 'rate': round(g.eqx_rate_deg_sec, 6),
+                'p_gain': g.eqx_motor.p_gain if g.eqx_motor else None,
+                'i_gain': g.eqx_motor.i_gain if g.eqx_motor else None,
+                'd_gain': g.eqx_motor.d_gain if g.eqx_motor else None,
+                'velocity_limit': g.eqx_motor.current_velocity_limit if g.eqx_motor else None,
                 'health': 'ok'
             }
         }, 200

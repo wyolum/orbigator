@@ -59,10 +59,14 @@ class DynamixelMotor:
         # Convert to motor degrees
         self.motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
         
-        # Track output position (accounting for gear ratio)
         self.output_degrees = self.motor_degrees / gear_ratio
         self.present_output_degrees = self.output_degrees
         self.last_present_read_ticks = time.ticks_ms()
+        
+        # Cache for parameters (DYNAMIXEL defaults)
+        self.p_gain = 800
+        self.i_gain = 0
+        self.d_gain = 0
         
         print(f"Motor {motor_id} ({name}) initialized:")
         print(f"  Motor position: {self.motor_degrees:.2f}°")
@@ -313,6 +317,7 @@ class DynamixelMotor:
         p = read_word(self.motor_id, self.ADDR_POSITION_P_GAIN)
         i = read_word(self.motor_id, self.ADDR_POSITION_I_GAIN)
         d = read_word(self.motor_id, self.ADDR_POSITION_D_GAIN)
+        self.p_gain, self.i_gain, self.d_gain = p, i, d
         return p, i, d
         
     def set_pid_gains(self, p=None, i=None, d=None):
@@ -328,17 +333,23 @@ class DynamixelMotor:
         
         success = True
         if p is not None:
-            if not write_word(self.motor_id, self.ADDR_POSITION_P_GAIN, p):
+            if write_word(self.motor_id, self.ADDR_POSITION_P_GAIN, p):
+                self.p_gain = p
+            else:
                 success = False
                 print(f"  ✗ Failed to set P gain for motor {self.motor_id}")
         
         if i is not None:
-            if not write_word(self.motor_id, self.ADDR_POSITION_I_GAIN, i):
+            if write_word(self.motor_id, self.ADDR_POSITION_I_GAIN, i):
+                self.i_gain = i
+            else:
                 success = False
                 print(f"  ✗ Failed to set I gain for motor {self.motor_id}")
                 
         if d is not None:
-            if not write_word(self.motor_id, self.ADDR_POSITION_D_GAIN, d):
+            if write_word(self.motor_id, self.ADDR_POSITION_D_GAIN, d):
+                self.d_gain = d
+            else:
                 success = False
                 print(f"  ✗ Failed to set D gain for motor {self.motor_id}")
                 
