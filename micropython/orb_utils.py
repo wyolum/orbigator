@@ -272,13 +272,26 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_FORMAT = "<4sQffffffB16sB"
+STATE_VERSION = 1
+STATE_FORMAT_V0 = "<4sQffffffB16sB"
+STATE_FORMAT = "<4sBQffffffB16sB"
 STATE_MAGIC = b"ORB!"
 STATE_SIZE = struct.calcsize(STATE_FORMAT)
 
 def _compute_checksum(data):
     """Simple 8-bit checksum for data except the last byte."""
     return sum(data[:-1]) & 0xFF
+
+def _validate_state(config):
+    """Validate state values are within sane ranges."""
+    try:
+        if not (100 <= config.get("altitude_km", 0) <= 40000): return False
+        if not (0 <= config.get("inclination_deg", 0) <= 180): return False
+        if not (0 <= config.get("eccentricity", 0) <= 0.95): return False
+        if not (config.get("timestamp", 0) > 1700000000): return False
+        return True
+    except:
+        return False
 
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
@@ -306,7 +319,7 @@ def save_state():
                 
                 # Pack binary block (leaving checksum 0 for now)
                 data = struct.pack(STATE_FORMAT, 
-                    STATE_MAGIC, int(now), 
+                    STATE_MAGIC, STATE_VERSION, int(now), 
                     float(g.aov_position_deg), float(g.eqx_position_deg),
                     float(g.orbital_altitude_km), float(g.orbital_inclination_deg),
                     float(g.orbital_eccentricity), float(g.orbital_periapsis_deg),
@@ -351,29 +364,46 @@ def load_state():
                 data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
                 
             if data and data[:4] == STATE_MAGIC:
-                # Verify checksum
-                if data[-1] == _compute_checksum(data):
-                    # Unpack
-                    mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
-                    
-                    # Decoded Mode
-                    mode_rev = {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}
-                    config = {
-                        "timestamp": ts,
-                        "aov_deg": aov,
-                        "eqx_deg": eqx,
-                        "altitude_km": alt,
-                        "inclination_deg": inc,
-                        "eccentricity": ecc,
-                        "periapsis_deg": per,
-                        "mode_id": mode_rev.get(mid, "ORBIT"),
-                        "sat_name": sat.decode('utf-8').strip('\x00')
-                    }
-                    print(f"State recovered from RTC SRAM: AoV={aov:.1f} EQX={eqx:.1f} Alt={alt:.1f}")
+                # 1. Try Version 1 (Current)
+                if data[4] == STATE_VERSION:
+                    if data[-1] == _compute_checksum(data):
+                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
+                        config = {
+                            "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                            "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                            "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
+                            "sat_name": sat.decode('utf-8').strip('\x00')
+                        }
+                        if _validate_state(config):
+                            print(f"SRAM state: OK v{ver}")
+                        else:
+                            print("SRAM state: validation fail")
+                            config = None
+                    else:
+                        print("SRAM state: checksum fail")
+                # 2. Backward Compatibility Bridge (V0)
                 else:
-                    print("RTC SRAM checksum failed.")
+                    print(f"SRAM state: version mismatch (found v{data[4]})")
+                    try:
+                        # Attempt V0 parse
+                        v0_size = struct.calcsize(STATE_FORMAT_V0)
+                        v0_data = data[:v0_size]
+                        if v0_data[-1] == _compute_checksum(v0_data):
+                            mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V0, v0_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
+                                "sat_name": sat.decode('utf-8').strip('\x00')
+                            }
+                            if _validate_state(config):
+                                print("SRAM state: V0 bridge success")
+                            else:
+                                config = None
+                    except:
+                        config = None
             else:
-                print("RTC SRAM magic missing or invalid.")
+                print("SRAM state: empty or invalid")
         except Exception as e:
             print("RTC SRAM recovery error:", e)
 
