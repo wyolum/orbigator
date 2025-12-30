@@ -258,7 +258,7 @@ if lt[0] < 2024:
     g.current_mode = DatetimeEditorMode(next_mode=OrbitMode())
 else:
     # Resume last mode
-    if saved_mode_id == "SGP4":
+    if g.current_mode_id == "SGP4":
         import modes
         g.current_mode = modes.SGP4Mode()
         g.current_mode.enter()
