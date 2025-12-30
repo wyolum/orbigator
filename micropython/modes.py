@@ -121,6 +121,7 @@ class OrbitMode(Mode):
         self.tracking = True # Toggle with Confirm button
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
+        self.nudge_manager = input_utils.NudgeManager()
     
     def enter(self) :
         """Initialize orbital tracking and catch up if needed."""
@@ -229,7 +230,9 @@ class OrbitMode(Mode):
         self.initialized = True
 
     def on_encoder_rotate(self, delta):
-        delta = input_utils.normalize_encoder_delta(delta)
+        # Apply accelerated nudging policy
+        delta = self.nudge_manager.get_delta(delta)
+        
         if self.nudge_target == 0:
             g.run_start_aov_deg += delta
             if self.propagator: self.propagator.nudge_aov(delta)
@@ -864,6 +867,7 @@ class SGP4Mode(Mode):
         self.last_unix = 0 # Cache for propagator math
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
+        self.nudge_manager = input_utils.NudgeManager()
         
         # Check WiFi availability
         try:
