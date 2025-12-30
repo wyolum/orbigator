@@ -182,6 +182,8 @@ module gear_support(){
 module new_base_assy(){
   dd = 23/2;
   hh = 23;  
+  TT = 14;
+  RR = R + 8;
   translate([0,0,-globe_r]){
     difference(){
       union(){
@@ -199,8 +201,6 @@ module new_base_assy(){
       rotate([7, 0, 0])translate([-28/2+2, 15.5, h/2+1-12])cube([28, 70, 10]);
 
     }
-    TT = 14;
-    RR = R + 8;
     if(true){// base enclosure
       for(theta=[-30, -90, -160, -120, 90, 30]){ // 6 horizontal guides
 	translate([0,0,-17])
@@ -209,8 +209,7 @@ module new_base_assy(){
 	  cylinder(r=RR+2, h=12);
 	}
       }
-
-      translate([0,0,-TT-10])difference(){
+    translate([0,0,-TT-10])difference(){
 	cylinder(r=R+11, h=TT+5);
 	translate([0,0,-7])
 	  translate([0,0,TT])cylinder(r=RR+1, h=16);
@@ -222,6 +221,11 @@ module new_base_assy(){
       translate([0,0,-1])cylinder(d=4, h=11);
     }
   }
+  translate([0,0,-globe_r-49.4])cylinder(h=26, r=RR+3);
+for(theta=[0,90,180,270]){
+  rotate([0,0,theta])translate([RR+3, 0, -globe_r-49.4])rotate([0,0,45])translate([-3/2,-3/2, 0])
+    cube([3, 3, 44.4],center=false);
+ }
 }
 
 module base_with_1010_hole(){
@@ -265,7 +269,7 @@ module base_with_1010_hole(){
        //pivot mount screw hole
        translate([0, -19, 0])cylinder(d=4.5, h=100, center=true);
        translate([0, -19, -30+4])cylinder(d=10, h=5, center=false);
-       translate([50,0,-20])cube([40, 15, 5], center=true); // motor cable slot
+       translate([50,0,-20])cube([40, 55, 10], center=true); // motor cable slot
     }
   }
 }
@@ -286,18 +290,17 @@ module weight_hole(){
   sphere(d=7);
   cylinder(d=6, h=20);
 }
-
 module aov_motor_assy(inc, aov){
-  translate([0,0,-140]){
+  translate([0,0,0]){
     //color("black")translate([-5,-5,-1000+100])cube([10, 10, 1000], center=false);
-    translate([0, 0, base_z_offset])translate([0, 0, -10])
+    translate([0, 0, 0])translate([0, 0, 0])
       rotate([inc, 0, 0])rotate([0, 180, 0]){
       translate([0,0,0])rotate([0,180,90])translate([0,0,-2.8])dynamixel_xl330();
       color("coral")dynamixel_motor_mount();
       //translate([-10,10,90])rotate([90, 180, 180])arduino();
       //translate([0,10,40])rotate([90, 0, 180])pico();
     }
-    translate([0, -3, 140])
+    translate([0, 0, 0])
       rotate([inc, 0, 0])rotate([0, 0, aov-180]){
       color([.4, .4, .4, 1])aov_arm();
       translate([-globe_r, 0, 0])sled();
@@ -349,7 +352,7 @@ module display_extension(){
     translate([0,0,-5])inside_box();
     translate([-5,0,0])inside_box();
     translate([-5,0,-5])inside_box();
-    translate([0,0,-inch/2])sphere(globe_r + 4);
+//translate([0,0,-inch/2])sphere(globe_r + 4);
     cylinder(r=R+10, h=2 * globe_d, center=true);
 
     translate([190-50,0,-base_z_offset+5])rotate([0,100,0])cylinder(d=7, h=40, center=true);//power outlet
@@ -401,21 +404,21 @@ module display_panel(){
 //color("lightslategrey")base_with_1010_hole();
 
 module base_with_extension(){
-  color("lightslategrey"){
+  {
     base_with_1010_hole();
-    display_extension();
+    translate([0,0,-inch])display_extension();
+    //color("purple")translate([0,0,-200])cylinder(r=R+11, h=inch);
   }
 }
-if(true){
+if(false){
   translate([0,0,inch/2]){
     base_with_extension();
     translate([0,0,16.4])color("cornflowerblue")Ring();
     eqx_motor_assy();
-    //aov_motor_assy(65, 350);
-    //color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
-    //color("black")translate([0,0,-100])cube([10, 10, base_z_offset], center=true);
+    aov_motor_assy(65, 350);
+    color("blue")rotate([0,180,0])translate([0,0,0])inclination_support();
+    color("black")translate([0,0,-100])cube([10, 10, base_z_offset], center=true);
   }
-  globe();
 }
 else{
   //Ring();
@@ -434,26 +437,29 @@ module globe(){
   }
 }
 //south_pole();
+ring_xyscale = 1.02;
 module globe_interface_ring_start(h){
-  scale([1.01, 1.01, 1])difference(){
-    union(){
-      cylinder(r=55.6, h=h);
-    }
-    translate([0,0,-1])cylinder(r=R+2.25, h=h+2);
-    for(theta = [0, 90, 180, 270]){
-      rotate([0, 0, theta])
-	translate([R+2.25, 0, -1])cylinder(d=4, h=h+2, $fn=4);
-    }
-    translate([0,0,h-2])difference(){
-      cylinder(r=55.7, h=h);
-      translate([0,0,-1])cylinder(r=55.6-2, h=h+2);
+  scale([ring_xyscale, ring_xyscale, 1]){
+    difference(){
+      union(){
+	cylinder(r=55.6, h=h);
+      }
+      translate([0,0,-1])cylinder(r=R+2.25, h=h+2);
+      for(theta = [0, 90, 180, 270]){
+	rotate([0, 0, theta])
+	  translate([R+2.25, 0, -1])cylinder(d=4, h=h+2, $fn=4);
+      }
+      translate([0,0,h-2])difference(){
+	cylinder(r=55.7, h=h);
+	translate([0,0,-1])cylinder(r=55.6-2, h=h+2);
+      }
     }
   }
 }
 
 module globe_interface_ring(){
   h = 4;
-  translate([0,0,-base_z_offset-4]){
+  scale([ring_xyscale, ring_xyscale, 1])translate([0,0,-base_z_offset-4]){
     globe_interface_ring_start(h=h);
     difference(){
       union(){
@@ -462,8 +468,10 @@ module globe_interface_ring(){
 	    translate([R+6, 0, -1])cylinder(d=4, h=h, $fn=4);
 	}
       }
-      cylinder(d=106, h=6, center=true);
+      cylinder(d=106, h=10, center=true);
     }
   }
 }
 
+
+globe_interface_ring();
