@@ -15,10 +15,10 @@ All core software and motor tuning objectives have been met. The system is verif
 
 - **Web API (Observability)**: Added real-time motor monitoring. `/api/status` and `/api/motors` now report live PID gains and speed limits.
 
-## 3. Motor Longevity & Reliability (NEW)
-- **Lifecycle Analysis**: At 1 rev per 90 mins (~5,840 revs/year), the XC330 motor is operating in a "gentle" regime.
-- **Estimated Lifespan**: Conservative estimate of 17 years (100k revs) to 170+ years (1M revs) of continuous operation.
-- **Key Factor**: P-only tuning (P=600, D=0) and velocity-based control eliminate hunting and micro-oscillation, maximizing gear train life.
+## 3. Motor Longevity & Reliability
+- **Analysis**: At 1 rev per 90 mins (~0.11 rpm), the XC330 motor is operating so gently that its expected lifetime is measured in decades (very likely longer than the rest of the system).
+- **Technical Note**: ~5,840 revolutions/year. Even under conservative metal-gear wear assumptions (≥100,000 revs), service life exceeds 17 years; realistic estimates are far higher. 
+- **Control Factor**: Our P-only tuning (P=600) and velocity-based control ensure smooth motion free of hunting or micro-oscillation, maximizing gear train life.
 
 ## 4. UI & Experience Enhancements
 - **Accelerated Encoder**: Velocity-based nudging (0.1° fine, 1.0° max). Allows fast 180° traversal (one turn) while maintaining high precision.
