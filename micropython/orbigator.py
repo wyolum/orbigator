@@ -246,7 +246,8 @@ eqx_motor.set_speed_limit(10) # Capped at 10 for safety
 # ---------------- State and Loop ----------------
 # Load state and reconstruct positions
 state_info = utils.load_state()
-saved_mode_id = state_info.get("mode_id", "ORBIT")
+# SRAM health logging is now handled inside load_state() via print
+g.current_mode_id = state_info.get("mode_id", "ORBIT")
 saved_sat_name = state_info.get("sat_name", None)
 
 # Check for RTC reset (e.g. battery failure)
