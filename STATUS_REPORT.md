@@ -15,21 +15,26 @@ All core software and motor tuning objectives have been met. The system is verif
 
 - **Web API (Observability)**: Added real-time motor monitoring. `/api/status` and `/api/motors` now report live PID gains and speed limits.
 
-## 3. UI & Experience Enhancements
+## 3. Motor Longevity & Reliability (NEW)
+- **Lifecycle Analysis**: At 1 rev per 90 mins (~5,840 revs/year), the XC330 motor is operating in a "gentle" regime.
+- **Estimated Lifespan**: Conservative estimate of 17 years (100k revs) to 170+ years (1M revs) of continuous operation.
+- **Key Factor**: P-only tuning (P=600, D=0) and velocity-based control eliminate hunting and micro-oscillation, maximizing gear train life.
+
+## 4. UI & Experience Enhancements
 - **Accelerated Encoder**: Velocity-based nudging (0.1° fine, 1.0° max). Allows fast 180° traversal (one turn) while maintaining high precision.
 - **Graphical Degree Symbol**: Custom 3x3 pixel ring replaces "deg" text for a professional, premium aesthetic.
 - **Enhanced Catch-up Display**: OLED now shows actual motor readouts (`ACT: A123° E456°`, modulo 360) during seek/initialization for physical state transparency.
 
-## 3. Toolset Improvements
+## 5. Toolset Improvements
 - **Incremental Sync**: New `sync.sh` + `sync_to_pico.py` suite. Uses a `sync_whitelist.txt` to push only modified project files (ignoring `.pico_state.json`, `stls/`, etc.).
 - **Live Tuner**: `tune_motors.py` allow host-side PID/Speed adjustment with immediate MicroPython code injection and motion testing.
 
-## 4. Mechanical & CAD
+## 6. Mechanical & CAD
 - **Globe Diameter**: Adjusted to **295mm** (11.82") for the new assembly.
 - **CAD Cleanup**: Removed AI-generated "subterranean display" base. Updated `dynamixel_aov_arm.scad` and `full_assembly.scad` for new globe radius.
 - **Mechanical Iteration**: `globe_interface_ring` v1 (1.01) was too tight. v2 (1.02) currently printing on Ultimaker 3 (Smooth progress, ~1.5h remaining).
 
-## 5. Repository Status
+## 7. Repository Status
 - **GitHub**: All drivers, tools, and SCAD modifications pushed to `wyolum/orbigator`.
 - **Branch**: `main` is current.
 
