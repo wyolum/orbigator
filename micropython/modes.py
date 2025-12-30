@@ -367,26 +367,13 @@ class OrbitMode(Mode):
         if not self.tracking:
             disp.text("** PAUSED **", 16, 31)
         elif catching_up:
-            # Show actual positions during catch-up
+            # Show actual positions during catch-up (replacing Altitude line)
             act_a = aov_actual % 360
             act_e = eqx_actual % 360
-            a_str = f"Act: A:{act_a:5.1f}"
-            disp.text(a_str, 0, 31)
-            disp.degree(len(a_str)*8 + 1, 31)
-            
-            e_str = f"     E:{act_e:5.1f}"
-            disp.text(e_str, 0, 41) # Using same line area or slightly below? 
-            # Wait, let's overlap the Alt line which is at 31 as well.
-            # Actually, Alt is at 31, let's put Actuals there.
-            # But we need more space. 
-            # I'll replace the Alt text (31) with Act AoV (31) and Act EQX (41)?
-            # No, that's messy.
-            # Let's put a single line: "Act: {a:3.0f} {e:3.0f}"
-            act_str = f"Act: {act_a:3.0f} / {act_e:3.0f}"
-            disp.text(act_str, 0, 31)
-            # Need to find positions for degrees... too complex for one line.
-            # Let's go simpler:
-            disp.text(f"ACT: A{act_a:.1f} E{act_e:.1f}", 0, 31)
+            # Use concise format to avoid overlap
+            disp.text(f"ACT:A{act_a:3.0f} E{act_e:3.0f}", 0, 31)
+            disp.degree(8*8+2, 31)  # After A###
+            disp.degree(14*8+2, 31) # After E###
         else:
             disp.text(f"Alt: {g.orbital_altitude_km:.1f} km", 0, 31)
             
@@ -1238,11 +1225,13 @@ class SGP4Mode(Mode):
                     catching_up = True
                 
             if catching_up:
-                # Show actual positions during catch-up
+                # Show actual positions during catch-up (replacing Lat/Lon area)
                 act_a = aov_actual % 360
                 act_e = eqx_actual % 360
-                disp.text(f"ACT: A{act_a:.1f} E{act_e:.1f}", 0, 24)
-                disp.text(f"Alt: {self.alt_km:.0f}km", 0, 34)
+                disp.text("** CATCHING UP **", 0, 24)
+                disp.text(f"A{act_a:3.0f} / E{act_e:3.0f} Act", 0, 34)
+                disp.degree(4*8, 34)  # After A###
+                disp.degree(13*8, 34) # After E###
             else:
                 # Show position
                 la_str = f"Lat: {self.lat_deg:+.2f}"
