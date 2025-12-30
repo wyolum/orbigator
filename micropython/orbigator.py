@@ -55,6 +55,11 @@ class SH1106_I2C:
         self.fill(0); self.show()
     def fill(self,c): self.fb.fill(c)
     def text(self,s,x,y,c=1): self.fb.text(s,x,y,c)
+    def degree(self,x,y,c=1):
+        self.fb.pixel(x+1, y, c)
+        self.fb.pixel(x, y+1, c)
+        self.fb.pixel(x+2, y+1, c)
+        self.fb.pixel(x+1, y+2, c)
     def show(self):
         try:
             if g.i2c_lock:
@@ -82,6 +87,7 @@ except Exception:
     class DummyDisp:
         def fill(self,c): pass
         def text(self,s,x,y,c=1): pass
+        def degree(self,x,y,c=1): pass
         def show(self): pass
     disp = DummyDisp(); g.disp = disp
 

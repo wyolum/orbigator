@@ -336,8 +336,13 @@ class OrbitMode(Mode):
         else:
             disp.text(f"T: {p_mi:02d}m {p_si:02d}s", 0, 22)
         
-        disp.text(f"AoV: {g.aov_position_deg % 360:.1f} deg", 0, 44)
-        disp.text(f"EQX: {g.eqx_position_deg % 360:.1f} deg", 0, 54)
+        a_str = f"AoV: {g.aov_position_deg % 360:.1f}"
+        disp.text(a_str, 0, 44)
+        disp.degree(len(a_str)*8 + 1, 44)
+
+        e_str = f"EQX: {g.eqx_position_deg % 360:.1f}"
+        disp.text(e_str, 0, 54)
+        disp.degree(len(e_str)*8 + 1, 54)
         
         # Catch-up status based on physical hardware feedback
         catching_up = False
@@ -636,11 +641,15 @@ class InclinationEditorMode(Mode):
     def render(self, disp):
         disp.fill(0)
         disp.text("SET INCLINATION", 0, 0)
-        inc_str = f"{self.inc_x10/10.0:.1f} deg"
-        w = len(inc_str) * 8
+        inc_val = f"{self.inc_x10/10.0:.1f}"
+        w = (len(inc_val) + 1) * 8
         disp.fb.fill_rect(30, 14, w+4, 10, 1)
-        disp.fb.text(inc_str, 32, 15, 0)
-        disp.text("Step: 0.1 deg", 0, 40)
+        disp.fb.text(inc_val, 32, 15, 0)
+        disp.degree(32 + len(inc_val)*8 + 1, 15, 0)
+        
+        s_str = "Step: 0.1"
+        disp.text(s_str, 0, 40)
+        disp.degree(len(s_str)*8 + 1, 40)
         disp.text("Confirm to Save", 0, 52)
         disp.show()
 
@@ -796,12 +805,17 @@ class PeriapsisEditorMode(Mode):
     def render(self, disp):
         disp.fill(0)
         disp.text("SET PERIAPSIS", 0, 0)
-        per_str = f"{self.periapsis} deg"
-        w = len(per_str) * 8
+        per_val = f"{self.periapsis}"
+        w = (len(per_val) + 1) * 8
         disp.fb.fill_rect(30, 14, w+4, 10, 1)
-        disp.fb.text(per_str, 32, 15, 0)
+        disp.fb.text(per_val, 32, 15, 0)
+        disp.degree(32 + len(per_val)*8 + 1, 15, 0)
+        
         disp.text("(Closest point)", 0, 28)
-        disp.text("Step: 5 deg", 0, 40)
+        
+        s_str = "Step: 5"
+        disp.text(s_str, 0, 40)
+        disp.degree(len(s_str)*8 + 1, 40)
         disp.text("Confirm to Save", 0, 52)
         disp.show()
         disp.show()
@@ -1217,8 +1231,13 @@ class SGP4Mode(Mode):
                 disp.text(f"Alt: {self.alt_km:.0f}km", 0, 34)
             else:
                 # Show position
-                disp.text(f"Lat: {self.lat_deg:+.2f}", 0, 24)
-                disp.text(f"Lon: {self.lon_deg:+.2f}", 0, 34)
+                la_str = f"Lat: {self.lat_deg:+.2f}"
+                disp.text(la_str, 0, 24)
+                disp.degree(len(la_str)*8 + 1, 24)
+                
+                lo_str = f"Lon: {self.lon_deg:+.2f}"
+                disp.text(lo_str, 0, 34)
+                disp.degree(len(lo_str)*8 + 1, 34)
             
             disp.text(f"Alt: {self.alt_km:.0f}km", 0, 44)
             disp.text(f"TLE: {self.tle_age}", 0, 54)
