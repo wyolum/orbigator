@@ -584,11 +584,11 @@ class AltitudeEditorMode(Mode):
     def __init__(self):
         super().__init__()
         self.alt = int(g.orbital_altitude_km)
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=10, coarse_step=100)
         
     def on_encoder_rotate(self, delta):
-        delta = input_utils.normalize_encoder_delta(delta)
-        d = delta * 10 # CW = increase
-        self.alt = max(200, min(2000, self.alt + d))
+        d = self.nudge_manager.get_delta(delta)
+        self.alt = max(200, min(2000, self.alt + int(d)))
         
     def on_confirm(self):
         g.orbital_altitude_km = float(self.alt)
@@ -616,12 +616,12 @@ class InclinationEditorMode(Mode):
         super().__init__()
         # Store as 10x integer for easy encoder step (0.1 deg)
         self.inc_x10 = int(g.orbital_inclination_deg * 10)
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=10, coarse_step=100)
         
     def on_encoder_rotate(self, delta):
-        delta = input_utils.normalize_encoder_delta(delta)
-        d = delta # CW = increase
+        d = self.nudge_manager.get_delta(delta)
         # Range 0 to 180 (most common 0 to 99)
-        self.inc_x10 = max(0, min(1800, self.inc_x10 + d))
+        self.inc_x10 = max(0, min(1800, self.inc_x10 + int(d)))
         
     def on_confirm(self):
         g.orbital_inclination_deg = float(self.inc_x10) / 10.0
@@ -733,12 +733,12 @@ class EccentricityEditorMode(Mode):
         super().__init__()
         # Store as 100x integer for 0.01 precision (0 to 90 = 0.00 to 0.90)
         self.ecc_x100 = int(g.orbital_eccentricity * 100)
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=20)
         
     def on_encoder_rotate(self, delta):
-        delta = input_utils.normalize_encoder_delta(delta)
-        d = delta  # CW = increase
+        d = self.nudge_manager.get_delta(delta)
         # Range 0 to 90 (0.00 to 0.90)
-        self.ecc_x100 = max(0, min(90, self.ecc_x100 + d))
+        self.ecc_x100 = max(0, min(90, self.ecc_x100 + int(d)))
         
     def on_confirm(self):
         g.orbital_eccentricity = float(self.ecc_x100) / 100.0
@@ -775,11 +775,12 @@ class PeriapsisEditorMode(Mode):
     def __init__(self):
         super().__init__()
         self.periapsis = int(g.orbital_periapsis_deg)
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=45)
         
     def on_encoder_rotate(self, delta):
-        delta = input_utils.normalize_encoder_delta(delta)
-        d = delta * 5  # CW = increase, 5 degree steps
-        self.periapsis = (self.periapsis + d) % 360
+        d = self.nudge_manager.get_delta(delta)
+        # Apply accelerated steps
+        self.periapsis = (self.periapsis + int(d)) % 360
         
     def on_confirm(self):
         g.orbital_periapsis_deg = float(self.periapsis)
