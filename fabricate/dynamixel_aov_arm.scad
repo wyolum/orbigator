@@ -8,7 +8,7 @@
 
 // Import motor constants from dynamixel_motor.scad
 use <dynamixel_motor.scad>
-
+use <sled.scad>
 // Unit conversions
 inch = 25.4;
 
@@ -17,13 +17,20 @@ globe_d = 299; // was 13 * inch;
 globe_r = globe_d/2;
 globe_thickness = 2;
 globe_ir = globe_r - globe_thickness;
-
+if(false){
+  translate([-(globe_ir+.7), 0, 0])magnets();
+  difference(){
+    sphere(globe_r);
+    sphere(globe_ir, $fn=50);
+    translate([0,0, globe_r])cube(globe_d+1, center=true);
+  }
+ }
 // Arm parameters
 arm_height = 5;
 arm_base_diameter = 20;  // Slightly larger than horn_diameter (16mm) for clearance
 
 // Magnet/weight compartment parameters
-magnet_support_offset = 8;  // Offset from globe_ir
+magnet_support_offset = 9;  // Offset from globe_ir
 penny_radius = 70;
 penny_angle = 9;  // Angle for dual penny compartments
 
@@ -67,7 +74,7 @@ module aov_arm() {
         // Arm extending to globe edge
         hull() {
           cylinder(d=arm_base_diameter+2, h=arm_height);
-          translate([globe_ir - 1, -2, 0])
+          translate([globe_ir - 1-magnet_support_offset, -2, 0])
             cube([0.1, 4, arm_height]);
         }
         
@@ -102,11 +109,11 @@ module aov_arm() {
     intersection() {
       difference() {
         // Outer ring
-        cylinder(r=globe_ir, h=7, $fn=50);
+        cylinder(r=globe_ir-magnet_support_offset, h=7, $fn=50);
         
         // Inner clearance
         translate([0, 0, -1])
-          cylinder(r=globe_ir - 2, h=arm_height + 12, $fn=50);
+          cylinder(r=globe_ir - 2-magnet_support_offset, h=arm_height + 12, $fn=50);
         
         // Horizontal clearance slot
         rotate([90, 0, 0])

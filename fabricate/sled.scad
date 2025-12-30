@@ -1,6 +1,6 @@
 inch = 25.4;
 
-D = 13*inch;
+D = 297;
 MAGNET_SEP = 7;
 
 module bearing(d=6){
@@ -73,4 +73,4 @@ module magnets(){
   magnets_up();
 }
 
-//magnets();
+magnets();

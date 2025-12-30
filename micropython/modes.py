@@ -584,7 +584,8 @@ class AltitudeEditorMode(Mode):
     def __init__(self):
         super().__init__()
         self.alt = int(g.orbital_altitude_km)
-        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=10, coarse_step=100)
+        # Slower acceleration, max 20km per click (~0.2% of range)
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=20)
         
     def on_encoder_rotate(self, delta):
         d = self.nudge_manager.get_delta(delta)
@@ -616,7 +617,8 @@ class InclinationEditorMode(Mode):
         super().__init__()
         # Store as 10x integer for easy encoder step (0.1 deg)
         self.inc_x10 = int(g.orbital_inclination_deg * 10)
-        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=10, coarse_step=100)
+        # Max 1.0 deg (10 in x10 units) per click
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=10)
         
     def on_encoder_rotate(self, delta):
         d = self.nudge_manager.get_delta(delta)
@@ -733,7 +735,8 @@ class EccentricityEditorMode(Mode):
         super().__init__()
         # Store as 100x integer for 0.01 precision (0 to 90 = 0.00 to 0.90)
         self.ecc_x100 = int(g.orbital_eccentricity * 100)
-        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=20)
+        # Slower: 0.01, 0.02, 0.05 per click
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=2, coarse_step=5)
         
     def on_encoder_rotate(self, delta):
         d = self.nudge_manager.get_delta(delta)
@@ -775,11 +778,11 @@ class PeriapsisEditorMode(Mode):
     def __init__(self):
         super().__init__()
         self.periapsis = int(g.orbital_periapsis_deg)
-        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=45)
+        # Max 1.0 deg per click
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1, medium_step=5, coarse_step=10)
         
     def on_encoder_rotate(self, delta):
         d = self.nudge_manager.get_delta(delta)
-        # Apply accelerated steps
         self.periapsis = (self.periapsis + int(d)) % 360
         
     def on_confirm(self):
