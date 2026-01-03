@@ -161,9 +161,10 @@ class SGP4Propagator(Propagator):
             # AoV = Argument of Latitude (angle from ascending node) = nu + argp
             aov_deg = math.degrees(nu + argp_curr) % 360.0
             
-            # EQX = Longitude of Ascending Node = GMST + RAAN
-            # At the ascending node (lat=0, aov=0), the satellite's longitude equals this value
-            eqx_deg = math.degrees(gmst + raan_curr) % 360.0
+            # EQX = Longitude of Ascending Node = RAAN - GMST
+            # This represents the longitude where the orbit crosses the equator ascending (ECEF frame)
+            # Since Earth rotates East, the node moves West (retrograde) relative to surface.
+            eqx_deg = math.degrees(raan_curr - gmst) % 360.0
             
             return aov_deg, eqx_deg, lat_deg, lon_deg
             

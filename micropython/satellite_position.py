@@ -119,8 +119,13 @@ def compute_satellite_geodetic(sgp4_obj, tle_epoch_year, tle_epoch_day, current_
     unix_now = time.mktime(current_time_tuple)
     
     # Compute Unix timestamp for TLE epoch
+    # Handle 2-digit years (assume 2000+)
+    year = tle_epoch_year
+    if year < 100:
+        year += 2000
+        
     # Start with Jan 1st of epoch year
-    epoch_jan1_jd = compute_julian_date(tle_epoch_year, 1, 1, 0, 0, 0)
+    epoch_jan1_jd = compute_julian_date(year, 1, 1, 0, 0, 0)
     # JD 1970 is 2440587.5
     epoch_jan1_unix = int((epoch_jan1_jd - 2440587.5) * 86400.0)
     
