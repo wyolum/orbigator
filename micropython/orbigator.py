@@ -16,6 +16,9 @@ import _thread  # For I2C lock
 
 
 # ---------------- Hardware Config ----------------
+# Set to False for web development without motors
+ENABLE_MOTORS = True
+
 AOV_MOTOR_ID = 2
 EQX_MOTOR_ID = 1
 EQX_GEAR_RATIO = 120.0 / 14.0
@@ -31,7 +34,7 @@ addrs = i2c.scan()
 
 # Initialize Globals
 print(f"Orbigator Booting... System Time: {time.time()}")
-# Initialize global lock if not already done
+utils.init_software_clock() # Guarantee clock advancement from this point
 if g.i2c_lock is None:
     g.i2c_lock = _thread.allocate_lock()
 if g.uart_lock is None:
@@ -85,10 +88,25 @@ try:
         raise Exception("No display")
 except Exception:
     class DummyDisp:
+        def __init__(self):
+            # Mock FrameBuffer attributes for modes.py compatibility
+            class DummyFB:
+                def text(self, *a, **k): pass
+                def pixel(self, *a, **k): pass
+                def line(self, *a, **k): pass
+                def fill(self, *a, **k): pass
+                def rect(self, *a, **k): pass
+                def fill_rect(self, *a, **k): pass
+                def hline(self, *a, **k): pass
+                def vline(self, *a, **k): pass
+            self.fb = DummyFB()
+            
         def fill(self,c): pass
         def text(self,s,x,y,c=1): pass
         def degree(self,x,y,c=1): pass
         def show(self): pass
+        def line(self,x1,y1,x2,y2,c=1): pass
+        def pixel(self,x,y,c=1): pass
     disp = DummyDisp(); g.disp = disp
 
 # ---------------- RTC Init ----------------
@@ -198,34 +216,28 @@ if has_wifi:
                 
                 try:
                     import ntptime, machine
-                    ntptime.settime()
-                    t = machine.RTC().datetime()
-                    utils.set_datetime(t[0], t[1], t[2], t[4], t[5], t[6], g.rtc)
-                    print(f"✓ NTP Sync OK: {ip}")
-                    sync_done = True
+                    print("Settling network...")
+                    time.sleep(2) # Give stack a moment
+                    
+                    for attempt in range(3):
+                        try:
+                            print(f"NTP Sync attempt {attempt+1}...")
+                            ntptime.settime()
+                            t = machine.RTC().datetime()
+                            utils.set_datetime(t[0], t[1], t[2], t[4], t[5], t[6], g.rtc)
+                            print(f"✓ NTP Sync OK: {ip}")
+                            sync_done = True
+                            break
+                        except Exception as e:
+                            print(f"  Attempt {attempt+1} failed: {e}")
+                            time.sleep(1)
+                    
+                    if not sync_done:
+                        print("NTP Sync permanently failed. Proceeding with local/RTC time.")
+                        sync_done = True
                 except Exception as e:
-                    print(f"NTP Sync failed: {e}")
-                    # Prompt for Retry/Ignore
-                    prompting = True
-                    button_events.clear()
-                    while prompting:
-                        disp.fill(0)
-                        disp.text("[Back] Ignore", 0, 0)
-                        disp.text("   NTP Failed", 0, 24)
-                        disp.text("[Confirm] Retry", 0, 54)
-                        # disp.text(f"Err: {str(e)[:16]}", 0, 36) # Error might clutter, maybe skip or put small?
-                        # User reduced layout suggests simple. I'll omit error details or put them very small if needed, but request implies simple.
-                        # Let's stick to the requested 3 lines.
-                        disp.show()
-                        
-                        if button_events:
-                            btn = button_events.pop(0)
-                            if btn == CONFIRM_BTN:
-                                prompting = False # Loop back to retry WiFi+NTP
-                            elif btn == BACK_BTN:
-                                prompting = False
-                                sync_done = True # Proceed with RTC
-                        time.sleep_ms(50)
+                    print(f"WiFi/Time setup error: {e}")
+                    sync_done = True
             else:
                 print("WiFi connection failed during boot.")
                 # Also prompt on WiFi failure? Or just proceed?
@@ -235,19 +247,30 @@ if has_wifi:
         print(f"WiFi/Time setup error: {e}")
 
 # ---------------- Motor Init ----------------
-print("\nInitializing DYNAMIXEL motors...")
-set_extended_mode(AOV_MOTOR_ID)
-set_extended_mode(EQX_MOTOR_ID)
-
-aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
-g.aov_motor = aov_motor
-eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
-g.eqx_motor = eqx_motor
-
-aov_motor.set_pid_gains(p=600, d=0)
-aov_motor.set_speed_limit(2) # Capped at 2 or 3 for safety
-eqx_motor.set_pid_gains(p=600, d=0)
-eqx_motor.set_speed_limit(10) # Capped at 10 for safety
+if ENABLE_MOTORS:
+    print("\nInitializing DYNAMIXEL motors...")
+    set_extended_mode(AOV_MOTOR_ID)
+    set_extended_mode(EQX_MOTOR_ID)
+    
+    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
+    g.aov_motor = aov_motor
+    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
+    g.eqx_motor = eqx_motor
+    
+    aov_motor.set_pid_gains(p=600, d=0)
+    aov_motor.set_speed_limit(5) # Increased from 2 to 5 for reliable startup
+    eqx_motor.set_pid_gains(p=600, d=0)
+    eqx_motor.set_speed_limit(10) # Capped at 10 for safety
+    
+    # Explicitly enable torque to ensure motion
+    print("Forcing Torque ON...")
+    aov_motor.enable_torque()
+    eqx_motor.enable_torque()
+else:
+    print("\nMotors DISABLED - Using mock motors for web development")
+    from mock_motor import MockMotor
+    g.aov_motor = MockMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
+    g.eqx_motor = MockMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 
 # ---------------- State and Loop ----------------
 # Load state and reconstruct positions
@@ -261,6 +284,7 @@ saved_sat_name = state_info.get("sat_name", None)
 lt = time.localtime()
 if lt[0] < 2024:
     print(f"RTC Year {lt[0]} invalid! Prompting for time.")
+    g.current_mode_id = "DATETIME"
     g.current_mode = DatetimeEditorMode(next_mode=OrbitMode())
 else:
     # Resume last mode
@@ -294,11 +318,16 @@ if has_wifi:
         try:
             import network
             wlan = network.WLAN(network.STA_IF)
-            if wlan.isconnected():
-                import web_server
-                web_server.start_server(port=80)
-            else:
-                print("Web server skipped: No WiFi connection.")
+            if not wlan.isconnected():
+                print("WiFi not connected. Starting Access Point for dashboard testing...")
+                ap = network.WLAN(network.AP_IF)
+                ap.active(True)
+                # Use a custom SSID so it's easy to find
+                ap.config(essid="Orbigator-Dev", password="orbigator123")
+                print(f"AP Started: Orbigator-Dev (192.168.4.1)")
+            
+            import web_server
+            web_server.start_server(port=80)
         except Exception as e:
             print(f"Web server error: {e}")
 
@@ -370,3 +399,4 @@ while True:
     if time.ticks_diff(now, last_display_update) >= 200:
         last_display_update = now
         g.current_mode.render(g.disp)
+  

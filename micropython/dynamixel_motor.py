@@ -171,13 +171,13 @@ class DynamixelMotor:
             self.get_angle_degrees()
             return False
             
-    def home(self):
+    def home(self, angle_deg=0):
         """
         Home the motor (move output shaft to 0 degrees).
         Convenience wrapper around set_angle_degrees(0).
         """
         print(f"Homing Motor {self.motor_id} ({self.name})...")
-        return self.set_nearest_degrees(0)
+        return self.set_nearest_degrees(angle_deg)
     
     def set_nearest_degrees(self, target_degrees):
         """
