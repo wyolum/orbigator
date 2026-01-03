@@ -1,16 +1,20 @@
-inch = 25.4;
+/*
+ * Sled and Magnets
+ */
 
-D = 297;
+include <common.scad>
+
+D = globe_d;
 MAGNET_SEP = 7;
 
-module bearing(d=6){
+module sled_bearing(d=6){
   sphere(d=d, $fn=50);
 }
 
-module bearings(d=6){
+module sled_bearings(d=6){
   sep = MAGNET_SEP;
-  translate([-sep, 0, 0])bearing(d);
-  translate([ sep, 0, 0])bearing(d);
+  translate([-sep, 0, 0])sled_bearing(d=d);
+  translate([ sep, 0, 0])sled_bearing(d=d);
 }
 
 module sled_base(){
@@ -20,37 +24,29 @@ module sled_base(){
   
   difference(){
     translate([-L/2, -W/2,-1])cube([L, W, H],center=false);
-    translate([0, 0,2.9])bearings(7);
+    translate([0, 0,2.9])sled_bearings(7);
     translate([0, 0, -D/2])sphere(d=D, $fn=300);
     translate([MAGNET_SEP, 0, 1.7])cylinder(d=7, h=3, $fn=30);
     translate([-MAGNET_SEP, 0, 1.7])cylinder(d=7, h=3, $fn=30);
     translate([MAGNET_SEP, 0, 1.7])cylinder(d=6, h=10, $fn=30);
     translate([-MAGNET_SEP, 0, 1.7])cylinder(d=6, h=10, $fn=30);
-    cylinder(h=10, d=2, $fn=30);
   }
-  //color("silver")translate([0,0,2.2])bearings(6);
+  color("silver")translate([0,0,2.2])sled_bearings(6);
   //color("silver")cylinder(h=inch, d=1.5, $fn=30);
 }
 
-module sled_complete(){
+module sled(){
   /*
   translate([-3,-3,inch])rotate([-40, 0, 0])
     rotate([0, 70, 0])scale(30)translate([-28.85, 0, 0])
     color("grey")import("sat_model_2.stl");
   */
-  RR = 20;
-  intersection(){
+
+  rotate([0,0,90])intersection(){
     sled_base();
-    scale([1, .45, 1])translate([0,0,-50])cylinder(d=25, h=100);
-    translate([0, 0, +RR-.5])rotate([90,0,0])cylinder(r=RR,h=20, $fn=50,center=true);
+    scale([1, .55, 1])translate([0,0,-50])cylinder(d=25, h=100);
   }
 }
-module sled(){
-  translate([0, 0, 3.5])
-  rotate([0,-90,0])rotate([0, 0, 90])sled_complete();
-}
-sled();
-//color("blue", alpha=.5)    translate([0, 0, -D/2])sphere(d=D, $fn=300);
 
 module magnet(){
   color("silver"){
@@ -69,9 +65,11 @@ module magnets_up(){
   translate([-MAGNET_SEP, 0, 0])rotate([180, -angle/2, 0])magnet();
 }
 module magnets(){
-  translate([2, 0,3.5])
-  rotate([-90,0,90])
+  translate([2, 0, -4])
+  rotate([0,0,90])
   magnets_up();
 }
 
-//magnets();
+if ($show_demo) {
+  sled();
+}

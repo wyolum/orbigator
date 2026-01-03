@@ -1,0 +1,90 @@
+/*
+ * AoV Motor Mount and Inclination Support
+ */
+
+include <common.scad>
+include <motor_dynamixel.scad>
+
+// Internal helper for mount geometry
+module wedge(h, r, a){
+  translate([0,0,-h/2])rotate_extrude(angle=a, $fn=100)square([r, h]);
+}
+
+module dynamixel_motor_mount_arc(){
+  union(){
+    translate([-3.0-4, 0, 0]) difference(){
+      union(){
+        // Main protractor fan
+	rotate([0, -90, 0]) wedge(4, 50, 90);
+        
+        // Vertical support
+	translate([-2, 0, 0]) cube([4, 15, 50]);
+        
+        // Side stabilizing wedges
+	translate([0, -12., 0.75]) rotate([90, 0, 0]) wedge(2, 20, 90);
+	translate([0, 12., 0.75]) rotate([90, 0, 0]) wedge(2, 20, 90);
+      }
+      
+      // Motor clearance
+      hull(){
+	translate([7, 0, 0]) rotate([0, 0, -90]) rotate([0, 180, 180]) 
+          translate([0, 0, -horn_height]) dynamixel_xl330();
+      }
+      
+      // Secondary clearance for body
+      rotate([0, 0, -90]) translate([0, 0, motor_height/2 + 3.5]) 
+        cube([motor_width + 1, motor_depth + 1, motor_height + 5], center=true);
+        
+      // Inclination holes/slots (Protractor marks)
+      for(i=[5:5:85]){
+	rotate([i, 0, 0]) translate([0, 0, 45]) rotate([0, 90, 0]) 
+          cylinder(d=3.25, h=100, $fn=30, center=true);
+	rotate([i, 0, 0]) translate([0, 0, 35]) rotate([0, 90, 0]) 
+          cylinder(d=3.25, h=100, $fn=30, center=true);
+	rotate([i, 0, 0]) translate([-2.5, 0, 0]) 
+          cylinder(d=1.5, h=100, $fn=20);
+      }
+      
+      // Bottom cutoff
+      translate([0, 0, -50]) cube(100, center=true);
+    }
+  }
+}
+
+module dynamixel_motor_mount(){
+  difference(){
+    dynamixel_motor_mount_arc();
+    rotate([0,0,-90])
+      scale([1,1,.5])translate([0,0,5])rotate([0,180,180])
+      dynamixel_mounting_screws();
+  }
+  rotate([0,0,-90])
+  rotate([0,180,180])
+    difference(){
+    translate([0,-7.5, 1-horn_height])color("red")
+      cube([motor_width+4, motor_depth+4, 2], center=true);
+    cylinder(d=18, h=100, center=true);
+    translate([0,0,-1.8-1])dynamixel_mounting_screws();
+  }
+}
+dynamixel_motor_mount();
+
+module inclination_support(){
+  difference(){
+    translate([0,0,50]){
+      difference(){
+	translate([-5, 0, 0])cube([10, 14, 20], center=true);
+	translate([0,0,-1])cube([10, 10, 25], center=true);
+	translate([0,0,5])rotate([0, -90, 0])cylinder(d=3.5, h=30, $fn=30);
+	translate([0,0,-5])rotate([0, -90, 0])cylinder(d=3.5, h=30, $fn=30);
+      }
+    }
+    rotate([0, 90, 0])cylinder(r=50, h=100, center=true, $fn=360);
+    translate([-10, 0, 70])cylinder(d=1, h=10, $fn=100);
+  }
+}
+
+if ($show_demo) {
+    dynamixel_motor_mount();
+    translate([0,0,50]) inclination_support();
+}

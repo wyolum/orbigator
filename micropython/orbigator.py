@@ -19,16 +19,35 @@ import _thread  # For I2C lock
 # Set to False for web development without motors
 ENABLE_MOTORS = True
 
-AOV_MOTOR_ID = 2
-EQX_MOTOR_ID = 1
-EQX_GEAR_RATIO = 120.0 / 14.0
-AOV_GEAR_RATIO = 1.0
+# Load Configuration
+try:
+    with open("orbigator_config.json", "r") as f:
+        config_data = json.load(f)
+    print("Configuration loaded from orbigator_config.json")
+except Exception as e:
+    print(f"Config load error: {e}. Using defaults.")
+    # Fallback/Default Config
+    config_data = {
+        "motors": {
+            "eqx": {"id": 1, "gear_ratio_num": 120.0, "gear_ratio_den": 14.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 10, "offset_deg": 0.0},
+            "aov": {"id": 2, "gear_ratio_num": 1.0, "gear_ratio_den": 1.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 2, "offset_deg": 0.0}
+        },
+        "system": {"detent_div": 4, "debounce_ms": 200, "oled": {"width": 128, "height": 64}}
+    }
 
-DETENT_DIV = 4
-DEBOUNCE_MS = 200
+# Extract Config
+mc = config_data["motors"]
+EQX_MOTOR_ID = mc["eqx"]["id"]
+AOV_MOTOR_ID = mc["aov"]["id"]
+EQX_GEAR_RATIO = mc["eqx"]["gear_ratio_num"] / mc["eqx"]["gear_ratio_den"]
+AOV_GEAR_RATIO = mc["aov"]["gear_ratio_num"] / mc["aov"]["gear_ratio_den"]
+
+DETENT_DIV = config_data["system"]["detent_div"]
+DEBOUNCE_MS = config_data["system"]["debounce_ms"]
 
 # ---------------- OLED Init ----------------
-OLED_W, OLED_H = 128, 64
+OLED_W = config_data["system"]["oled"]["width"]
+OLED_H = config_data["system"]["oled"]["height"]
 i2c = I2C(pins.I2C_ID, sda=Pin(pins.I2C_SDA_PIN), scl=Pin(pins.I2C_SCL_PIN), freq=400_000)
 addrs = i2c.scan()
 
@@ -252,15 +271,24 @@ if ENABLE_MOTORS:
     set_extended_mode(AOV_MOTOR_ID)
     set_extended_mode(EQX_MOTOR_ID)
     
-    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
+    # Pass offset_degrees to constructor
+    aov_offset = mc["aov"].get("offset_deg", 0.0)
+    eqx_offset = mc["eqx"].get("offset_deg", 0.0)
+
+    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO, offset_degrees=aov_offset)
     g.aov_motor = aov_motor
-    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
+    
+    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO, offset_degrees=eqx_offset)
     g.eqx_motor = eqx_motor
     
-    aov_motor.set_pid_gains(p=600, d=0)
-    aov_motor.set_speed_limit(2) # Back to 2 per user request
-    eqx_motor.set_pid_gains(p=600, d=0)
-    eqx_motor.set_speed_limit(10) # Capped at 10 for safety
+    # Configure from loaded config
+    aov_pid = mc["aov"]["pid"]
+    aov_motor.set_pid_gains(p=aov_pid["p"], i=aov_pid["i"], d=aov_pid["d"])
+    aov_motor.set_speed_limit(mc["aov"]["speed_limit"])
+    
+    eqx_pid = mc["eqx"]["pid"]
+    eqx_motor.set_pid_gains(p=eqx_pid["p"], i=eqx_pid["i"], d=eqx_pid["d"])
+    eqx_motor.set_speed_limit(mc["eqx"]["speed_limit"])
     
     # Explicitly enable torque to ensure motion
     print("Forcing Torque ON...")

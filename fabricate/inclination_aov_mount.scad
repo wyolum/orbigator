@@ -28,6 +28,7 @@ module dynamixel_motor_mount_arc(){
 }
 
 my_horn_height = 2.8;
+my_horn_diameter = 16;
 my_motor_width = 20;           // Width of motor body
 my_motor_depth = 34;           // Depth of motor body
 my_motor_height = 23;        // Height of motor body (excluding horn)
@@ -63,10 +64,11 @@ module arc(h, outside_r, a, inside_r){
 }
 
 module inclination_support(){
+  L = 73;
   difference(){
     translate([0,0,50]){
       difference(){
-	translate([-5, 0, 0])cube([10, 14, 20], center=true);
+	translate([-10, -7, 0])cube([5, 14, L], center=false);
 	translate([0,0,-1])cube([10, 10, 25], center=true);
 	translate([0,0,5])rotate([0, -90, 0])cylinder(d=3.5, h=30, $fn=30);
 	translate([0,0,-5])rotate([0, -90, 0])cylinder(d=3.5, h=30, $fn=30);
@@ -77,3 +79,4 @@ module inclination_support(){
   }
 }
 //color("blue")inclination_support();
+//cylinder(d=my_horn_diameter, h=my_horn_height);

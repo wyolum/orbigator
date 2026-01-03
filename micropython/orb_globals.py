@@ -20,6 +20,7 @@ orbital_period_min = 92.0
 orbital_inclination_deg = 51.6
 orbital_eccentricity = 0.0  # 0.0 = circular, 0.9 = highly elliptical
 orbital_periapsis_deg = 0.0  # Argument of periapsis (0-360°)
+orbital_rev_count = 0        # Total completed orbits
 
 # Motor rates
 aov_rate_deg_sec = 0.0

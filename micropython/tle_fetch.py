@@ -5,6 +5,7 @@ Downloads Two-Line Element sets from CelesTrak
 
 import urequests
 import json
+import time
 
 CELESTRAK_BASE = "https://celestrak.org/NORAD/elements/gp.php"
 CACHE_FILE = "tle_cache.json"
@@ -77,7 +78,8 @@ def cache_tle(name, tle_data):
         cache[name] = {
             'name': tle_data[0],
             'line1': tle_data[1],
-            'line2': tle_data[2]
+            'line2': tle_data[2],
+            'last_fetch': int(time.time())
         }
         
         # Save cache

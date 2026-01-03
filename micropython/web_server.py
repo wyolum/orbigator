@@ -7,6 +7,7 @@ import socket
 import json
 import time
 import gc
+import os
 
 # Import Orbigator globals and utilities
 import orb_globals as g
@@ -19,6 +20,9 @@ class WebServer:
         self.routes = {}
         self.current_mode_name = "menu"
         self.seen_ips = set()
+        import network
+        self.wlan = network.WLAN(network.STA_IF)
+        self.ap = network.WLAN(network.AP_IF)
         self._setup_routes()
     
     def _setup_routes(self):
@@ -29,41 +33,57 @@ class WebServer:
         self.routes['/api/mode'] = self.api_mode
         self.routes['/api/satellite'] = self.api_satellite
         self.routes['/api/tracking'] = self.api_tracking
+        self.routes['/api/sync'] = self.api_sync
         self.routes['/api/orbit/params'] = self.api_orbit_params
         self.routes['/api/tle/refresh'] = self.api_tle_refresh
         self.routes['/api/motors'] = self.api_motors
         self.routes['/api/motors/nudge'] = self.api_motors_nudge
         self.routes['/api/tle/manual'] = self.api_tle_manual
+        self.routes['/api/wifi/scan'] = self.api_wifi_scan
+        self.routes['/api/wifi/config'] = self.api_wifi_config
     
     def api_status(self, method, body):
         """GET /api/status - Current system status"""
         if method != 'GET':
             return {'error': 'Method not allowed'}, 405
         
+        # Get actual WiFi status
+        wifi_connected = self.wlan.isconnected()
+        wifi_ssid = ""
+        if wifi_connected:
+            wifi_ssid = self.wlan.config('essid')
+        elif self.ap.active():
+            wifi_ssid = "AP MODE"
+            
         status = {
-            'mode': self.current_mode_name,
+            'mode': g.current_mode_id.lower(),
             'motors': {
                 'aov': round(g.aov_position_deg % 360, 2),
                 'eqx': round(g.eqx_position_deg % 360, 2)
             },
             'wifi': {
-                'connected': True,  # Assume connected if web server is running
-                'ssid': 'wyolum'  # TODO: Get from wifi_setup
+                'connected': wifi_connected,
+                'ssid': wifi_ssid
             },
             'rtc': {
-                'synced': g.rtc is not None,
+                'synced': time.localtime()[0] >= 2024,
                 'time': self._get_rtc_time()
             }
         }
         
         # Add mode-specific status
-        if self.current_mode_name == 'sgp4':
-            # TODO: Get from current SGP4Mode instance
-            status['tracking'] = False
-            status['satellite'] = 'ISS'
-            status['position'] = {'lat': 0, 'lon': 0, 'alt': 0}
-            status['tle_age'] = 'unknown'
-        elif self.current_mode_name == 'orbit':
+        if g.current_mode_id == 'SGP4' and hasattr(g, 'current_mode'):
+            m = g.current_mode
+            status['tracking'] = getattr(m, 'tracking', False)
+            status['satellite'] = getattr(m, 'satellite_name', "none")
+            status['position'] = {
+                'lat': round(getattr(m, 'lat_deg', 0.0), 4),
+                'lon': round(getattr(m, 'lon_deg', 0.0), 4),
+                'alt': round(getattr(m, 'alt_km', 0.0), 1),
+                'inc': round(getattr(m, 'inclination', 0.0), 1)
+            }
+            status['tle_age'] = getattr(m, 'tle_age', "N/A")
+        elif g.current_mode_id == 'ORBIT':
             status['orbital_params'] = {
                 'altitude_km': g.orbital_altitude_km,
                 'period_min': g.orbital_period_min,
@@ -131,6 +151,24 @@ class WebServer:
         else:
              return {'error': 'Not in Sentry/SGP4 mode'}, 409
     
+    def api_sync(self, method, body):
+        """POST /api/sync - Manually trigger time sync and TLE refresh"""
+        if method != 'POST':
+            return {'error': 'Method not allowed'}, 405
+        
+        try:
+            import ntptime, machine
+            ntptime.settime()
+            t = machine.RTC().datetime()
+            utils.set_datetime(t[0], t[1], t[2], t[4], t[5], t[6], g.rtc)
+            # Re-fetch TLEs if requested
+            if body.get('tle', False):
+                import tle_fetch
+                tle_fetch.fetch_all()
+            return {'success': True, 'time': utils.get_timestamp()}, 200
+        except Exception as e:
+            return {'error': str(e)}, 500
+
     def api_tracking(self, method, body):
         """POST /api/tracking - Start/stop tracking"""
         if method != 'POST':
@@ -337,6 +375,16 @@ class WebServer:
         
         # Try to serve file from web/ directory
         filepath = 'web' + path
+        
+        # Check for gzipped version first
+        is_gz = False
+        try:
+            if os.stat(filepath + '.gz'):
+                filepath += '.gz'
+                is_gz = True
+        except:
+            pass
+            
         try:
             # Determine content type
             if path.endswith('.html'):
@@ -345,24 +393,41 @@ class WebServer:
                 content_type = 'text/css'
             elif path.endswith('.js'):
                 content_type = 'application/javascript'
+            elif path.endswith('.svg'):
+                content_type = 'image/svg+xml'
+            elif path.endswith('.json'):
+                content_type = 'application/json'
             else:
-                content_type = 'text/plain'
+                content_type = 'application/octet-stream'
             
             headers = f"HTTP/1.1 200 OK\r\n"
             headers += f"Content-Type: {content_type}\r\n"
+            if is_gz:
+                headers += "Content-Encoding: gzip\r\n"
             headers += "Access-Control-Allow-Origin: *\r\n"
             headers += "Connection: close\r\n\r\n"
             client.send(headers.encode('utf-8'))
             
             # Stream the file in chunks
+            # Use smaller chunks and a small delay to prevent network stack overflow
+            gc.collect()
+            print(f"  -> Streaming {filepath} {'(GZ)' if is_gz else ''}...")
             CHUNK_SIZE = 512
             with open(filepath, 'rb') as f:
                 while True:
                     chunk = f.read(CHUNK_SIZE)
                     if not chunk:
                         break
-                    client.send(chunk)
-        except:
+                    try:
+                        # use write() as it's more reliable for streaming in MP
+                        client.write(chunk)
+                        time.sleep_ms(2) # Give Pico oxygen
+                    except Exception as e:
+                        print(f"  !! Send error: {e}")
+                        break
+            gc.collect()
+        except Exception as e:
+            print(f"  !! Serve error: {e}")
             self._send_response(client, 404, {'error': 'Not found'})
     
     def handle_request(self, client, request):
@@ -372,6 +437,8 @@ class WebServer:
         if not method or not path:
             self._send_response(client, 400, {'error': 'Bad request'})
             return
+            
+        print(f"[{method}] {path}")
         
         # Handle OPTIONS (CORS preflight)
         if method == 'OPTIONS':
@@ -433,6 +500,49 @@ class WebServer:
                     client.close()
                 except:
                     pass
+
+    def api_wifi_scan(self, method, body):
+        """GET /api/wifi/scan - Scan for available networks"""
+        if method != 'GET':
+            return {'error': 'Method not allowed'}, 405
+        
+        try:
+            import wifi_setup
+            networks = wifi_setup.scan_networks()
+            return {'networks': networks}, 200
+        except Exception as e:
+            print(f"Scan error: {e}")
+            return {'error': str(e)}, 500
+
+    def api_wifi_config(self, method, body):
+        """POST /api/wifi/config - Save WiFi credentials and restart"""
+        if method != 'POST':
+            return {'error': 'Method not allowed'}, 405
+        
+        try:
+            data = json.loads(body)
+            ssid = data.get('ssid')
+            password = data.get('password')
+            
+            if not ssid:
+                return {'error': 'SSID required'}, 400
+            
+            import wifi_setup
+            wifi_setup.save_config(ssid, password)
+            
+            # Restart after a short delay to allow response to send
+            import machine
+            def restart(t):
+                print("Restarting for WiFi config...")
+                machine.reset()
+                
+            timer = machine.Timer(-1)
+            timer.init(period=2000, mode=machine.Timer.ONE_SHOT, callback=restart)
+            
+            return {'message': 'Config saved. System will restart in 2 seconds.'}, 200
+        except Exception as e:
+            print(f"Config error: {e}")
+            return {'error': str(e)}, 500
 
 # Global server instance
 _server = None

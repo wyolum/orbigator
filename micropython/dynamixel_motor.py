@@ -28,7 +28,8 @@ class DynamixelMotor:
     ADDR_POSITION_I_GAIN = 82
     ADDR_POSITION_P_GAIN = 84
     
-    def __init__(self, motor_id, name, gear_ratio=1.0):
+    
+    def __init__(self, motor_id, name, gear_ratio=1.0, offset_degrees=0.0):
         """
         Initialize motor.
         
@@ -36,10 +37,13 @@ class DynamixelMotor:
             motor_id: Dynamixel ID (1 for EQX, 2 for AoV)
             name: Human-readable name for debugging
             gear_ratio: Output rotation / Motor rotation (e.g., 120/11 for EQX ring gear)
+            offset_degrees: Software zero offset in OUTPUT degrees (default 0.0)
+                            Output = (Motor / Ratio) - Offset
         """
         self.motor_id = motor_id
         self.name = name
         self.gear_ratio = gear_ratio
+        self.offset_degrees = offset_degrees
         
         # Communication resilience
         self.consecutive_failures = 0
@@ -59,7 +63,8 @@ class DynamixelMotor:
         # Convert to motor degrees
         self.motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
         
-        self.output_degrees = self.motor_degrees / gear_ratio
+        # Apply offset: Output = (Motor / Ratio) - Offset
+        self.output_degrees = (self.motor_degrees / gear_ratio) - self.offset_degrees
         self.present_output_degrees = self.output_degrees
         self.last_present_read_ticks = time.ticks_ms()
         
@@ -151,7 +156,8 @@ class DynamixelMotor:
             True if successful, False otherwise
         """
         # Convert output degrees to motor degrees
-        motor_degrees = output_degrees * self.gear_ratio
+        # Output = (Motor / Ratio) - Offset  =>  Motor = (Output + Offset) * Ratio
+        motor_degrees = (output_degrees + self.offset_degrees) * self.gear_ratio
         
         # Command the motor with retry logic
         def _write_operation():
@@ -220,7 +226,8 @@ class DynamixelMotor:
             motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
             
             # Convert to output degrees
-            output_degrees = motor_degrees / self.gear_ratio
+            # Output = (Motor / Ratio) - Offset
+            output_degrees = (motor_degrees / self.gear_ratio) - self.offset_degrees
             
             # Update tracking
             self.motor_degrees = motor_degrees

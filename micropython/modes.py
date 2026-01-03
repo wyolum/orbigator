@@ -122,6 +122,7 @@ class OrbitMode(Mode):
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
         self.nudge_manager = input_utils.NudgeManager()
+        self.last_aov_wrapped = 0.0  # Track wrapped AoV for south point detection
     
     def enter(self) :
         """Initialize orbital tracking and catch up if needed."""
@@ -300,7 +301,16 @@ class OrbitMode(Mode):
             g.aov_position_deg = aov_angle
             g.eqx_position_deg = eqx_angle
 
-        # Persistence check
+        # Revolution counter: increment when crossing south point (AoV = 270°)
+        current_aov_wrapped = g.aov_position_deg % 360
+        # Detect south point crossing: previous < 270 and current >= 270
+        if self.last_aov_wrapped < 270 and current_aov_wrapped >= 270:
+            g.orbital_rev_count += 1
+            print(f"South point crossed! Rev count: {g.orbital_rev_count}")
+            utils.save_state()
+        self.last_aov_wrapped = current_aov_wrapped
+        
+        # Persistence check for motor position changes
         cur_rev_eqx = int(g.eqx_position_deg // 360)
         cur_rev_aov = int(g.aov_position_deg // 360)
         if cur_rev_eqx != self.last_saved_rev_eqx or cur_rev_aov != self.last_saved_rev_aov:
@@ -375,7 +385,7 @@ class OrbitMode(Mode):
             disp.degree(8*8+2, 31)  # After A###
             disp.degree(14*8+2, 31) # After E###
         else:
-            disp.text(f"Alt: {g.orbital_altitude_km:.1f} km", 0, 31)
+            disp.text(f"Rev: {g.orbital_rev_count:05d}", 0, 31)
             
         disp.show()
 
@@ -468,10 +478,10 @@ class PeriodEditorMode(Mode):
 class SettingsMode(Mode):
     """Settings menu for secondary parameters."""
     
-    def __init__(self):
+    def __init__(self, selection=0):
         super().__init__()
-        self.selection = 0
-        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Zulu Time", "Home Motors", "Motor ID Test", "Back"]
+        self.selection = selection
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Home Motors", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -489,16 +499,18 @@ class SettingsMode(Mode):
         elif self.selection == 3:
             return PeriapsisEditorMode()
         elif self.selection == 4:
-            return DatetimeEditorMode()
+            return RevCountEditorMode()
         elif self.selection == 5:
-            return HomingMode()
+            return DatetimeEditorMode()
         elif self.selection == 6:
+            return HomingMode()
+        elif self.selection == 7:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 7:
+        elif self.selection == 8:
             return MenuMode()
         return None
     
@@ -538,8 +550,8 @@ class HomingMode(Mode):
     def update(self, dt):
         # Send command once
         if not self.sent_command:
-            if g.eqx_motor: g.eqx_motor.home()
-            if g.aov_motor: g.aov_motor.home()
+            if g.eqx_motor: g.eqx_motor.home(0)
+            if g.aov_motor: g.aov_motor.home(90)
             self.sent_command = True
             
         # Poll actual positions
@@ -559,10 +571,10 @@ class HomingMode(Mode):
             g.aov_motor.stop()
             g.eqx_motor.stop()
             
-        return SettingsMode()
+        return SettingsMode(selection=6)  # Home Motors is index 6
         
     def on_confirm(self):
-        return SettingsMode()
+        return SettingsMode(selection=6)
         
     def render(self, disp):
         disp.fill(0)
@@ -598,10 +610,10 @@ class AltitudeEditorMode(Mode):
         g.orbital_altitude_km = float(self.alt)
         g.orbital_period_min = utils.compute_period_from_altitude(g.orbital_altitude_km)
         utils.save_state()
-        return SettingsMode()
+        return SettingsMode(selection=0)  # Altitude is index 0
         
     def on_back(self):
-        return SettingsMode()
+        return SettingsMode(selection=0)
         
     def render(self, disp):
         disp.fill(0)
@@ -631,10 +643,10 @@ class InclinationEditorMode(Mode):
     def on_confirm(self):
         g.orbital_inclination_deg = float(self.inc_x10) / 10.0
         utils.save_state()
-        return SettingsMode()
+        return SettingsMode(selection=1)  # Inclination is index 1
         
     def on_back(self):
-        return SettingsMode()
+        return SettingsMode(selection=1)
         
     def render(self, disp):
         disp.fill(0)
@@ -655,7 +667,7 @@ class DatetimeEditorMode(Mode):
     """Editor for system date and time."""
     def __init__(self, next_mode=None):
         super().__init__()
-        self.next_mode = next_mode if next_mode else SettingsMode()
+        self.next_mode = next_mode if next_mode else SettingsMode(selection=5)  # Zulu Time is index 5
         t = utils.get_timestamp(g.rtc)
         # Pico 2000 epoch: (Y, M, D, H, M, S, WD, YD)
         lt = time.localtime(int(t))
@@ -753,10 +765,10 @@ class EccentricityEditorMode(Mode):
     def on_confirm(self):
         g.orbital_eccentricity = float(self.ecc_x100) / 100.0
         utils.save_state()
-        return SettingsMode()
+        return SettingsMode(selection=2)  # Eccentricity is index 2
         
     def on_back(self):
-        return SettingsMode()
+        return SettingsMode(selection=2)
         
     def render(self, disp):
         disp.fill(0)
@@ -795,10 +807,10 @@ class PeriapsisEditorMode(Mode):
     def on_confirm(self):
         g.orbital_periapsis_deg = float(self.periapsis)
         utils.save_state()
-        return SettingsMode()
+        return SettingsMode(selection=3)  # Periapsis is index 3
         
     def on_back(self):
-        return SettingsMode()
+        return SettingsMode(selection=3)
         
     def render(self, disp):
         disp.fill(0)
@@ -816,6 +828,67 @@ class PeriapsisEditorMode(Mode):
         disp.degree(len(s_str)*8 + 1, 40)
         disp.text("Confirm to Save", 0, 52)
         disp.show()
+        disp.show()
+
+class RevCountEditorMode(Mode):
+    """Editor for orbital revolution count (digit by digit)."""
+    def __init__(self):
+        super().__init__()
+        # Support up to 999999 revs (6 digits)
+        self.digits = [0] * 6
+        # Initialize from current value
+        val = int(g.orbital_rev_count)
+        for i in range(5, -1, -1):
+            self.digits[i] = val % 10
+            val //= 10
+        self.field = 0  # 0-5 for each digit
+        
+    def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
+        # CW = increase digit
+        self.digits[self.field] = (self.digits[self.field] + delta) % 10
+        
+    def on_encoder_press(self):
+        self.field = (self.field + 1) % 6
+        
+    def on_confirm(self):
+        if self.field < 5:
+            self.field += 1
+            return None
+        # Save and return
+        new_count = 0
+        for d in self.digits:
+            new_count = new_count * 10 + d
+        g.orbital_rev_count = new_count
+        utils.save_state()
+        return SettingsMode(selection=4)  # Rev Count is index 4
+        
+    def on_back(self):
+        if self.field > 0:
+            self.field -= 1
+            return None
+        return SettingsMode(selection=4)
+        
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET REV COUNT", 0, 0)
+        
+        # Draw 6 digits
+        x_base = 16
+        y_pos = 25
+        
+        for i in range(6):
+            d_str = str(self.digits[i])
+            x = x_base + i * 16
+            
+            if self.field == i:
+                disp.fb.fill_rect(x, y_pos-1, 8, 10, 1)
+                disp.fb.text(d_str, x, y_pos, 0)
+            else:
+                disp.fb.text(d_str, x, y_pos, 1)
+        
+        disp.text("Orbit Counter", 16, 45)
+        disp.text("Confirm to Save", 10, 56)
         disp.show()
 
 class MotorOfflineMode(Mode):
@@ -883,6 +956,8 @@ class SGP4Mode(Mode):
         self.last_unix = 0 # Cache for propagator math
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
+        self.last_command_ticks = 0
+        self.inclination = 0.0
         self.nudge_manager = input_utils.NudgeManager()
         
         # Check WiFi availability
@@ -934,7 +1009,7 @@ class SGP4Mode(Mode):
                 return True
         return False
         
-    def _load_satellite(self, index):
+    def _load_satellite(self, index=0):
         """Load and initialize SGP4 for selected satellite."""
         from satellite_catalog import get_satellite_name, get_satellite_norad
         import sgp4
@@ -974,9 +1049,11 @@ class SGP4Mode(Mode):
         
         # Initialize SGP4
         import propagators
+        self.inclination = inc
         self.sgp4 = sgp4.SGP4()
         self.sgp4.init(epoch_year, epoch_day, bstar, inc, raan, ecc, argp, m, n)
         self.propagator = propagators.SGP4Propagator(self.sgp4)
+        self.tracking = True # Start tracking automatically on selection
         
         print(f"Loaded {self.satellite_name}: epoch {epoch_year} day {epoch_day:.2f}")
     
@@ -1135,15 +1212,16 @@ class SGP4Mode(Mode):
         if not self.propagator or not self.tracking:
             return
         
+        # print(f"SGP4 Update: {getattr(self, 'satellite_name', 'UNK')} track={self.tracking}")
+        
         # 1. Update target orientation from propagator (cache by second)
         now_unix = utils.get_timestamp()
         if now_unix != self.last_unix:
-            self.last_aov_angle, self.last_eqx_angle = self.propagator.get_aov_eqx(now_unix)
-            
-            self.lat_deg = self.last_aov_angle - 90.0
-            self.lon_deg = self.last_eqx_angle - 180.0
+            self.last_aov_angle, self.last_eqx_angle, self.lat_deg, self.lon_deg = self.propagator.get_aov_eqx(now_unix)
             self.alt_km = self.propagator.get_altitude()
             
+            # print(f"SGP4 Calc: AoV={self.last_aov_angle:.1f} EQX={self.last_eqx_angle:.1f} | Lat={self.lat_deg:.2f} Lon={self.lon_deg:.2f} @ {now_unix}")
+
             g.aov_position_deg = self.last_aov_angle
             g.eqx_position_deg = self.last_eqx_angle
             self.last_unix = now_unix

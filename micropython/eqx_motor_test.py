@@ -14,6 +14,7 @@ UART_TX_PIN = 0
 UART_RX_PIN = 1
 DIR_PIN = 2
 MOTOR_BAUDRATE = 57600
+VELOCITY = 1
 
 # Initialize UART and direction control
 uart = UART(0, baudrate=MOTOR_BAUDRATE, tx=Pin(UART_TX_PIN), rx=Pin(UART_RX_PIN))
@@ -72,7 +73,7 @@ motor = DynamixelMotor(MOTOR_ID, "EQX", gear_ratio=120/11)
 
 # Set slow speed for testing gear engagement
 print("Setting max speed to 10...")
-motor.set_speed_limit(velocity=10)  # Match Orbigator's max running speed
+motor.set_speed_limit(velocity=VELOCITY)  # Match Orbigator's max running speed
 
 # Read current position
 current_pos = motor.get_angle_degrees()

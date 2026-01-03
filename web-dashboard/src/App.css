@@ -1,0 +1,29 @@
+/* Global reset and utilities */
+#root {
+  width: 100%;
+}
+
+.pulse-on-change {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.min-vh-100 {
+  min-height: 100vh;
+}
+
+.space-y-4>*+* {
+  margin-top: 1rem;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tracking-widest {
+  letter-spacing: 0.1em;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}

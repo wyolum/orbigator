@@ -1,0 +1,36 @@
+{
+    "motors": {
+        "eqx": {
+            "id": 1,
+            "gear_ratio_num": 120.0,
+            "gear_ratio_den": 14.0,
+            "pid": {
+                "p": 600,
+                "i": 0,
+                "d": 0
+            },
+            "speed_limit": 10,
+            "offset_deg": 0.0
+        },
+        "aov": {
+            "id": 2,
+            "gear_ratio_num": 1.0,
+            "gear_ratio_den": 1.0,
+            "pid": {
+                "p": 600,
+                "i": 0,
+                "d": 0
+            },
+            "speed_limit": 2,
+            "offset_deg": 0.0
+        }
+    },
+    "system": {
+        "detent_div": 4,
+        "debounce_ms": 200,
+        "oled": {
+            "width": 128,
+            "height": 64
+        }
+    }
+}
