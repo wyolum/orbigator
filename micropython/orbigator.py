@@ -258,7 +258,7 @@ if ENABLE_MOTORS:
     g.eqx_motor = eqx_motor
     
     aov_motor.set_pid_gains(p=600, d=0)
-    aov_motor.set_speed_limit(5) # Increased from 2 to 5 for reliable startup
+    aov_motor.set_speed_limit(2) # Back to 2 per user request
     eqx_motor.set_pid_gains(p=600, d=0)
     eqx_motor.set_speed_limit(10) # Capped at 10 for safety
     
