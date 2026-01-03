@@ -237,11 +237,31 @@ def sync_system_time(rtc):
         print("Sync time failed:", e)
 
 # Global time reference for high-res timestamping
-_time_ref = None
+_boot_ts = 0
+_boot_ms = 0
+
+def init_software_clock(ts=None):
+    """Initialize the software clock base."""
+    global _boot_ts, _boot_ms
+    if ts is None:
+        ts = int(time.time())
+    _boot_ts = ts
+    _boot_ms = time.ticks_ms()
+    print(f"Software Clock Init: {ts} @ {_boot_ms}ms")
 
 def get_timestamp(rtc=None):
-    """Get stable integer unix timestamp."""
-    return int(time.time())
+    """Get stable integer unix timestamp with software fallback if HW clock is stalled."""
+    hw_time = int(time.time())
+    
+    if _boot_ts == 0:
+        return hw_time
+        
+    # Calculate expected time based on uptime (ticks)
+    elapsed_sec = time.ticks_diff(time.ticks_ms(), _boot_ms) // 1000
+    sw_time = _boot_ts + elapsed_sec
+    
+    # Return the furthest advanced time (usually SW time if HW clock is stuck)
+    return max(hw_time, sw_time)
 
 def get_shortest_path_delta(current_deg, target_deg):
     """Calculate the shortest delta between two angles (0-360)."""
@@ -264,6 +284,9 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
             else:
                 rtc.datetime(t)
         machine.RTC().datetime(t)
+        # Sychronize software clock too
+        import time
+        init_software_clock(int(time.time()))
         print(f"Time set to: {year}-{month:02d}-{day:02d} {hour:02d}:{minute:02d}:{second:02d}")
         return True
     except Exception as e:
@@ -272,9 +295,10 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_VERSION = 1
-STATE_FORMAT_V0 = "<4sQffffffB16sB"
-STATE_FORMAT = "<4sBQffffffB16sB"
+STATE_VERSION = 2
+STATE_FORMAT_V0 = "<4sQffffffB16sB"  # Original format without version byte
+STATE_FORMAT_V1 = "<4sBQffffffB16sB"  # V1 with version byte
+STATE_FORMAT = "<4sBIffffffIB16sB"  # V2 magic, ver, ts, 6xfloat, rev, mode, sat, crc
 STATE_MAGIC = b"ORB!"
 STATE_SIZE = struct.calcsize(STATE_FORMAT)
 
@@ -304,6 +328,7 @@ def save_state():
             "periapsis_deg": g.orbital_periapsis_deg,
             "eqx_deg": g.eqx_position_deg,
             "aov_deg": g.aov_position_deg,
+            "rev_count": g.orbital_rev_count,
             "mode_id": g.current_mode_id,
             "sat_name": getattr(g.current_mode, 'satellite_name', None) if g.current_mode_id == "SGP4" else "",
             "timestamp": now
@@ -315,15 +340,17 @@ def save_state():
                 # Map Mode ID to integer
                 mode_map = {"ORBIT": 0, "SGP4": 1, "DATETIME": 2}
                 m_id = mode_map.get(g.current_mode_id, 0)
-                sat_name = str(config["sat_name"])[:16]
+                sat_name_bytes = str(config["sat_name"]).encode('utf-8')[:16]
+                sat_name_bytes += b'\x00' * (16 - len(sat_name_bytes)) # Pad to 16
                 
                 # Pack binary block (leaving checksum 0 for now)
                 data = struct.pack(STATE_FORMAT, 
-                    STATE_MAGIC, STATE_VERSION, int(now), 
+                    STATE_MAGIC, STATE_VERSION, int(now) & 0xFFFFFFFF, 
                     float(g.aov_position_deg), float(g.eqx_position_deg),
                     float(g.orbital_altitude_km), float(g.orbital_inclination_deg),
                     float(g.orbital_eccentricity), float(g.orbital_periapsis_deg),
-                    m_id, sat_name.encode('utf-8'), 0
+                    int(g.orbital_rev_count),
+                    m_id, sat_name_bytes, 0
                 )
                 
                 print(f"DEBUG SRAM Save: AoV={g.aov_position_deg:.1f} EQX={g.eqx_position_deg:.1f} Alt={g.orbital_altitude_km:.1f}")
@@ -367,10 +394,11 @@ def load_state():
                 # 1. Try Version 1 (Current)
                 if data[4] == STATE_VERSION:
                     if data[-1] == _compute_checksum(data):
-                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
+                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
                         config = {
                             "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
                             "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                            "rev_count": rev,
                             "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
                             "sat_name": sat.decode('utf-8').strip('\x00')
                         }
@@ -381,27 +409,51 @@ def load_state():
                             config = None
                     else:
                         print("SRAM state: checksum fail")
-                # 2. Backward Compatibility Bridge (V0)
+                # 2. Backward Compatibility Bridge
                 else:
                     print(f"SRAM state: version mismatch (found v{data[4]})")
-                    try:
-                        # Attempt V0 parse
-                        v0_size = struct.calcsize(STATE_FORMAT_V0)
-                        v0_data = data[:v0_size]
-                        if v0_data[-1] == _compute_checksum(v0_data):
-                            mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V0, v0_data)
-                            config = {
-                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
-                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
-                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
-                                "sat_name": sat.decode('utf-8').strip('\x00')
-                            }
-                            if _validate_state(config):
-                                print("SRAM state: V0 bridge success")
-                            else:
-                                config = None
-                    except:
-                        config = None
+                    # Try V1 format (version 1)
+                    if data[4] == 1:
+                        try:
+                            v1_size = struct.calcsize(STATE_FORMAT_V1)
+                            v1_data = data[:v1_size]
+                            if v1_data[-1] == _compute_checksum(v1_data):
+                                mag, ver, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V1, v1_data)
+                                config = {
+                                    "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                    "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                    "rev_count": 0,  # V1 didn't have rev count
+                                    "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
+                                    "sat_name": sat.decode('utf-8').strip('\x00')
+                                }
+                                if _validate_state(config):
+                                    print("SRAM state: V1 bridge success")
+                                else:
+                                    config = None
+                        except Exception as e:
+                            print(f"V1 parse error: {e}")
+                            config = None
+                    # Try V0 format (no version byte)
+                    else:
+                        try:
+                            v0_size = struct.calcsize(STATE_FORMAT_V0)
+                            v0_data = data[:v0_size]
+                            if v0_data[-1] == _compute_checksum(v0_data):
+                                mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V0, v0_data)
+                                config = {
+                                    "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                    "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                    "rev_count": 0,  # V0 didn't have rev count
+                                    "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
+                                    "sat_name": sat.decode('utf-8').strip('\x00')
+                                }
+                                if _validate_state(config):
+                                    print("SRAM state: V0 bridge success")
+                                else:
+                                    config = None
+                        except Exception as e:
+                            print(f"V0 parse error: {e}")
+                            config = None
             else:
                 print("SRAM state: empty or invalid")
         except Exception as e:
@@ -423,7 +475,9 @@ def load_state():
         g.orbital_inclination_deg = config.get("inclination_deg", 51.6)
         g.orbital_eccentricity = config.get("eccentricity", 0.0)
         g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
+        g.orbital_rev_count = config.get("rev_count", 0)
         
+        # Import get_new_pos for shortest path calculation
         # Import get_new_pos for shortest path calculation
         from dynamixel_extended_utils import get_new_pos
         
@@ -439,6 +493,36 @@ def load_state():
             raw_motor_val = g.aov_motor.get_angle_degrees()
             g.aov_position_deg = get_new_pos(last_aov_deg, raw_motor_val % 360)
             
+        # Estimate missed revolutions during power loss
+        if timestamp > 0:
+            now = get_timestamp()
+            elapsed = now - timestamp
+            # Only estimate if power was off for a reasonable time (> 1 min, < 7 days)
+            if 60 < elapsed < 604800:
+                # Calculate orbital period and AoV rate
+                period_min = compute_period_from_altitude(g.orbital_altitude_km)
+                period_sec = period_min * 60.0
+                aov_rate_deg_sec = 360.0 / period_sec
+                
+                # Estimate total orbits during downtime
+                # Formula: saved_count + floor(elapsed_time / period - partial_orbit_from_south)
+                # Since rev increments at 270° (south point), measure from there
+                saved_aov_wrapped = last_aov_deg % 360
+                # Calculate how far past the last south point crossing (270°)
+                if saved_aov_wrapped >= 270:
+                    degrees_since_south = saved_aov_wrapped - 270
+                else:
+                    degrees_since_south = saved_aov_wrapped + 90  # 0-270 wraps to 90-360 from south
+                partial_orbit_time = degrees_since_south / aov_rate_deg_sec
+                total_orbit_time = elapsed - partial_orbit_time
+                missed_revs = int(total_orbit_time / period_sec)
+                
+                if missed_revs > 0:
+                    saved_count = config.get("rev_count", 0)
+                    g.orbital_rev_count = saved_count + missed_revs
+                    print(f"Power loss detected: {elapsed/60:.1f} min offline")
+                    print(f"Estimated {missed_revs} missed orbits (Rev: {saved_count} → {g.orbital_rev_count})")
+            
         return {
             "timestamp": timestamp,
             "mode_id": config.get("mode_id", "ORBIT"),
@@ -453,48 +537,56 @@ def load_state():
 def compute_gmst(unix_timestamp):
     """
     Compute Greenwich Mean Sidereal Time from Unix timestamp.
-    
-    Args:
-        unix_timestamp: Unix timestamp (seconds since 1970-01-01 00:00:00 UTC)
-    
-    Returns:
-        GMST in radians
+    Pico 2W (32-bit float) loses precision at unix > 16M.
+    Use integer math for the primary offset.
     """
-    # Julian Date from Unix timestamp
-    # Julian Date from Unix timestamp
-    # MicroPython time.time() starts at 2000-01-01 00:00:00
-    # JD for 2000-01-01 00:00:00 UTC is 2451544.5
-    jd = (unix_timestamp / 86400.0) + 2451544.5
+    # J2000.0 is Jan 1 2000 12:00:00 UTC (946728000 in 1970 epoch)
+    # Pico 1970 epoch:
+    J2000_UNIX = 946728000
     
-    # Days since J2000.0
-    d = jd - 2451545.0
+    # Seconds since J2000.0 (integer)
+    s_since_j2000 = int(unix_timestamp) - J2000_UNIX
     
-    # GMST at 0h UT (simplified formula, accurate to ~1 arcsecond)
-    gmst_hours = 18.697374558 + 24.06570982441908 * d
+    d_int = s_since_j2000 // 86400
+    s_rem = s_since_j2000 % 86400
+    # d_frac is the fractional day [0, 1.0)
+    d_frac = s_rem / 86400.0
     
-    # Convert to radians and normalize to [0, 2π]
-    gmst_rad = math.radians(gmst_hours * 15.0)  # 15 deg/hour
-    gmst_rad = gmst_rad % (2.0 * math.pi)
+    # Meeus GMST formula (accurate to 0.02 seconds over 50 years)
+    # GMST_degrees = 280.46061837 + 360.98564736629 * d
+    # where d is days since J2000.0
+    d = d_int + d_frac
+    gmst_deg = (280.46061837 + 360.98564736629 * d) % 360.0
     
-    return gmst_rad
+    # Convert to radians and normalize
+    return math.radians(gmst_deg) % (2.0 * math.pi)
 
 def get_jd(unix_timestamp):
-    """Julian Date from MicroPython unix timestamp (starts at 2000)."""
-    return (unix_timestamp / 86400.0) + 2451544.5
+    """Julian Date from unix timestamp (1970 base)."""
+    # JD for 1970-01-01 00:00:00 is 2440587.5
+    return (unix_timestamp / 86400.0) + 2440587.5
 
 def get_jd_of_tle_epoch(year, day):
-    """
-    Calculate Julian Date for TLE epoch.
-    year is 4-digit (e.g. 1997 or 2025)
-    day is fractional day of year (1.0 = Jan 1 0h)
-    """
-    # Precise formula for JD of Jan 1 0h of the given year
+    # Precise formula stays same, but we must use it carefully
     y = year
     m = 1
     d = 1
     jd_jan1 = 367*y - (7*(y + (m+9)//12))//4 + (275*m)//9 + d + 1721013.5
-    # Add fractional dayoffset (TLE day 1.0 is Jan 1 0h)
     return jd_jan1 + (day - 1.0)
+
+def get_t_min(unix_time, epoch_year, epoch_day):
+    """
+    Calculate minutes since TLE epoch, maintaining precision for 32-bit float.
+    Uses integer subtraction for the large unix base.
+    """
+    # 1. Calculate Epoch Unix (integer seconds since 1970)
+    jd_epoch = get_jd_of_tle_epoch(epoch_year, epoch_day)
+    # JD 1970 = 2440587.5
+    epoch_unix = int((jd_epoch - 2440587.5) * 86400.0)
+    
+    # 2. Subtract first, then divide (preserves resolution)
+    delta_sec = int(unix_time) - epoch_unix
+    return delta_sec / 60.0
 
 def parse_tle_epoch(line1):
     """

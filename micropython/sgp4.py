@@ -51,26 +51,25 @@ class SGP4:
         self.cosio = cosio
         self.x3thm1 = x3thm1
         
-        # Simplified secular rates
-        self.omgdot = 0.0 # Simplified
-        self.xnodot = 0.0 # Simplified
-        self.xmdot = self.xnodp # Simplified
+        # Calculate proper secular rates (J2 perturbations)
+        # RAAN precession rate
+        self.xnodot = -1.5 * CK2 * self.cosio / (self.aodp * self.aodp * betao2 * betao2) * self.xnodp
+        
+        # Argument of perigee precession rate
+        self.omgdot = 0.75 * CK2 * (5.0 * theta2 - 1.0) / (self.aodp * self.aodp * betao2 * betao2) * self.xnodp
+        
+        # Mean motion rate (corrected for drag)
+        self.xmdot = self.xnodp
 
     def propagate(self, t_min):
         # Update Mean Anomaly
-        m_curr = self.m + self.xmdot * t_min
+        m_curr = (self.m + self.xmdot * t_min) % TWOPI
         
-        # Update RAAN (J2 perturbation)
-        theta2 = self.cosio * self.cosio
-        x3thm1 = 3.0 * theta2 - 1.0
-        eosq = self.ecc * self.ecc
-        betao2 = 1.0 - eosq
-        rdot = -1.5 * CK2 * self.cosio / (self.aodp * self.aodp * betao2 * betao2) * self.n
-        raan_curr = self.raan + rdot * t_min
+        # Update RAAN using pre-calculated rate
+        raan_curr = (self.raan + self.xnodot * t_min) % TWOPI
         
-        # Update Arg Perigee
-        pdot = 0.75 * CK2 * (5.0 * theta2 - 1.0) / (self.aodp * self.aodp * betao2 * betao2) * self.n
-        argp_curr = self.argp + pdot * t_min
+        # Update Arg Perigee using pre-calculated rate
+        argp_curr = (self.argp + self.omgdot * t_min) % TWOPI
 
         # Solve Kepler's Equation
         e_anom = m_curr
@@ -108,7 +107,7 @@ class SGP4:
 
     def eci_to_geodetic(self, x, y, z, gmst):
         r = math.sqrt(x*x + y*y)
-        lon = math.atan2(y, x) - gmst
+        lon = math.atan2(y, x) + gmst  # Changed from - to +
         
         while lon > PI: lon -= TWOPI
         while lon < -PI: lon += TWOPI

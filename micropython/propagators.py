@@ -92,30 +92,88 @@ class SGP4Propagator(Propagator):
             self._sgp4_mod = None
 
     def get_aov_eqx(self, unix_time):
+        """
+        Returns (aov_deg, eqx_deg, lat_deg, lon_deg)
+        aov/eqx are the motor targets (orbital phase/RAAN)
+        lat/lon are the geodetic ground track
+        """
         if not self._sgp4_mod:
-            return 0.0, 0.0
+            return 0.0, 0.0, 0.0, 0.0
         
-        # Calculate time since TLE epoch
-        jd_now = utils.get_jd(unix_time)
-        jd_epoch = utils.get_jd_of_tle_epoch(self.sgp4.epoch_year, self.sgp4.epoch_day)
-        t_min = (jd_now - jd_epoch) * 1440.0
-        
-        # print(f"DEBUG SGP4: JD_Now={jd_now:.4f} Epoch={jd_epoch:.4f} t_min={t_min:.4f}")
-        
-        # Propagate
-        x, y, z = self.sgp4.propagate(t_min)
-        gmst = utils.compute_gmst(unix_time)
-        lat, lon, alt = self.sgp4.eci_to_geodetic(x, y, z, gmst)
-        
-        self.last_alt = alt
-        
-        # Map to motor angles
-        # AoV = Latitude (-90 to +90 -> 0 to 180)
-        # EQX = Longitude (-180 to +180 -> 0 to 360)
-        aov_deg = math.degrees(lat) + 90.0
-        eqx_deg = math.degrees(lon) + 180.0
-        
-        return aov_deg, eqx_deg
+        # Access external satellite_position module for robust calculation
+        # This module handles 32-bit float precision limitations on Pico 2W correctly
+        try:
+            import satellite_position
+            
+            # Helper to get current time from unix timestamp
+            import time
+            t_struct = time.gmtime(unix_time)
+            # Ensure 9-tuple for compatibility
+            t_tuple = (t_struct[0], t_struct[1], t_struct[2], t_struct[3], t_struct[4], t_struct[5], 0, 0, 0)
+            
+            result = satellite_position.compute_satellite_geodetic(
+                self.sgp4, 
+                self.sgp4.epoch_year, 
+                self.sgp4.epoch_day, 
+                t_tuple
+            )
+            
+            lat_deg = result['latitude']
+            lon_deg = result['longitude']
+            alt_km = result['altitude']
+            gmst = result['gmst']
+            t_min = result.get('t_min', 0)
+            
+            # Store altitude for retrieval
+            self.last_alt = alt_km
+            
+            # --- Continue with specific Orbigator motor mapping ---
+            
+            # 3. Update Orbital Elements with J2 Precession (high-precision)
+            # We need t_min for this, which we now get from the robust calculation
+            
+            theta2 = self.sgp4.cosio * self.sgp4.cosio
+            eosq = self.sgp4.ecc * self.sgp4.ecc
+            betao2 = 1.0 - eosq
+            CK2 = 5.413080e-4 
+            
+            # RAAN Precession
+            rdot = -1.5 * CK2 * self.sgp4.cosio / (self.sgp4.aodp * self.sgp4.aodp * betao2 * betao2) * self.sgp4.n
+            raan_curr = (self.sgp4.raan + rdot * t_min)
+            
+            # Arg of Perigee Precession
+            pdot = 0.75 * CK2 * (5.0 * theta2 - 1.0) / (self.sgp4.aodp * self.sgp4.aodp * betao2 * betao2) * self.sgp4.n
+            argp_curr = (self.sgp4.argp + pdot * t_min)
+            
+            # 4. Solve Kepler's Equation for True Anomaly (nu)
+            m_curr = (self.sgp4.m + self.sgp4.xmdot * t_min)
+            e_anom = m_curr
+            for i in range(10):
+                d_e = (m_curr - e_anom + self.sgp4.ecc * math.sin(e_anom)) / (1.0 - self.sgp4.ecc * math.cos(e_anom))
+                e_anom += d_e
+                if abs(d_e) < 1e-6: break
+                
+            sin_e = math.sin(e_anom)
+            cos_e = math.cos(e_anom)
+            nu = math.atan2(math.sqrt(1.0 - self.sgp4.ecc * self.sgp4.ecc) * sin_e, cos_e - self.sgp4.ecc)
+            
+            # 5. Map to Orbigator drive coordinates
+            # AoV = Argument of Latitude (angle from ascending node) = nu + argp
+            aov_deg = math.degrees(nu + argp_curr) % 360.0
+            
+            # EQX = Longitude of Ascending Node = GMST + RAAN
+            # At the ascending node (lat=0, aov=0), the satellite's longitude equals this value
+            eqx_deg = math.degrees(gmst + raan_curr) % 360.0
+            
+            return aov_deg, eqx_deg, lat_deg, lon_deg
+            
+        except ImportError:
+            # Fallback if module missing (should not happen in prod)
+            print("SGP4 Error: satellite_position module missing")
+            return 0.0, 0.0, 0.0, 0.0
+        except Exception as e:
+            print(f"SGP4 Prop Error: {e}")
+            return 0.0, 0.0, 0.0, 0.0
 
     def get_altitude(self):
         return self.last_alt
