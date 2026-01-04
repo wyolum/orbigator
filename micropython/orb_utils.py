@@ -11,7 +11,7 @@ EARTH_MU = 398600.4418   # km^3/s^2 (gravitational parameter)
 EARTH_J2 = 0.00108263    # J2 perturbation coefficient
 SIDEREAL_DAY_SEC = 86164.0905  # seconds
 EARTH_ROTATION_DEG_DAY = 360.0
-CONFIG_FILE = "orbigator_config.json"
+CONFIG_FILE = "orbigator_state.json"
 
 def wrap_phase_deg(phase_deg):
     return (phase_deg + 180) % 360 - 180
@@ -676,3 +676,31 @@ def get_tle_age_str(last_fetch_timestamp):
         return f"{int(age_sec/3600)}h"
     else:
         return f"{int(age_sec/86400)}d"
+
+def save_motor_calibration(motor_name, offset_deg):
+    """
+    Update motor offset in orbigator_config.json (Not state file).
+    
+    Args:
+        motor_name: "eqx" or "aov"
+        offset_deg: New offset in degrees
+    """
+    try:
+        # Load existing config
+        with open("orbigator_config.json", "r") as f:
+            config = json.load(f)
+            
+        # Update specific motor
+        if "motors" in config and motor_name in config["motors"]:
+            config["motors"][motor_name]["offset_deg"] = float(offset_deg)
+            
+            # Save back
+            with open("orbigator_config.json", "w") as f:
+                json.dump(config, f)
+            print(f"Saved {motor_name} offset: {offset_deg:.4f}")
+            return True
+            
+        return False
+    except Exception as e:
+        print(f"Error saving calibration: {e}")
+        return False

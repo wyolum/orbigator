@@ -43,7 +43,7 @@ EQX_GEAR_RATIO = mc["eqx"]["gear_ratio_num"] / mc["eqx"]["gear_ratio_den"]
 AOV_GEAR_RATIO = mc["aov"]["gear_ratio_num"] / mc["aov"]["gear_ratio_den"]
 
 DETENT_DIV = config_data["system"]["detent_div"]
-DEBOUNCE_MS = config_data["system"]["debounce_ms"]
+DEBOUNCE_MS = 300 # Increased from 200 to filter noise
 
 # ---------------- OLED Init ----------------
 OLED_W = config_data["system"]["oled"]["width"]
@@ -236,11 +236,12 @@ if has_wifi:
                 try:
                     import ntptime, machine
                     print("Settling network...")
-                    time.sleep(2) # Give stack a moment
+                    time.sleep(4) # Give stack a moment
                     
-                    for attempt in range(3):
+                    for attempt in range(5):
                         try:
                             print(f"NTP Sync attempt {attempt+1}...")
+                            ntptime.host = "pool.ntp.org" 
                             ntptime.settime()
                             t = machine.RTC().datetime()
                             utils.set_datetime(t[0], t[1], t[2], t[4], t[5], t[6], g.rtc)
@@ -249,7 +250,7 @@ if has_wifi:
                             break
                         except Exception as e:
                             print(f"  Attempt {attempt+1} failed: {e}")
-                            time.sleep(1)
+                            time.sleep(2)
                     
                     if not sync_done:
                         print("NTP Sync permanently failed. Proceeding with local/RTC time.")
@@ -369,62 +370,78 @@ if has_wifi:
 
 # ---------------- Main Loop ----------------
 while True:
-    time.sleep_ms(10)
-    now = time.ticks_ms()
-    
-    # 0. Check for Requested Mode Change (from Web Server)
-    if g.next_mode:
-        print(f"Switching mode via API...")
-        g.current_mode.exit()
-        g.current_mode = g.next_mode
-        g.next_mode = None
-        g.current_mode.enter()
-        utils.save_state() # Proactively save new mode from API
-    
-    # 1. Poll Encoder Rotation
-    irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
-    d = rc // DETENT_DIV
-    if d != last_detent:
-        delta = d - last_detent
-        last_detent = d
-        g.current_mode.on_encoder_rotate(delta)
-    
-    # 2. Process Button Events (ISR-driven)
-    while button_events:
-        try:
-            pin = button_events.pop(0)
-            
-            new_mode = None
-            if pin == enc_btn:
-                new_mode = g.current_mode.on_encoder_press()
-            elif pin == CONFIRM_BTN:
-                new_mode = g.current_mode.on_confirm()
-            elif pin == BACK_BTN:
-                new_mode = g.current_mode.on_back()
+    try:
+        time.sleep_ms(10)
+        now = time.ticks_ms()
+        
+        # 0. Check for Requested Mode Change (from Web Server)
+        if g.next_mode:
+            print(f"Switching mode via API: {type(g.current_mode).__name__} -> {type(g.next_mode).__name__}")
+            g.current_mode.exit()
+            g.current_mode = g.next_mode
+            g.next_mode = None
+            g.current_mode.enter()
+            utils.save_state() # Proactively save new mode from API
+        
+        # 1. Poll Encoder Rotation
+        irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
+        d = rc // DETENT_DIV
+        if d != last_detent:
+            delta = d - last_detent
+            last_detent = d
+            g.current_mode.on_encoder_rotate(delta)
+        
+        # 2. Process Button Events (ISR-driven)
+        while button_events:
+            try:
+                pin = button_events.pop(0)
                 
-            if new_mode:
-                print(f"Transition: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
-                g.current_mode.exit()
-                g.current_mode = new_mode
-                g.current_mode.enter()
-                utils.save_state()
-                print(f"Transition complete.")
-        except Exception as e:
-            print(f"Error handling button: {e}")
+                new_mode = None
+                if pin == enc_btn:
+                    new_mode = g.current_mode.on_encoder_press()
+                elif pin == CONFIRM_BTN:
+                    new_mode = g.current_mode.on_confirm()
+                elif pin == BACK_BTN:
+                    new_mode = g.current_mode.on_back()
+                    
+                if new_mode:
+                    btn_name = "ENC" if pin == enc_btn else "CONFIRM" if pin == CONFIRM_BTN else "BACK"
+                    print(f"Transition via Button [{btn_name}]: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
+                    g.current_mode.exit()
+                    g.current_mode = new_mode
+                    g.current_mode.enter()
+                    utils.save_state()
+                    print(f"Transition complete.")
+            except Exception as e:
+                print(f"Error handling button: {e}")
+        
+        # 3. Check Motor Health
+        if not g.motor_health_ok and g.motor_offline_id is not None:
+            # Transition to offline mode
+            motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
+            g.current_mode.exit()
+            import modes
+            g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
+            g.current_mode.enter()
+        
+        # 6. Update and Render
+        g.current_mode.update(now)
+        
+        if time.ticks_diff(now, last_display_update) >= 200:
+            last_display_update = now
+            g.current_mode.render(g.disp)
     
-    # 3. Check Motor Health
-    if not g.motor_health_ok and g.motor_offline_id is not None:
-        # Transition to offline mode
-        motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
-        g.current_mode.exit()
-        import modes
-        g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
-        g.current_mode.enter()
-    
-    # 6. Update and Render
-    g.current_mode.update(now)
-    
-    if time.ticks_diff(now, last_display_update) >= 200:
-        last_display_update = now
-        g.current_mode.render(g.disp)
+    except Exception as e:
+        import sys, io
+        print(f"\\nCRASH DETECTED: {e}")
+        with open("crash_log.txt", "a") as f:
+            f.write(f"\\n[{time.time()}] Crash: {e}\\n")
+            # sys.print_exception(e, f) # MicroPython specific
+        
+        # Flash LED SOS or similar?
+        time.sleep(1)
+        # Attempt to resume or reset?
+        print("Resetting machine...")
+        time.sleep(1)
+        machine.reset()
   

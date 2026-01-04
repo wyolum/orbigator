@@ -144,10 +144,10 @@ class WebServer:
         
         satellite = body.get('satellite', '')
         if hasattr(g, 'current_mode') and g.current_mode and g.current_mode_id == "SGP4":
-             if g.current_mode.select_satellite_by_name(satellite):
-                 return {'success': True, 'satellite': satellite}, 200
-             else:
-                 return {'error': f'Satellite {satellite} not found'}, 404
+            if g.current_mode.select_satellite_by_name(satellite):
+                return {'success': True, 'satellite': satellite}, 200
+            else:
+                return {'error': f'Satellite {satellite} not found'}, 404
         else:
              return {'error': 'Not in Sentry/SGP4 mode'}, 409
     
@@ -176,8 +176,8 @@ class WebServer:
         
         tracking = body.get('tracking', False)
         if hasattr(g, 'current_mode') and g.current_mode and g.current_mode_id == "SGP4":
-             g.current_mode.tracking = tracking
-             return {'success': True, 'tracking': tracking}, 200
+            g.current_mode.tracking = tracking
+            return {'success': True, 'tracking': tracking}, 200
         else:
              return {'error': 'Not in Sentry/SGP4 mode'}, 409
     
@@ -235,11 +235,11 @@ class WebServer:
             
         # Check logic
         if hasattr(g, 'current_mode') and g.current_mode and g.current_mode_id == "SGP4":
-             success, msg = g.current_mode.set_manual_tle(name, line1, line2)
-             if success:
-                 return {'success': True, 'message': msg}, 200
-             else:
-                 return {'error': msg}, 400
+            success, msg = g.current_mode.set_manual_tle(name, line1, line2)
+            if success:
+                return {'success': True, 'message': msg}, 200
+            else:
+                return {'error': msg}, 400
         else:
              return {'error': 'System must be in Track Satellite mode'}, 409
     
@@ -279,7 +279,7 @@ class WebServer:
 
         # Check current mode - Nudging disabled in SGP4 mode
         if hasattr(g, 'current_mode_id') and g.current_mode_id == "SGP4":
-             return {'error': 'Nudging disabled in SGP4 mode'}, 400
+            return {'error': 'Nudging disabled in SGP4 mode'}, 400
         
         if motor == 'aov' and g.aov_motor:
             g.aov_position_deg += delta
@@ -341,6 +341,7 @@ class WebServer:
             body_text = '\r\n'.join(lines[body_start:])
             if body_text:
                 try:
+                # Parse body (JSON)
                     body = json.loads(body_text)
                 except:
                     pass

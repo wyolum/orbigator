@@ -38,11 +38,11 @@ module sled_complete(){
     rotate([0, 70, 0])scale(30)translate([-28.85, 0, 0])
     color("grey")import("sat_model_2.stl");
   */
-  RR = 20;
+  RR = 10;
   intersection(){
     sled_base();
     scale([1, .45, 1])translate([0,0,-50])cylinder(d=25, h=100);
-    translate([0, 0, +RR-.5])rotate([90,0,0])cylinder(r=RR,h=20, $fn=50,center=true);
+    translate([0, 0, +RR-.5])rotate([90,0,0])scale([3, 1, 1])cylinder(r=RR,h=20, $fn=50,center=true);
   }
 }
 module sled(){

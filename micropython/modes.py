@@ -62,6 +62,17 @@ class MenuMode(Mode):
         except:
             pass  # No WiFi, skip Track Satellite option
             
+        # Default selection based on current mode to prevent accidental switching
+        if g.current_mode_id == "SGP4":
+            # Find index of Track Satellite
+            for i, item in enumerate(self.items):
+                if item == "Track Satellite":
+                    self.selection = i
+                    break
+        elif g.current_mode_id == "ORBIT":
+            # Default to 0 (Orbit!)
+            self.selection = 0
+            
     def enter(self):
         g.current_mode_id = "MENU"
     
@@ -481,7 +492,7 @@ class SettingsMode(Mode):
     def __init__(self, selection=0):
         super().__init__()
         self.selection = selection
-        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Home Motors", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Home Motors", "Calibrate EQX", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -505,12 +516,14 @@ class SettingsMode(Mode):
         elif self.selection == 6:
             return HomingMode()
         elif self.selection == 7:
+            return EQXCalibrationMode()
+        elif self.selection == 8:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
             return None
-        elif self.selection == 8:
+        elif self.selection == 9:
             return MenuMode()
         return None
     
@@ -534,6 +547,154 @@ class SettingsMode(Mode):
             prefix = ">" if i == self.selection else " "
             y = 16 + (i - start_idx) * 12
             disp.text(f"{prefix} {item}", 0, y)
+        disp.show()
+
+class EQXCalibrationMode(Mode):
+    """
+    Manually calibrate EQX zero point by entering the TRUE physical angle using a numeric editor.
+    Offset = Raw_Angle - User_Defined_True_Angle
+    """
+    def __init__(self):
+        super().__init__()
+        # Fields: 0=Sign, 1=Hundreds, 2=Tens, 3=Ones
+        self.sign = 1 # 1 or -1
+        self.hundreds = 0
+        self.tens = 0
+        self.ones = 0
+        self.field = 0
+        
+        # Pre-populate with current logical angle if available
+        if g.eqx_motor and g.eqx_motor.present_output_degrees is not None:
+             curr = g.eqx_motor.present_output_degrees
+             val = int(round(curr))
+             
+             if val < 0:
+                 self.sign = -1
+                 val = abs(val)
+             else:
+                 self.sign = 1
+                 
+             val = val % 360 # Wrap to safe range
+             if val > 180:   # Prefer -180 to 180 representation
+                 val = val - 360
+                 self.sign = -1
+                 val = abs(val)
+                 
+             self.hundreds = (val // 100) % 10
+             self.tens = (val // 10) % 10
+             self.ones = val % 10 
+        
+    def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
+        d = delta
+        
+        if self.field == 0:
+            if d != 0: self.sign *= -1
+        elif self.field == 1:
+            self.hundreds = (self.hundreds + d) % 2 # 0-1
+        elif self.field == 2:
+            self.tens = (self.tens + d) % 10
+        elif self.field == 3:
+            self.ones = (self.ones + d) % 10
+            
+    def on_encoder_press(self):
+        self.field = (self.field + 1) % 4
+        
+    def on_confirm(self):
+        if self.field < 3:
+            self.field += 1
+            return None
+            
+        # 1. Calculate the user-specified TRUE angle
+        user_deg = float(self.sign * (self.hundreds * 100 + self.tens * 10 + self.ones))
+        
+        if not g.eqx_motor:
+            print("No EQX motor to calibrate")
+            return SettingsMode(selection=7)
+            
+        # 2. Get current Raw angle
+        # Current logic: present_deg = raw - offset
+        # So: raw = present_deg + offset
+        current_offset = g.eqx_motor.offset_degrees
+        current_logical = g.eqx_motor.get_angle_degrees() # This uses current offset
+        if current_logical is None: current_logical = 0.0
+        
+        raw_deg = current_logical + current_offset
+        
+        # 3. Calculate NEW offset
+        # Target: user_deg = raw_deg - new_offset
+        # => new_offset = raw_deg - user_deg
+        new_offset = raw_deg - user_deg
+        
+        print(f"Calib: User={user_deg} Raw={raw_deg} OldOff={current_offset} NewOff={new_offset}")
+        
+        # 4. Apply and Save
+        g.eqx_motor.offset_degrees = new_offset
+        
+        # Save to hardware config
+        success = utils.save_motor_calibration("eqx", new_offset)
+        
+        if success:
+             print("Calibration Saved.")
+        
+        return SettingsMode(selection=7)
+        
+    def on_back(self):
+        if self.field > 0:
+            self.field -= 1
+            return None
+        return SettingsMode(selection=7)
+
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("CALIBRATE EQX", 0, 0)
+        
+        # Draw editor
+        # Format: [+/-] [0] [0] [0]
+        x_base = 20
+        y_pos = 20
+        
+        # Sign
+        s_char = "E" if self.sign > 0 else "W"
+        if self.field == 0:
+            disp.fb.fill_rect(x_base, y_pos-1, 10, 10, 1)
+            disp.fb.text(s_char, x_base+1, y_pos, 0)
+        else:
+            disp.fb.text(s_char, x_base+1, y_pos, 1)
+            
+        # Hundreds
+        if self.field == 1:
+            disp.fb.fill_rect(x_base+12, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.hundreds), x_base+13, y_pos, 0)
+        else:
+            disp.fb.text(str(self.hundreds), x_base+13, y_pos, 1)
+            
+        # Tens
+        if self.field == 2:
+            disp.fb.fill_rect(x_base+24, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.tens), x_base+25, y_pos, 0)
+        else:
+            disp.fb.text(str(self.tens), x_base+25, y_pos, 1)
+            
+        # Ones
+        if self.field == 3:
+            disp.fb.fill_rect(x_base+36, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.ones), x_base+37, y_pos, 0)
+        else:
+            disp.fb.text(str(self.ones), x_base+37, y_pos, 1)
+            
+        disp.text("deg", x_base+50, y_pos)
+        
+        # Show Current Raw for reference
+        # We need raw, which is (present + offset)
+        raw_val = 0.0
+        if g.eqx_motor:
+             curr = g.eqx_motor.present_output_degrees
+             if curr is None: curr = 0.0
+             raw_val = curr + g.eqx_motor.offset_degrees
+             
+        disp.text(f"Raw: {raw_val:.1f}", 0, 40)
+        disp.text("Confirm to Set", 0, 54)
         disp.show()
 
 class HomingMode(Mode):
