@@ -202,9 +202,9 @@ def create_sheets(image_path=None, diameter_in=12.0, total_gores=12, gores_per_s
     clip_path = build_path_from_coords(xL_base, xR_base, y)
     
     # Build path with West Tab (Left side extended)
-    # Tab width: 0.25 inches at equator, scaling with cos(phi)
+    # Tab width: 0.25 inches constant
     tab_width_max = 0.25
-    tab_offset = tab_width_max * np.cos(phis)
+    tab_offset = np.full_like(phis, tab_width_max)
     
     # Generate 6 individual tabs with relief notches (gaps)
     xL_cut = xL_base.copy() # Default to fold line
@@ -340,6 +340,142 @@ def create_sheets(image_path=None, diameter_in=12.0, total_gores=12, gores_per_s
         plt.close(fig)
         print(f"Saved {outfile}")
 
+def create_rosette(image_path=None, diameter_in=12.0, total_gores=12, min_lat_deg=-60):
+    # Load Image
+    if image_path:
+        print(f"Loading {image_path}...")
+        try:
+            img = Image.open(image_path).convert("RGBA")
+        except Exception as e:
+            print(f"Error opening image: {e}")
+            return
+    else:
+        img = generate_synthetic_map()
+        if img is None: return
+        img = img.resize((4000, 2000), Image.BICUBIC)
+        image_path = "vector_map"
+
+    W, H = img.size
+    slice_w_px = W / total_gores
+    
+    # 1. Generate all warped gores first
+    gores = []
+    print("Generating gores for rosette...")
+    for i in range(total_gores):
+        left_px = int(i * slice_w_px)
+        right_px = int((i + 1) * slice_w_px)
+        if i == total_gores - 1: right_px = W
+        slice_img = img.crop((left_px, 0, right_px, H))
+        warped = warp_slice_to_gore(slice_img, diameter_in, total_gores, min_lat_deg)
+        gores.append(warped)
+
+    # 2. Setup Canvas
+    # Rosette Diameter = 2 * ArcLength(90 to min_lat)
+    # R_sphere = D/2. Angle = 90 - min_lat. Arc = R * angle_rad
+    R_sphere = diameter_in / 2.0
+    angle_span_deg = 90.0 - min_lat_deg
+    angle_span_rad = np.radians(angle_span_deg)
+    arm_length = R_sphere * angle_span_rad
+    rosette_diam_in = 2.0 * arm_length
+    
+    print(f"Rosette Diameter: {rosette_diam_in:.2f} inches")
+    
+    # Paper size needed
+    # If diameter > 11 (which it is, 12" -> ~15-30" arc?), we likely need tiling.
+    # Arc length for 12" sphere from 90N to 60S (150 deg):
+    # C = pi * 12 = 37.7. 150/360 * 37.7 = 15.7 inches radius.
+    # Diameter = 31 inches. Needs large format or tiling.
+    # User has 11x17. 
+    # This will strictly require tiling or a smaller bowl.
+    
+    if rosette_diam_in > 16:
+        print("WARNING: Rosette too large for single 11x17 execution. Generating simplified center-piece only.")
+    
+    # Create a large canvas, then we can crop calls later? 
+    # For now, let's just create one giant image and let user tile it or scale it.
+    
+    canvas_w = int(rosette_diam_in * 300) + 200 # 300 DPI
+    canvas_h = canvas_w
+    center = canvas_w // 2
+    
+    fig = plt.figure(figsize=(rosette_diam_in + 1, rosette_diam_in + 1))
+    ax = fig.add_subplot(111)
+    ax.set_xlim(-arm_length*1.05, arm_length*1.05)
+    ax.set_ylim(-arm_length*1.05, arm_length*1.05)
+    ax.set_aspect('equal')
+    ax.axis('off')
+    
+    # We need to rotate and place each gore
+    # Gore 0 is at -180 lon (Left edge of map)? 
+    # Depending on map projection. usually index 0 is -180 to -180+dLat
+    # Let's place index 0 pointing UP (North is center).
+    # Wait, North IS center.
+    # So index 0 radiates at some angle. 
+    # Let's say index 0 is at 12 o'clock, or standard polar arrangement.
+    
+    # Gore geometry (from function):
+    # y=0 is pole? No, in get_gore_coordinates: y = R * phi. 
+    # phi=pi/2 (90N) -> y = R*pi/2. phi=min_lat -> y = R*min_lat.
+    # Wait, my coordinate system in get_gore_coordinates:
+    # y is linear with latitude? Yes: y = R * phis.
+    # Pole is at y_max = R * pi/2.
+    # South is at y_min = R * min_lat.
+    # So the gore is vertical, top is North.
+    
+    # To make rosette:
+    # 1. Translate so North Pole is at (0,0).
+    #    New Y = Y_original - Y_pole. (So pole is 0, south is negative).
+    # 2. Rotate by angle for that gore.
+    
+    phis, xL_base, xR_base, yy = get_gore_coordinates(diameter_in, total_gores, min_lat_deg)
+    y_pole = yy.max()
+    
+    # Clip path
+    clip_path_verts = build_path_from_coords(xL_base, xR_base, yy).vertices
+    # Shift to pole-relative
+    clip_path_verts[:, 1] -= y_pole
+    # Rotate 180? No, if we want them radiating out. 
+    # If (0,0) is center, and gore extends along negative Y axis...
+    # That means top of gore is center.
+    
+    base_clip_path = Path(clip_path_verts, build_path_from_coords(xL_base, xR_base, yy).codes)
+
+    for i in range(total_gores):
+        gore_img = gores[i]
+        
+        # Angle: 360 / total * i
+        # Standard: defined by central meridian of the gore.
+        # But we align them edge-to-edge.
+        angle_deg = (360.0 / total_gores) * i
+        # Rotation: Matplotlib rotates counter-clockwise?
+        
+        tr = Affine2D().translate(0, -y_pole) # Move pole to 0,0
+        tr += Affine2D().rotate_deg(-angle_deg) # Rotate around 0,0
+        tr += ax.transData
+        
+        # Extent of image
+        # x: [xL_min, xR_max], y: [y_min, y_max]
+        # BUT we must match the transform.
+        # Image is rectangular. We rely on clip_path.
+        
+        ax.imshow(gore_img,
+                  extent=[xL_base.min(), xR_base.max(), yy.min(), yy.max()],
+                  origin='upper',
+                  transform=tr,
+                  clip_path=patches.PathPatch(base_clip_path, transform=tr),
+                  clip_on=True)
+                  
+        # Outline
+        ax.add_patch(patches.PathPatch(base_clip_path,
+                                       facecolor='none',
+                                       edgecolor='black',
+                                       linewidth=0.5,
+                                       transform=tr))
+                                       
+    out_file = f"{os.path.splitext(os.path.basename(image_path))[0]}_rosette_preview.pdf"
+    plt.savefig(out_file, dpi=150, bbox_inches='tight')
+    print(f"Saved rosette preview: {out_file}")
+
 if __name__ == "__main__":
     img_path = None
     diam = 12.0
@@ -379,8 +515,12 @@ if __name__ == "__main__":
                 pass
 
     mirror_mode = "--mirror" in sys.argv
+    rosette_mode = "--rosette" in sys.argv
     
     if img_path is None:
         print("No image provided (or 'auto' selected). Using synthetic vector map.")
     
-    create_sheets(img_path, diameter_in=diam, total_gores=total_gores, gores_per_sheet=gores_per_sheet, min_lat_deg=min_lat, mirror=mirror_mode)
+    if rosette_mode:
+        create_rosette(img_path, diameter_in=diam, total_gores=total_gores, min_lat_deg=min_lat)
+    else:
+        create_sheets(img_path, diameter_in=diam, total_gores=total_gores, gores_per_sheet=gores_per_sheet, min_lat_deg=min_lat, mirror=mirror_mode)
