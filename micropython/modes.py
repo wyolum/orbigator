@@ -154,6 +154,10 @@ class OrbitMode(Mode):
                 n = 2.0 * math.pi / period_sec
                 elapsed_needed = M_rad / n
                 
+                now_unix = utils.get_timestamp()
+                g.run_start_time = now_unix - int(elapsed_needed) 
+                # Note: ticks are for smooth interpolation, time is for propagator
+                
                 now_ticks = time.ticks_ms()
                 g.run_start_ticks = time.ticks_add(now_ticks, -int(elapsed_needed * 1000))
                 current_turns = (g.aov_position_deg // 360) * 360.0
@@ -161,6 +165,7 @@ class OrbitMode(Mode):
             else:
                 # Circular Orbit Resume Strategy: RESET TIME
                 g.run_start_ticks = time.ticks_ms()
+                g.run_start_time = utils.get_timestamp() # FIX: Reset T0 to Now
                 g.run_start_aov_deg = g.aov_position_deg
                 g.run_start_eqx_deg = g.eqx_position_deg
             
