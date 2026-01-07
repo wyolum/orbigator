@@ -1,0 +1,1 @@
+{"system": {"detent_div": 4, "debounce_ms": 200, "oled": {"height": 64, "width": 128}}, "motors": {"eqx": {"id": 1, "offset_deg": -30.295898, "pid": {"i": 0, "p": 600, "d": 0}, "gear_ratio_den": 14.0, "speed_limit": 10, "gear_ratio_num": 120.0}, "aov": {"id": 2, "offset_deg": 0.0, "pid": {"i": 0, "p": 600, "d": 0}, "gear_ratio_den": 1.0, "speed_limit": 2, "gear_ratio_num": 1.0}}}

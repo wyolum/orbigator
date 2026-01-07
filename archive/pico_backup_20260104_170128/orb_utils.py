@@ -353,7 +353,7 @@ def save_state():
                     m_id, sat_name_bytes, 0
                 )
                 
-                # print(f"DEBUG SRAM Save: AoV={g.aov_position_deg:.1f} EQX={g.eqx_position_deg:.1f} Alt={g.orbital_altitude_km:.1f}")
+                print(f"DEBUG SRAM Save: AoV={g.aov_position_deg:.1f} EQX={g.eqx_position_deg:.1f} Alt={g.orbital_altitude_km:.1f}")
                 
                 # Calculate and insert checksum
                 data_list = bytearray(data)

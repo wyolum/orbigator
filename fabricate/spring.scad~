@@ -1,7 +1,0 @@
-inch = 25.4;
-
-D = 3 * inch / 8;
-
-d = .9;
-
-rotate_extrude(translate([D/2 - d, 0, 0]) circle(d));

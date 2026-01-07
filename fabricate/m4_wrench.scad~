@@ -1,5 +1,0 @@
-module m4_nut(){
-  d = 6.7 / (2 * cos(pi/6));
-  cylinder(d=d, h=3 );
-  
-}

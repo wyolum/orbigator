@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orbigator KISS HUD</title>
+  <style>
+    :root {
+      --accent: #6366f1;
+      --success: #22c55e;
+      --bg: #0f172a;
+      --card: rgba(30, 41, 59, 0.7);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .status-pill {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #334155;
+    }
+
+    .dot.active {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .ssid {
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 500;
+      font-family: monospace;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 20px 16px;
+      border-radius: 20px;
+      text-align: center;
+    }
+
+    .card h3 {
+      margin: 0 0 8px 0;
+      font-size: 0.6rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 800;
+    }
+
+    .value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .unit {
+      font-size: 0.7rem;
+      vertical-align: super;
+      color: #475569;
+      margin-left: 1px;
+    }
+
+    .panel {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      margin-bottom: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .panel h2 {
+      margin: 0;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 1.5px;
+      font-weight: 800;
+    }
+
+    .sat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 12px;
+      border: 1px solid transparent;
+    }
+
+    .sat-item.active {
+      background: rgba(99, 102, 241, 0.05);
+      border-color: rgba(99, 102, 241, 0.2);
+    }
+
+    .sat-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sat-name {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .sat-norad {
+      font-size: 0.65rem;
+      color: #475569;
+      font-family: monospace;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: #4f46e5;
+    }
+
+    .btn-select.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--accent);
+      pointer-events: none;
+    }
+
+    .mode-val {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      margin: 4px 0;
+      text-transform: uppercase;
+    }
+
+    .footer {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.65rem;
+      color: #475569;
+      font-family: monospace;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+      <h1>ORBIGATOR HUD</h1>
+      <div style="display: flex; gap: 8px;">
+        <div class="status-pill" id="sync-pill" onclick="syncAll()" style="cursor:pointer"
+          title="Click to sync time/TLE">
+          <div id="sync-dot" class="dot"></div>
+          <span id="sync-status">UTC Sync</span>
+        </div>
+        <div class="status-pill">
+          <div id="wifi-dot" class="dot"></div>
+          <span id="ssid-name" class="ssid">OFFLINE</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid">
+        <div class="card">
+          <h3>Latitude</h3>
+          <div class="value" id="val-lat">--.--</div><span class="unit">°</span>
+        </div>
+        <div class="card">
+          <h3>Longitude</h3>
+          <div class="value" id="val-lon">--.--</div><span class="unit">°</span>
+        </div>
+        <div class="card">
+          <h3>Inclination</h3>
+          <div class="value" id="val-inc" style="color:var(--success)">--.-</div><span class="unit">°</span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>AoV Drive</h3>
+          <div class="value" id="val-aov" style="color:var(--accent)">--.-</div><span class="unit">°</span>
+        </div>
+        <div class="card">
+          <h3>EqX Drive</h3>
+          <div class="value" id="val-eqx" style="color:var(--accent)">--.-</div><span class="unit">°</span>
+        </div>
+        <div class="card" style="display:flex; flex-direction:column; justify-content:center; padding: 10px 16px;">
+          <h3>System Mode</h3>
+          <div id="val-mode" class="mode-val">SYNCING...</div>
+          <button class="btn" style="font-size:0.6rem; padding:4px 8px; margin-top:4px;"
+            onclick="toggleMode()">Switch</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Satellite Catalog</h2>
+          <div id="active-sat"
+            style="font-size: 0.65rem; color: var(--accent); font-weight: 800; padding: 4px 12px; background: rgba(99,102,241,0.1); border-radius: 10px; border: 1px solid rgba(99,102,241,0.2);">
+            NO TARGET
+          </div>
+        </div>
+        <div class="sat-list" id="sat-list">
+          <!-- Loaded dynamically -->
+        </div>
+      </div>
+    </main>
+
+    <div class="footer" id="footer-time">
+      Pico Ready
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let currentSat = "";
+    let currentMode = "";
+
+    async function syncAll() {
+      try {
+        const btn = document.getElementById('sync-status');
+        const dot = document.getElementById('sync-dot');
+        btn.textContent = 'Syncing...';
+        dot.style.background = 'orange';
+
+        const res = await fetch(`${API_BASE}/api/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tle: true })
+        });
+
+        if (res.ok) {
+          btn.textContent = 'UTC OK';
+          dot.className = 'dot active';
+        } else {
+          btn.textContent = 'Retry Sync';
+          dot.style.background = '#ef4444';
+        }
+        setTimeout(updateStatus, 500);
+      } catch (e) {
+        document.getElementById('sync-status').textContent = 'Sync Error';
+      }
+    }
+
+    async function updateStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        const data = await res.json();
+        console.log("HUD Status:", data);
+
+        currentMode = (data.mode || 'syncing').toUpperCase();
+        document.getElementById('val-mode').textContent = currentMode;
+
+        const syncPill = document.getElementById('sync-status');
+        const syncDot = document.getElementById('sync-dot');
+        const wifiDot = document.getElementById('wifi-dot');
+        const wifiName = document.getElementById('ssid-name');
+
+        if (data.rtc?.synced) {
+          if (syncPill) syncPill.textContent = 'UTC OK';
+          if (syncDot) syncDot.className = 'dot active';
+        } else if (syncPill && syncPill.textContent !== 'Syncing...') {
+          syncPill.textContent = 'UTC OFF';
+          if (syncDot) {
+            syncDot.className = 'dot';
+            syncDot.style.background = '#334155';
+          }
+        }
+
+        document.getElementById('val-lat').textContent = data.position?.lat?.toFixed(2) || '0.00';
+        document.getElementById('val-lon').textContent = data.position?.lon?.toFixed(2) || '0.00';
+
+        let inc = 0;
+        if (data.mode === 'orbit' && data.orbital_params) inc = data.orbital_params.inclination_deg;
+        else if (data.position && data.position.inc) inc = data.position.inc;
+        document.getElementById('val-inc').textContent = inc.toFixed(1);
+
+        document.getElementById('val-aov').textContent = (data.motors?.aov % 360).toFixed(1);
+        document.getElementById('val-eqx').textContent = (data.motors?.eqx % 360).toFixed(1);
+
+        document.getElementById('footer-time').textContent = data.rtc?.time || 'TIME SYNCING...';
+
+        if (data.wifi?.connected) {
+          if (wifiDot) wifiDot.classList.add('active');
+          if (wifiName) wifiName.textContent = data.wifi.ssid;
+        } else {
+          if (wifiDot) wifiDot.classList.remove('active');
+          if (wifiName) wifiName.textContent = "OFFLINE";
+        }
+
+        if (data.satellite && data.satellite !== 'none') {
+          if (currentSat !== data.satellite) {
+            currentSat = data.satellite;
+            document.getElementById('active-sat').textContent = currentSat;
+            loadSatellites();
+          }
+        } else {
+          document.getElementById('active-sat').textContent = "NO TARGET";
+        }
+      } catch (e) { console.error("Poll error", e); }
+    }
+
+    async function loadSatellites() {
+      try {
+        const res = await fetch(`${API_BASE}/api/satellites`);
+        const data = await res.json();
+        const list = document.getElementById('sat-list');
+        list.innerHTML = '';
+
+        data.satellites.forEach(sat => {
+          const row = document.createElement('div');
+          row.className = `sat-item ${currentSat === sat.name ? 'active' : ''}`;
+          row.innerHTML = `
+                        <div class="sat-info">
+                            <span class="sat-name">${sat.name}</span>
+                            <span class="sat-norad">ID: ${sat.norad_id} • ${sat.tle_age}</span>
+                        </div>
+                        <button class="btn btn-select ${currentSat === sat.name ? 'active' : ''}" onclick="selectSat('${sat.name}')">
+                            ${currentSat === sat.name ? 'ACTIVE' : 'SELECT'}
+                        </button>
+                    `;
+          list.appendChild(row);
+        });
+      } catch (e) { console.error("Load sats error", e); }
+    }
+
+    async function selectSat(name) {
+      try {
+        // Auto-switch to SGP4 mode first if needed
+        if (currentMode !== 'sgp4') {
+          await fetch(`${API_BASE}/api/mode`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'sgp4' })
+          });
+        }
+
+        const res = await fetch(`${API_BASE}/api/satellite`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ satellite: name })
+        });
+        if (res.ok) {
+          currentSat = name;
+          document.getElementById('active-sat').textContent = currentSat;
+          loadSatellites();
+          setTimeout(updateStatus, 500); // Quick refresh after mode/sat change
+        }
+      } catch (e) { alert("Selection failed"); }
+    }
+
+    async function toggleMode() {
+      const nextMode = currentMode === 'sgp4' ? 'orbit' : 'sgp4';
+      try {
+        const res = await fetch(`${API_BASE}/api/mode`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: nextMode })
+        });
+        if (res.ok) updateStatus();
+      } catch (e) { alert("Mode toggle failed"); }
+    }
+
+    // 0.5Hz polling (every 2 seconds) to reduce Pico overhead as requested
+    setInterval(updateStatus, 2000);
+    updateStatus().then(loadSatellites);
+  </script>
+</body>
+
+</html>

@@ -32,7 +32,6 @@ aov_position_deg = 0.0
 eqx_position_deg = 0.0
 
 # Run tracking
-last_save_timestamp = 0 # Stores timestamp from last successful load
 run_start_time = 0
 run_start_ticks = 0
 run_start_aov_deg = 0.0

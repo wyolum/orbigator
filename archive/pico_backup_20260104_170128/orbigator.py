@@ -135,35 +135,21 @@ if RTC_ADDR in addrs:
         # First try as DS3232 (has SRAM)
         rtc = DS323x(i2c, addr=RTC_ADDR, has_sram=True)
         # Probe SRAM stickiness to confirm it's real memory (DS3232 only)
-        # Use Read-Modify-Write-Restore strategy at the END of SRAM to avoid nuking the header
-        target_addr = rtc.SRAM_END
-        try:
-            # 1. Backup existing byte
-            original = rtc.read_sram(target_addr, 1)
-            
-            # 2. Write Test Pattern 1 (0x5A)
-            test_val = 0x5A
-            rtc.write_sram(target_addr, bytes([test_val]))
-            read_back = rtc.read_sram(target_addr, 1)
-            
-            sram_confirmed = False
-            if read_back and read_back[0] == test_val:
-                # 3. Write Test Pattern 2 (0xA5) - Invert bits
-                rtc.write_sram(target_addr, bytes([0xA5]))
-                read_back = rtc.read_sram(target_addr, 1)
-                
-                if read_back and read_back[0] == 0xA5:
-                    print("RTC: DS3232 detected (SRAM verified).")
-                    rtc.has_sram = True # Typo fixed
-                    sram_confirmed = True
-            
-            # 4. Restore original byte
-            if original:
-                rtc.write_sram(target_addr, original)
-                
-            rtc.has_sram = sram_confirmed
-        except Exception as e:
-            print(f"SRAM Probe Error: {e}")
+        test_val = 0x5A
+        rtc.write_sram(rtc.SRAM_START, bytes([test_val]))
+        read_back = rtc.read_sram(rtc.SRAM_START, 1)
+        
+        if read_back and read_back[0] == test_val:
+            # Second test value to be absolutely sure
+            rtc.write_sram(rtc.SRAM_START, bytes([0xA5]))
+            read_back = rtc.read_sram(rtc.SRAM_START, 1)
+            if read_back and read_back[0] == 0xA5:
+                print("RTC: DS3232 detected (SRAM verified).")
+                rtc.has_sram = True
+            else:
+                rtc.has_sram = False
+        else:
+            print("RTC: No SRAM persistence, falling back to DS3231 mode.")
             rtc.has_sram = False
         
         g.rtc = rtc
@@ -320,7 +306,6 @@ else:
 state_info = utils.load_state()
 # SRAM health logging is now handled inside load_state() via print
 g.current_mode_id = state_info.get("mode_id", "ORBIT")
-g.last_save_timestamp = state_info.get("timestamp", 0)
 saved_sat_name = state_info.get("sat_name", None)
 
 # Check for RTC reset (e.g. battery failure)
@@ -345,7 +330,6 @@ else:
 
 last_detent = 0
 last_display_update = 0
-last_sram_save = time.ticks_ms()
 
 print("Orbigator Ready.")
 
@@ -439,12 +423,6 @@ while True:
             import modes
             g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
             g.current_mode.enter()
-            
-        # 4. Periodic SRAM Save (Every 10s)
-        # Safe because SRAM has infinite write cycles
-        if time.ticks_diff(now, last_sram_save) > 10000:
-            utils.save_state()
-            last_sram_save = now
         
         # 6. Update and Render
         g.current_mode.update(now)

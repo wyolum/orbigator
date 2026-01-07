@@ -8,9 +8,8 @@ propagators.py
 sgp4.py
 satellite_catalog.py
 tle_fetch.py
-tle_parser.py
 satellite_position.py
-ntp_sync.py
+
 
 # Motor & Hardware Drivers
 dynamixel_motor.py
@@ -19,14 +18,6 @@ ds323x.py
 ds3231.py
 ss1306.py
 mock_motor.py
-mock_ds3231.py
-
-# GearClock & Stepper logic
-gearclock2.py
-gearclock_config.py
-clock_controller.py
-kalman_filter.py
-velocity_clock_controller.py
 
 # Utilities
 web_server.py
@@ -35,10 +26,8 @@ input_utils.py
 
 # Config & Cache
 orbigator_config.json
-position_cache.json
 tle_cache.json
 
 # Directories (Recursive)
 [DIRS]
 web
-lib
