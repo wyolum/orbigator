@@ -29,9 +29,11 @@ module screen_hole(){
 }
 inch = 25.4;
 module pins(){
-  translate([-board_w/2+.1*inch, -board_l/2 + .5*inch, -6])
-  for(i=[0:8]){
-    translate([0, i * .1 * inch, 2])cube([1, 1, 10],center=true);
+  translate([-board_w/2+.1*inch, -board_l/2 + .474*inch, -6]){
+    for(i=[0:8]){
+      translate([0, i * .1 * inch, 2])cube([1, 1, 10],center=true);
+    }
+    //translate([0,-9,0])cylinder(d=3.5, h=10, $fn=30);
   }
 }
 module knob(){
@@ -97,7 +99,7 @@ module display_spacers(){
     }
   }
 }
-display_spacers();
+//display_spacers();
 //buttons();
 display_assy();
 //translate([0,0,0])screen_hole();
