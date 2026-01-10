@@ -2795,6 +2795,376 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Connector_Generic:Conn_01x07"
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "J"
+				(at 0 10.16 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Conn_01x07"
+				(at 0 -10.16 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Generic connector, single row, 01x07, script generated (kicad-library-utils/schlib/autogen/connector/)"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "connector"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Connector*:*_1x??_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Conn_01x07_1_1"
+				(rectangle
+					(start -1.27 8.89)
+					(end 1.27 -8.89)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(rectangle
+					(start -1.27 7.747)
+					(end 0 7.493)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 5.207)
+					(end 0 4.953)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 2.667)
+					(end 0 2.413)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 0.127)
+					(end 0 -0.127)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 -2.413)
+					(end 0 -2.667)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 -4.953)
+					(end 0 -5.207)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start -1.27 -7.493)
+					(end 0 -7.747)
+					(stroke
+						(width 0.1524)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(pin passive line
+					(at -5.08 7.62 0)
+					(length 3.81)
+					(name "Pin_1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 5.08 0)
+					(length 3.81)
+					(name "Pin_2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 2.54 0)
+					(length 3.81)
+					(name "Pin_3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 0 0)
+					(length 3.81)
+					(name "Pin_4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -2.54 0)
+					(length 3.81)
+					(name "Pin_5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -5.08 0)
+					(length 3.81)
+					(name "Pin_6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -5.08 -7.62 0)
+					(length 3.81)
+					(name "Pin_7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "Mechanical:MountingHole"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board yes)
+			(property "Reference" "H"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "MountingHole"
+				(at 0 3.175 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Mounting Hole without connection"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "mounting hole"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "MountingHole*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "MountingHole_0_1"
+				(circle
+					(center 0 0)
+					(radius 1.27)
+					(stroke
+						(width 1.27)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "orbigator:74LS126"
 			(pin_names
 				(offset 1.016)
@@ -3191,415 +3561,6 @@
 					)
 					(fill
 						(type background)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "orbigator:Adafruit_DS3231_Breakout"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "A"
-				(at -6.35 12.7 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "Adafruit_DS3231_Breakout"
-				(at -15.24 -12.7 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at -8.89 5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "https://learn.adafruit.com/adafruit-ds3231-precision-rtc-breakout?view=all"
-				(at -27.94 -22.86 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "GitHub" "https://github.com/process1183/kicad-library"
-				(at -27.94 -26.67 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(property "Product URL" "https://www.adafruit.com/product/3013"
-				(at -27.94 -19.05 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-					(hide yes)
-				)
-			)
-			(symbol "Adafruit_DS3231_Breakout_0_1"
-				(rectangle
-					(start -6.35 8.89)
-					(end 6.35 -8.89)
-					(stroke
-						(width 0)
-						(type solid)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "Adafruit_DS3231_Breakout_1_1"
-				(pin input line
-					(at -8.89 1.27 0)
-					(length 2.54)
-					(name "SCL"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -8.89 -1.27 0)
-					(length 2.54)
-					(name "SDA"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -2.54 11.43 270)
-					(length 2.54)
-					(name "Vin"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 0 -11.43 90)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin power_out line
-					(at 2.54 11.43 270)
-					(length 2.54)
-					(name "BAT"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 8.89 2.54 180)
-					(length 2.54)
-					(name "RST"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 8.89 0 180)
-					(length 2.54)
-					(name "SQW"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 8.89 -2.54 180)
-					(length 2.54)
-					(name "32k"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "orbigator:Battery_Cell"
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(property "Reference" "BT"
-				(at 2.54 2.54 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Value" "Battery_Cell"
-				(at 2.54 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 1.524 90)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 1.524 90)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Single-cell battery"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "battery cell"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "Battery_Cell_0_1"
-				(rectangle
-					(start -2.286 1.778)
-					(end 2.286 1.524)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(rectangle
-					(start -1.524 1.016)
-					(end 1.524 0.508)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type outline)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 1.778) (xy 0 2.54)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0 0.762) (xy 0 0)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 0.762 3.048) (xy 1.778 3.048)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy 1.27 3.556) (xy 1.27 2.54)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(symbol "Battery_Cell_1_1"
-				(pin passive line
-					(at 0 5.08 270)
-					(length 2.54)
-					(name "+"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -2.54 90)
-					(length 2.54)
-					(name "-"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
 					)
 				)
 			)
@@ -5825,6 +5786,14 @@
 		(uuid "e711d662-1d7c-47e1-8671-134e4ec6fb2a")
 	)
 	(no_connect
+		(at 185.42 147.32)
+		(uuid "23af6ae5-438b-4657-ab3e-8cb74ebaf748")
+	)
+	(no_connect
+		(at 185.42 144.78)
+		(uuid "2d7aedf4-8489-4e26-ab09-01fa21cdf147")
+	)
+	(no_connect
 		(at 274.32 133.35)
 		(uuid "49e0ebca-9de2-473d-aa6b-9b086b4c4fa0")
 	)
@@ -5833,28 +5802,12 @@
 		(uuid "6acb0fe5-a31b-457e-a23e-a112d4b256a2")
 	)
 	(no_connect
+		(at 185.42 142.24)
+		(uuid "bb76a012-3068-4836-8fc5-61d17643043c")
+	)
+	(no_connect
 		(at 274.32 114.3)
 		(uuid "bbcd0ac9-23d8-48f0-94b9-4c84b269a213")
-	)
-	(wire
-		(pts
-			(xy 185.42 128.27) (xy 196.85 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "002eef4c-922a-48dd-b73f-4f364ee9d9bc")
-	)
-	(wire
-		(pts
-			(xy 196.85 130.81) (xy 196.85 128.27)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "00fd4272-f588-4470-92fb-fbfae523cdeb")
 	)
 	(wire
 		(pts
@@ -5898,26 +5851,6 @@
 	)
 	(wire
 		(pts
-			(xy 185.42 165.1) (xy 215.9 165.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "08274b5d-9881-4c0d-8984-845016db25f5")
-	)
-	(wire
-		(pts
-			(xy 185.42 160.02) (xy 210.82 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "0c22e0a0-d497-42cc-8850-2080f1d57f8a")
-	)
-	(wire
-		(pts
 			(xy 185.42 27.94) (xy 204.47 27.94)
 		)
 		(stroke
@@ -5958,16 +5891,6 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 125.73) (xy 160.02 130.81)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "126f9c9f-f1a3-4258-896b-aea31ceff966")
-	)
-	(wire
-		(pts
 			(xy 214.63 17.78) (xy 214.63 39.37)
 		)
 		(stroke
@@ -5975,6 +5898,16 @@
 			(type default)
 		)
 		(uuid "1841f45f-b719-4a95-a30d-2505ee264841")
+	)
+	(wire
+		(pts
+			(xy 185.42 134.62) (xy 198.12 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "18b1a6dc-fabe-43bc-9553-3e90b98a3782")
 	)
 	(wire
 		(pts
@@ -5988,6 +5921,16 @@
 	)
 	(wire
 		(pts
+			(xy 185.42 142.24) (xy 198.12 142.24)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1d2f7f94-4c89-4a04-becd-01c45fae12a7")
+	)
+	(wire
+		(pts
 			(xy 208.28 106.68) (xy 208.28 110.49)
 		)
 		(stroke
@@ -5995,16 +5938,6 @@
 			(type default)
 		)
 		(uuid "1e9858c3-1e3b-4522-a955-aa4487dcd460")
-	)
-	(wire
-		(pts
-			(xy 160.02 156.21) (xy 199.39 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1eb70c41-f0f0-4687-b3cf-a1a15d4c6570")
 	)
 	(wire
 		(pts
@@ -6038,16 +5971,6 @@
 	)
 	(wire
 		(pts
-			(xy 208.28 139.7) (xy 215.9 139.7)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "252018f7-c769-4cb7-8700-42e827d58eb3")
-	)
-	(wire
-		(pts
 			(xy 210.82 106.68) (xy 208.28 106.68)
 		)
 		(stroke
@@ -6065,26 +5988,6 @@
 			(type default)
 		)
 		(uuid "26a7e926-4994-4f4a-880e-3db5334f5377")
-	)
-	(wire
-		(pts
-			(xy 185.42 140.97) (xy 190.5 140.97)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "27bd95ec-9dd7-48f6-abd2-1b336050627d")
-	)
-	(wire
-		(pts
-			(xy 201.93 130.81) (xy 201.93 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "29b97ce9-99d5-40c1-9ba5-dd1f63340508")
 	)
 	(wire
 		(pts
@@ -6138,16 +6041,6 @@
 	)
 	(wire
 		(pts
-			(xy 199.39 153.67) (xy 199.39 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3c7f864a-6703-44f1-a4f9-42c77453983d")
-	)
-	(wire
-		(pts
 			(xy 83.82 25.4) (xy 114.3 25.4)
 		)
 		(stroke
@@ -6158,13 +6051,13 @@
 	)
 	(wire
 		(pts
-			(xy 208.28 144.78) (xy 210.82 144.78)
+			(xy 185.42 132.08) (xy 198.12 132.08)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "4043763d-4df0-4c79-b383-3909874a42f4")
+		(uuid "3fa9a4ef-ef17-423c-b14d-b68c6559d9ce")
 	)
 	(wire
 		(pts
@@ -6238,16 +6131,6 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 125.73) (xy 201.93 125.73)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "59966a7c-2e86-4552-8e94-915b33572d69")
-	)
-	(wire
-		(pts
 			(xy 57.15 58.42) (xy 44.45 58.42)
 		)
 		(stroke
@@ -6255,6 +6138,16 @@
 			(type default)
 		)
 		(uuid "5c6e2b13-0e63-433c-b202-b8644c32754b")
+	)
+	(wire
+		(pts
+			(xy 185.42 144.78) (xy 198.12 144.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ce87121-effa-4c0b-9492-bbab67ece3f8")
 	)
 	(wire
 		(pts
@@ -6275,6 +6168,16 @@
 			(type default)
 		)
 		(uuid "64550b4f-d809-449a-a9d7-7fd63a4d45da")
+	)
+	(wire
+		(pts
+			(xy 185.42 137.16) (xy 198.12 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "64f59c7d-074a-472e-92be-3c420c604ad6")
 	)
 	(wire
 		(pts
@@ -6335,16 +6238,6 @@
 			(type default)
 		)
 		(uuid "6a660032-1d22-45f5-b131-2428d48b7d28")
-	)
-	(wire
-		(pts
-			(xy 185.42 143.51) (xy 190.5 143.51)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6c54d44a-691e-464e-99aa-922406e85c0d")
 	)
 	(wire
 		(pts
@@ -6438,16 +6331,6 @@
 	)
 	(wire
 		(pts
-			(xy 160.02 138.43) (xy 160.02 156.21)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "909033f6-a50a-470d-a13e-d81139b0be2b")
-	)
-	(wire
-		(pts
 			(xy 266.7 139.7) (xy 266.7 142.24)
 		)
 		(stroke
@@ -6465,16 +6348,6 @@
 			(type default)
 		)
 		(uuid "981bc51c-333b-4b12-8d01-f2744903fd67")
-	)
-	(wire
-		(pts
-			(xy 215.9 139.7) (xy 215.9 165.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "99c97fe1-ef03-4ebe-9944-38b9d956af06")
 	)
 	(wire
 		(pts
@@ -6515,16 +6388,6 @@
 			(type default)
 		)
 		(uuid "a182dec2-e9f9-47d9-bce9-7a510236fcda")
-	)
-	(wire
-		(pts
-			(xy 210.82 144.78) (xy 210.82 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a2fb4229-7e6b-4f2e-a93e-e80f24de46dc")
 	)
 	(wire
 		(pts
@@ -6658,13 +6521,13 @@
 	)
 	(wire
 		(pts
-			(xy 208.28 142.24) (xy 213.36 142.24)
+			(xy 185.42 147.32) (xy 198.12 147.32)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "c70de58b-d241-4ec3-a888-f7e1635b7fb5")
+		(uuid "c732d24a-757b-4bfe-a77f-ae38f8481a0a")
 	)
 	(wire
 		(pts
@@ -6678,13 +6541,13 @@
 	)
 	(wire
 		(pts
-			(xy 213.36 142.24) (xy 213.36 162.56)
+			(xy 185.42 139.7) (xy 198.12 139.7)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "cd9c21a2-2120-4343-9cbb-8e8149810659")
+		(uuid "ca1279a6-ea50-43f1-89e4-845417537933")
 	)
 	(wire
 		(pts
@@ -6745,16 +6608,6 @@
 			(type default)
 		)
 		(uuid "e77f8589-4648-42f2-9824-8c1f7873b09c")
-	)
-	(wire
-		(pts
-			(xy 185.42 162.56) (xy 213.36 162.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "eac82aea-2f3b-4fb4-a673-1d42493563d3")
 	)
 	(wire
 		(pts
@@ -15342,16 +15195,6 @@
 			"92+afSsNFD5obPqg282WMe1p3AyzNkzlvyra4v8Hp+mKdYuiAU4AAAAASUVORK5CYII="
 		)
 	)
-	(label "3V_BAT"
-		(at 185.42 125.73 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "008ac2a7-1b9f-4c59-a3d5-7f5e93d11be2")
-	)
 	(label "CNF_BTN"
 		(at 185.42 38.1 180)
 		(effects
@@ -15361,16 +15204,6 @@
 			(justify right bottom)
 		)
 		(uuid "09d0918d-a36d-48d8-920b-459868884a45")
-	)
-	(label "SDA"
-		(at 185.42 143.51 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "0d6e5207-d209-45fd-b2c4-2c7f64c89849")
 	)
 	(label "3V3"
 		(at 83.82 25.4 0)
@@ -15392,6 +15225,16 @@
 		)
 		(uuid "19aa88eb-86d3-4c19-8c51-fd3d857d19f0")
 	)
+	(label "3V3"
+		(at 185.42 132.08 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "1c3e2117-9636-4512-86a5-8bdb98cd51e9")
+	)
 	(label "5V0"
 		(at 185.42 72.39 180)
 		(effects
@@ -15401,16 +15244,6 @@
 			(justify right bottom)
 		)
 		(uuid "1f304965-2243-45b3-bab5-adad722513e7")
-	)
-	(label "GND"
-		(at 185.42 156.21 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "21cd35f0-23fb-413a-a75c-ba31d157eaaa")
 	)
 	(label "5V_SYS"
 		(at 83.82 22.86 0)
@@ -15512,26 +15345,6 @@
 		)
 		(uuid "61988939-2351-4c5f-92a2-3770d61017e4")
 	)
-	(label "3V3"
-		(at 185.42 128.27 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "65fa2ba8-838e-438c-88e1-10284db9daf9")
-	)
-	(label "SCL"
-		(at 185.42 140.97 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "6c339528-cb8b-4f22-b0d3-ee4aad108626")
-	)
 	(label "SCL"
 		(at 57.15 58.42 0)
 		(effects
@@ -15541,6 +15354,16 @@
 			(justify left bottom)
 		)
 		(uuid "72df7c10-13ec-4281-bbe2-fe3dc8af7528")
+	)
+	(label "32k"
+		(at 185.42 147.32 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "802f21da-8c3e-4bae-8daf-393a2a117ccd")
 	)
 	(label "MOT_DAT"
 		(at 57.15 60.96 0)
@@ -15572,6 +15395,16 @@
 		)
 		(uuid "925ae4c2-b89d-4871-aa94-d9ffb7788b38")
 	)
+	(label "SCL"
+		(at 185.42 137.16 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "9b03aead-ca70-4601-8b62-e7f0e2f10ead")
+	)
 	(label "GND"
 		(at 185.42 69.85 180)
 		(effects
@@ -15581,6 +15414,16 @@
 			(justify right bottom)
 		)
 		(uuid "a0faf555-e8c6-453c-bcaf-08bc89a7251d")
+	)
+	(label "INT"
+		(at 185.42 142.24 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "a2b2a948-6ee3-4adc-bb1b-dd324891c306")
 	)
 	(label "SDA"
 		(at 57.15 55.88 0)
@@ -15692,6 +15535,26 @@
 		)
 		(uuid "d830e5a9-127c-4eb2-b912-6222dd5b0430")
 	)
+	(label "GND"
+		(at 185.42 134.62 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "db57ef3e-ce92-46d1-a8b0-1e9fbf4dbf8a")
+	)
+	(label "RST"
+		(at 185.42 144.78 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "dd163aa6-4a27-4295-b3ac-5d58b2147f6f")
+	)
 	(label "SCL"
 		(at 83.82 58.42 180)
 		(effects
@@ -15782,6 +15645,16 @@
 		)
 		(uuid "ff567dcd-3c65-4d22-9361-37cd248584eb")
 	)
+	(label "SDA"
+		(at 185.42 139.7 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ffea8ae6-9f3d-494f-bc20-c7ff0cea61be")
+	)
 	(symbol
 		(lib_name "Conn_01x01_11")
 		(lib_id "orbigator:Conn_01x01_11")
@@ -15810,7 +15683,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 83.82 0)
 			(effects
 				(font
@@ -15879,7 +15752,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 68.58 0)
 			(effects
 				(font
@@ -15948,7 +15821,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 58.42 0)
 			(effects
 				(font
@@ -16017,7 +15890,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 78.74 0)
 			(effects
 				(font
@@ -16082,7 +15955,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:DIP-14_W7.62mm"
 			(at 266.7 133.35 0)
 			(effects
 				(font
@@ -16161,6 +16034,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 127 171.45 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4a0640ef-a486-431e-a24f-a9f298e78718")
+		(property "Reference" "H2"
+			(at 129.54 170.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 129.54 172.72 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
+			(at 127 171.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 127 171.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 127 171.45 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "H2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_21")
 		(lib_id "orbigator:Conn_01x01_21")
 		(at 147.32 63.5 0)
@@ -16190,7 +16127,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 63.5 0)
 			(effects
 				(font
@@ -16259,7 +16196,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 66.04 0)
 			(effects
 				(font
@@ -16299,6 +16236,91 @@
 		)
 	)
 	(symbol
+		(lib_id "Connector_Generic:Conn_01x07")
+		(at 203.2 139.7 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5abaf02e-65ed-433e-ad26-dc5e08930196")
+		(property "Reference" "RTC1"
+			(at 205.74 138.43 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "DS3232"
+			(at 205.74 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "orbigator:DS3232_RTC"
+			(at 203.2 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 203.2 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x07, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 203.2 139.7 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "6839ffea-41a2-402f-ac0f-524c1bc125be")
+		)
+		(pin "6"
+			(uuid "2cf862ba-54e2-4b58-b057-6cf1bf558251")
+		)
+		(pin "7"
+			(uuid "4d97a1ec-4779-4d08-bbfc-7d6ac75365de")
+		)
+		(pin "2"
+			(uuid "577ff231-4615-4a62-8373-e4a106419453")
+		)
+		(pin "5"
+			(uuid "f5c0f4d2-01bd-4b60-bc4d-53e9bde561d6")
+		)
+		(pin "4"
+			(uuid "8f7f846a-16b1-40e6-ae0c-c8f58735fc1b")
+		)
+		(pin "3"
+			(uuid "06fa2030-81e4-4f5f-9bf0-878c633146e8")
+		)
+		(instances
+			(project ""
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "RTC1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_4")
 		(lib_id "orbigator:Conn_01x01_4")
 		(at 91.44 38.1 180)
@@ -16326,7 +16348,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 38.1 0)
 			(effects
 				(font
@@ -16393,7 +16415,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:JST_GH_BM03B-GHS-TBT_1x03-1MP_P1.25mm_Vertical"
 			(at 198.12 91.44 0)
 			(effects
 				(font
@@ -16468,7 +16490,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 88.9 0)
 			(effects
 				(font
@@ -16535,7 +16557,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 78.74 20.32 0)
 			(effects
 				(font
@@ -16601,7 +16623,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 52.07 33.02 0)
 			(effects
 				(font
@@ -16690,7 +16712,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 76.2 0)
 			(effects
 				(font
@@ -16759,7 +16781,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 60.96 0)
 			(effects
 				(font
@@ -16826,7 +16848,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:DIP-14_W7.62mm"
 			(at 236.22 121.92 0)
 			(effects
 				(font
@@ -16905,6 +16927,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 127 165.1 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "761a59b4-ec80-4856-bfb4-7589add660e0")
+		(property "Reference" "H1"
+			(at 129.54 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 129.54 166.37 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
+			(at 127 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 127 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 127 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project ""
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "H1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_5")
 		(lib_id "orbigator:Conn_01x01_5")
 		(at 91.44 40.64 180)
@@ -16932,7 +17018,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 40.64 0)
 			(effects
 				(font
@@ -16997,7 +17083,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:DIP-14_W7.62mm"
 			(at 266.7 152.4 0)
 			(effects
 				(font
@@ -17101,7 +17187,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:DIP-14_W7.62mm"
 			(at 198.12 110.49 0)
 			(effects
 				(font
@@ -17207,7 +17293,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:JST_GH_BM03B-GHS-TBT_1x03-1MP_P1.25mm_Vertical"
 			(at 198.12 72.39 0)
 			(effects
 				(font
@@ -17280,7 +17366,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 78.74 114.3 0)
 			(effects
 				(font
@@ -17347,7 +17433,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 88.9 0)
 			(effects
 				(font
@@ -17414,7 +17500,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 78.74 0)
 			(effects
 				(font
@@ -17479,7 +17565,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:DIP-14_W7.62mm"
 			(at 266.7 114.3 0)
 			(effects
 				(font
@@ -17585,7 +17671,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 78.74 25.4 0)
 			(effects
 				(font
@@ -17651,7 +17737,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 36.83 33.02 0)
 			(effects
 				(font
@@ -17740,7 +17826,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 78.74 22.86 0)
 			(effects
 				(font
@@ -17807,7 +17893,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 91.44 0)
 			(effects
 				(font
@@ -17876,7 +17962,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 73.66 0)
 			(effects
 				(font
@@ -17945,7 +18031,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 83.82 0)
 			(effects
 				(font
@@ -17985,140 +18071,6 @@
 		)
 	)
 	(symbol
-		(lib_name "Conn_01x01_1")
-		(lib_id "orbigator:Conn_01x01_1")
-		(at 180.34 162.56 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b48d09c5-82ee-4055-9993-67a3b347537f")
-		(property "Reference" "J28"
-			(at 176.784 162.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Conn_01x01"
-			(at 177.8 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 180.34 162.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 180.34 162.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 180.34 162.56 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ac8e4214-36dd-4e1b-a21c-648724cfbfd3")
-		)
-		(instances
-			(project "orbigator"
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "J28")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_name "Conn_01x01_1")
-		(lib_id "orbigator:Conn_01x01_1")
-		(at 180.34 160.02 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "b7bd45a2-caa8-4632-aa20-a212ab5aca27")
-		(property "Reference" "J27"
-			(at 176.784 160.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Conn_01x01"
-			(at 177.8 158.75 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 180.34 160.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 180.34 160.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 180.34 160.02 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "48163f0a-c757-4953-af03-4f7ab4c6977f")
-		)
-		(instances
-			(project "orbigator"
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "J27")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_name "Conn_01x01_6")
 		(lib_id "orbigator:Conn_01x01_6")
 		(at 91.44 53.34 180)
@@ -18146,7 +18098,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 53.34 0)
 			(effects
 				(font
@@ -18213,7 +18165,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 73.66 0)
 			(effects
 				(font
@@ -18283,7 +18235,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Module_RaspberryPi_Pico:RaspberryPi_Pico_Original_SMD_HandSolder"
+		(property "Footprint" "orbigator:RaspberryPi_Pico_SMD_HandSolder"
 			(at 119.38 118.11 0)
 			(effects
 				(font
@@ -18476,7 +18428,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 91.44 81.28 0)
 			(effects
 				(font
@@ -18545,7 +18497,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 55.88 0)
 			(effects
 				(font
@@ -18585,126 +18537,17 @@
 		)
 	)
 	(symbol
-		(lib_id "orbigator:Adafruit_DS3231_Breakout")
-		(at 199.39 142.24 0)
+		(lib_id "Mechanical:MountingHole")
+		(at 127 184.15 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ce255b55-2673-4f59-bfa1-360bcd2381bd")
-		(property "Reference" "RTC1"
-			(at 201.8363 153.67 0)
-			(do_not_autoplace yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "DS3232"
-			(at 201.676 155.956 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 190.5 137.16 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://learn.adafruit.com/adafruit-ds3231-precision-rtc-breakout?view=all"
-			(at 171.45 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 199.39 142.24 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "GitHub" "https://github.com/process1183/kicad-library"
-			(at 171.45 168.91 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Product URL" "https://www.adafruit.com/product/3013"
-			(at 171.45 161.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(pin "7"
-			(uuid "1bfa9938-6af0-4dc9-9713-58b8bf414bad")
-		)
-		(pin "6"
-			(uuid "bec526dc-489b-40d9-a9ed-2fd4cfb839d1")
-		)
-		(pin "8"
-			(uuid "6c4005c2-51d9-44a5-9566-efe6ccead040")
-		)
-		(pin "5"
-			(uuid "c84ffe3b-b9e2-4d9b-97d2-b6aa8d80cc8a")
-		)
-		(pin "2"
-			(uuid "1b0751a8-241b-4fb9-9cd1-b8eefacfa8ba")
-		)
-		(pin "1"
-			(uuid "510fa1b1-4906-4adc-ba7a-bd80a043b26f")
-		)
-		(pin "4"
-			(uuid "93ea652d-5634-4c14-a63b-412ae1af7323")
-		)
-		(pin "3"
-			(uuid "ad5eccb5-7798-48a5-851e-7a120e375c4c")
-		)
-		(instances
-			(project ""
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "RTC1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "orbigator:Battery_Cell")
-		(at 160.02 135.89 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(fields_autoplaced yes)
-		(uuid "d14f41be-37fc-487c-a7f4-1cb21f79de77")
-		(property "Reference" "BT1"
-			(at 163.83 132.7785 0)
+		(uuid "cee934a9-3934-49cf-b5b2-7f1bd3dc47b0")
+		(property "Reference" "H4"
+			(at 129.54 182.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18712,8 +18555,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "CR2032"
-			(at 163.83 135.3185 0)
+		(property "Value" "MountingHole"
+			(at 129.54 185.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18721,8 +18564,8 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 160.02 134.366 90)
+		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
+			(at 127 184.15 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18731,7 +18574,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 160.02 134.366 90)
+			(at 127 184.15 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18739,92 +18582,19 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Single-cell battery"
-			(at 160.02 135.89 0)
+		(property "Description" "Mounting Hole without connection"
+			(at 127 184.15 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(hide yes)
 			)
-		)
-		(pin "1"
-			(uuid "c509b1eb-b46b-4ea9-8d9c-e165efebf5d7")
-		)
-		(pin "2"
-			(uuid "a3b0043d-bb64-409e-8226-e954c5cbec97")
-		)
-		(instances
-			(project ""
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "BT1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_name "Conn_01x01_1")
-		(lib_id "orbigator:Conn_01x01_1")
-		(at 180.34 165.1 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "dc1f133f-afb1-43ba-837e-049c55088f1a")
-		(property "Reference" "J29"
-			(at 176.784 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "Conn_01x01"
-			(at 177.8 163.83 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 180.34 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 180.34 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 180.34 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "211fae69-6999-4392-8761-0935bc789245")
 		)
 		(instances
 			(project "orbigator"
 				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "J29")
+					(reference "H4")
 					(unit 1)
 				)
 			)
@@ -18859,7 +18629,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 53.34 0)
 			(effects
 				(font
@@ -18925,7 +18695,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinSocket_1x09_P2.54mm_Vertical"
 			(at 194.31 41.91 0)
 			(effects
 				(font
@@ -18989,6 +18759,70 @@
 		)
 	)
 	(symbol
+		(lib_id "Mechanical:MountingHole")
+		(at 127 177.8 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f2bb246f-5789-4802-abc0-88724b8c2815")
+		(property "Reference" "H3"
+			(at 129.54 176.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "MountingHole"
+			(at 129.54 179.07 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
+			(at 127 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 127 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Mounting Hole without connection"
+			(at 127 177.8 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "H3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_16")
 		(lib_id "orbigator:Conn_01x01_16")
 		(at 147.32 81.28 0)
@@ -19018,7 +18852,7 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
 			(at 147.32 81.28 0)
 			(effects
 				(font
@@ -19084,7 +18918,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
 			(at 44.45 33.02 0)
 			(effects
 				(font

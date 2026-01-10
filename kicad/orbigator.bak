@@ -5399,20 +5399,24 @@
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(property "Reference" "A"
-			(at -19.05 38.1 0)
+		(property "Reference" "U1"
+			(at -18.288 -29.972 0)
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.254)
+					(bold yes)
 				)
 				(justify left)
 			)
 		)
-		(property "Value" "RaspberryPi_Pico"
-			(at 7.62 38.1 0)
+		(property "Value" "Pico_2"
+			(at -18.288 -32.258 0)
 			(effects
 				(font
 					(size 1.27 1.27)
+					(thickness 0.254)
+					(bold yes)
 				)
 				(justify left)
 			)
