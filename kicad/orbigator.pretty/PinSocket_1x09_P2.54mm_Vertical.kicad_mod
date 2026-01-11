@@ -8,7 +8,7 @@
 	(property "Reference" "REF**"
 		(at 0 -2.77 0)
 		(layer "F.SilkS")
-		(uuid "e3683158-faa6-4b2c-b6ce-fb9aaeedbb0e")
+		(uuid "01de880e-3d04-44ae-b100-3ecc53dab27c")
 		(effects
 			(font
 				(size 1 1)
@@ -19,7 +19,7 @@
 	(property "Value" "OLED_Encoder"
 		(at 0 23.09 0)
 		(layer "F.Fab")
-		(uuid "91780618-980a-44d5-9b8f-c486d8f2aa14")
+		(uuid "b38b259b-faae-42c7-ab9b-2e573f7e132b")
 		(effects
 			(font
 				(size 1 1)
@@ -31,7 +31,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "2e2259b9-1509-4aa2-9b93-4ba99fbe2baf")
+		(uuid "a5d2e24d-1cfe-4e46-a661-519dcdd75eb6")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -43,7 +43,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "f8fb7345-2b16-497f-84c4-c6ea7b95c8cc")
+		(uuid "9154d789-f1a9-4c11-8a1a-b8636cc4c860")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -113,34 +113,34 @@
 		(uuid "ccea710f-7c35-4d7d-8c6e-fab5daf351a2")
 	)
 	(fp_line
-		(start -1.8 -1.8)
-		(end 1.75 -1.8)
+		(start -1.8 -1.778)
+		(end 1.75 -1.778)
 		(stroke
 			(width 0.05)
-			(type solid)
+			(type default)
 		)
 		(layer "F.CrtYd")
-		(uuid "14413e3e-10d9-42bb-a61d-bb27720a48b8")
+		(uuid "38c92691-80e2-4091-bb6b-20b6327df7f2")
 	)
 	(fp_line
 		(start -1.8 22.1)
-		(end -1.8 -1.8)
+		(end -1.8 -1.778)
 		(stroke
 			(width 0.05)
-			(type solid)
+			(type default)
 		)
 		(layer "F.CrtYd")
-		(uuid "74015a60-1cac-4412-ae94-ba86e32bb56e")
+		(uuid "bc1893cb-acc1-4679-8341-862604ec501c")
 	)
 	(fp_line
-		(start 1.75 -1.8)
+		(start 1.75 -1.778)
 		(end 1.75 22.1)
 		(stroke
 			(width 0.05)
-			(type solid)
+			(type default)
 		)
 		(layer "F.CrtYd")
-		(uuid "ef072466-07fd-49d0-aea0-577a9cbd1665")
+		(uuid "bc2ae8ca-2deb-4b21-8ed0-fe1405794e4b")
 	)
 	(fp_line
 		(start 1.75 22.1)
