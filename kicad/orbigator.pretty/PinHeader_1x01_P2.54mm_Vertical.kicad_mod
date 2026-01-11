@@ -8,6 +8,7 @@
 	(property "Reference" "REF**"
 		(at 0 -2.38 0)
 		(layer "F.SilkS")
+		(hide yes)
 		(uuid "ee4100c8-5daa-4480-9a30-232d61df74d0")
 		(effects
 			(font
@@ -53,13 +54,53 @@
 	)
 	(attr through_hole)
 	(fp_line
+		(start -1.27 -1.27)
+		(end -1.27 1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "c842ae8d-5986-4ad6-80fe-48b366c187c5")
+	)
+	(fp_line
+		(start -1.27 1.27)
+		(end 1.27 1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "26b8d3f3-e4c5-40d7-9f56-bcabf3befad9")
+	)
+	(fp_line
+		(start 1.27 -1.27)
+		(end -1.27 -1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "b3c6c738-9fd1-4c70-a8a2-d3ab5f84120d")
+	)
+	(fp_line
+		(start 1.27 1.27)
+		(end 1.27 -1.27)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "c6a30735-bf68-46eb-bb4f-9a21fd7cc224")
+	)
+	(fp_line
 		(start -1.38 -1.38)
 		(end 0 -1.38)
 		(stroke
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "8992000d-18e0-4091-8c33-fbe53a54c351")
 	)
 	(fp_line
@@ -69,7 +110,7 @@
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "c1b9efbb-77c1-4a39-8d64-dc4d12487379")
 	)
 	(fp_line
@@ -79,7 +120,7 @@
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "84688e4e-f318-4dd2-bae2-292d51567061")
 	)
 	(fp_line
@@ -89,7 +130,7 @@
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "d14b292d-01ed-45e8-83c8-cf0513da3858")
 	)
 	(fp_line
@@ -99,7 +140,7 @@
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "12a7086c-e7d2-4778-bf5a-1a465c51f44d")
 	)
 	(fp_line
@@ -109,48 +150,8 @@
 			(width 0.12)
 			(type solid)
 		)
-		(layer "F.SilkS")
+		(layer "B.Fab")
 		(uuid "ab51f0c5-4fbe-4b5d-84fa-cc5f6b0f0a4b")
-	)
-	(fp_line
-		(start -1.77 -1.77)
-		(end -1.77 1.77)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(layer "F.CrtYd")
-		(uuid "c842ae8d-5986-4ad6-80fe-48b366c187c5")
-	)
-	(fp_line
-		(start -1.77 1.77)
-		(end 1.77 1.77)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(layer "F.CrtYd")
-		(uuid "26b8d3f3-e4c5-40d7-9f56-bcabf3befad9")
-	)
-	(fp_line
-		(start 1.77 -1.77)
-		(end -1.77 -1.77)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(layer "F.CrtYd")
-		(uuid "b3c6c738-9fd1-4c70-a8a2-d3ab5f84120d")
-	)
-	(fp_line
-		(start 1.77 1.77)
-		(end 1.77 -1.77)
-		(stroke
-			(width 0.05)
-			(type solid)
-		)
-		(layer "F.CrtYd")
-		(uuid "c6a30735-bf68-46eb-bb4f-9a21fd7cc224")
 	)
 	(fp_line
 		(start -1.27 -0.635)
@@ -223,6 +224,7 @@
 	)
 	(embedded_fonts no)
 	(model "${KICAD9_3DMODEL_DIR}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x01_P2.54mm_Vertical.step"
+		(hide yes)
 		(offset
 			(xyz 0 0 0)
 		)

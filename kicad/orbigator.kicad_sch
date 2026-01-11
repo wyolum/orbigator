@@ -2795,6 +2795,228 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Connector:Barrel_Jack_Switch"
+			(pin_names
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "J"
+				(at 0 5.334 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Barrel_Jack_Switch"
+				(at 0 -5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 1.27 -1.016 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 1.27 -1.016 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "DC Barrel Jack with an internal switch"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "DC power barrel jack connector"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "BarrelJack*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Barrel_Jack_Switch_0_1"
+				(rectangle
+					(start -5.08 3.81)
+					(end 5.08 -3.81)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(polyline
+					(pts
+						(xy -3.81 -2.54) (xy -2.54 -2.54) (xy -1.27 -1.27) (xy 0 -2.54) (xy 2.54 -2.54) (xy 5.08 -2.54)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -3.302 1.905)
+					(mid -3.9343 2.54)
+					(end -3.302 3.175)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(arc
+					(start -3.302 1.905)
+					(mid -3.9343 2.54)
+					(end -3.302 3.175)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -2.286) (xy 1.905 -1.651)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(rectangle
+					(start 3.683 3.175)
+					(end -3.302 1.905)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 5.08 2.54) (xy 3.81 2.54)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 5.08 0) (xy 1.27 0) (xy 1.27 -2.286) (xy 0.635 -1.651)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Barrel_Jack_Switch_1_1"
+				(pin passive line
+					(at 7.62 2.54 180)
+					(length 2.54)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 -2.54 180)
+					(length 2.54)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Connector_Generic:Conn_01x07"
 			(pin_names
 				(offset 1.016)
@@ -3077,89 +3299,6 @@
 								(size 1.27 1.27)
 							)
 						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "Mechanical:MountingHole"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom no)
-			(on_board yes)
-			(property "Reference" "H"
-				(at 0 5.08 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "MountingHole"
-				(at 0 3.175 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Datasheet" "~"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "Description" "Mounting Hole without connection"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_keywords" "mounting hole"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(property "ki_fp_filters" "MountingHole*"
-				(at 0 0 0)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(hide yes)
-				)
-			)
-			(symbol "MountingHole_0_1"
-				(circle
-					(center 0 0)
-					(radius 1.27)
-					(stroke
-						(width 1.27)
-						(type default)
-					)
-					(fill
-						(type none)
 					)
 				)
 			)
@@ -3848,6 +3987,162 @@
 								(size 1.27 1.27)
 							)
 						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "orbigator:DC"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "U"
+				(at 0 3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "DC_1_1"
+				(polyline
+					(pts
+						(xy -5.588 0) (xy -4.572 0)
+					)
+					(stroke
+						(width 0.254)
+						(type solid)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center -5.08 0)
+					(radius 1.016)
+					(stroke
+						(width 0.254)
+						(type solid)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.524 0) (xy -4.064 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 4.064 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 0 0)
+					(radius 0.762)
+					(stroke
+						(width 0)
+						(type solid)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(arc
+					(start 1.27 -1.016)
+					(mid -1.6264 0)
+					(end 1.27 1.016)
+					(stroke
+						(width 0.508)
+						(type solid)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 4.572 0) (xy 5.588 0)
+					)
+					(stroke
+						(width 0.254)
+						(type solid)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 5.08 0.508) (xy 5.08 -0.508)
+					)
+					(stroke
+						(width 0.254)
+						(type solid)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 5.08 0)
+					(radius 1.016)
+					(stroke
+						(width 0.254)
+						(type solid)
+					)
+					(fill
+						(type none)
 					)
 				)
 			)
@@ -5738,10 +6033,22 @@
 		)
 	)
 	(junction
-		(at 52.07 25.4)
+		(at 52.07 58.42)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "1e4ca759-f3d4-459c-bb4d-9601edb83ea0")
+	)
+	(junction
+		(at 254 139.7)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "2901cab2-3864-4d89-a864-e6ed04cbf461")
+	)
+	(junction
+		(at 254 125.73)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "37a7cb91-b260-4bf0-aad8-3dba6733529a")
 	)
 	(junction
 		(at 208.28 110.49)
@@ -5750,7 +6057,7 @@
 		(uuid "4bcb10d3-74d8-47bd-ac0c-349d95cf4a96")
 	)
 	(junction
-		(at 44.45 25.4)
+		(at 44.45 58.42)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "6a81b8fa-3298-4d40-9cce-5d8767d38b40")
@@ -5762,56 +6069,38 @@
 		(uuid "7ad1bed7-1818-46b3-8614-8e6d5572931b")
 	)
 	(junction
-		(at 254 142.24)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "7c5746e9-44e2-4b97-8dc4-4880a683f102")
-	)
-	(junction
-		(at 254 152.4)
+		(at 254 147.32)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7c6f30ca-7e67-4871-a7e4-917860ca7017")
 	)
 	(junction
-		(at 254 123.19)
+		(at 254 153.67)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "c4303990-c1b8-4a6d-8b20-22313edd16a0")
+		(uuid "ef95e0a2-a3f7-4c6a-8e7c-4763b07cb842")
 	)
 	(junction
-		(at 254 161.29)
+		(at 57.15 38.1)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "e711d662-1d7c-47e1-8671-134e4ec6fb2a")
-	)
-	(no_connect
-		(at 185.42 147.32)
-		(uuid "23af6ae5-438b-4657-ab3e-8cb74ebaf748")
-	)
-	(no_connect
-		(at 185.42 144.78)
-		(uuid "2d7aedf4-8489-4e26-ab09-01fa21cdf147")
+		(uuid "efbc6ca1-ca30-47b7-bc07-ac1987f5ae45")
 	)
 	(no_connect
 		(at 274.32 133.35)
 		(uuid "49e0ebca-9de2-473d-aa6b-9b086b4c4fa0")
 	)
 	(no_connect
-		(at 274.32 152.4)
+		(at 274.32 147.32)
 		(uuid "6acb0fe5-a31b-457e-a23e-a112d4b256a2")
 	)
 	(no_connect
-		(at 185.42 142.24)
-		(uuid "bb76a012-3068-4836-8fc5-61d17643043c")
-	)
-	(no_connect
-		(at 274.32 114.3)
+		(at 274.32 119.38)
 		(uuid "bbcd0ac9-23d8-48f0-94b9-4c84b269a213")
 	)
 	(wire
 		(pts
-			(xy 236.22 134.62) (xy 236.22 161.29)
+			(xy 242.57 147.32) (xy 242.57 153.67)
 		)
 		(stroke
 			(width 0)
@@ -5831,13 +6120,13 @@
 	)
 	(wire
 		(pts
-			(xy 254 123.19) (xy 254 133.35)
+			(xy 50.8 33.02) (xy 63.5 33.02)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "03876e7c-c65b-49da-922c-111aae8ad052")
+		(uuid "04fe3c5e-9461-46c4-9b4d-b2c788c13469")
 	)
 	(wire
 		(pts
@@ -5851,6 +6140,16 @@
 	)
 	(wire
 		(pts
+			(xy 57.15 35.56) (xy 57.15 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "09be3203-207e-461d-95be-72f2fb48a443")
+	)
+	(wire
+		(pts
 			(xy 185.42 27.94) (xy 204.47 27.94)
 		)
 		(stroke
@@ -5861,7 +6160,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 161.29) (xy 266.7 161.29)
+			(xy 254 153.67) (xy 266.7 153.67)
 		)
 		(stroke
 			(width 0)
@@ -5871,7 +6170,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 114.3) (xy 119.38 114.3)
+			(xy 83.82 147.32) (xy 119.38 147.32)
 		)
 		(stroke
 			(width 0)
@@ -5881,7 +6180,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 22.86) (xy 119.38 22.86)
+			(xy 96.52 55.88) (xy 119.38 55.88)
 		)
 		(stroke
 			(width 0)
@@ -5911,7 +6210,7 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 55.88) (xy 57.15 55.88)
+			(xy 52.07 88.9) (xy 57.15 88.9)
 		)
 		(stroke
 			(width 0)
@@ -5921,7 +6220,7 @@
 	)
 	(wire
 		(pts
-			(xy 185.42 142.24) (xy 198.12 142.24)
+			(xy 181.61 142.24) (xy 198.12 142.24)
 		)
 		(stroke
 			(width 0)
@@ -5951,7 +6250,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 55.88) (xy 96.52 55.88)
+			(xy 83.82 88.9) (xy 96.52 88.9)
 		)
 		(stroke
 			(width 0)
@@ -5961,7 +6260,7 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 38.1) (xy 52.07 55.88)
+			(xy 52.07 71.12) (xy 52.07 88.9)
 		)
 		(stroke
 			(width 0)
@@ -5981,7 +6280,7 @@
 	)
 	(wire
 		(pts
-			(xy 36.83 60.96) (xy 57.15 60.96)
+			(xy 36.83 93.98) (xy 57.15 93.98)
 		)
 		(stroke
 			(width 0)
@@ -5991,7 +6290,7 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 25.4) (xy 52.07 27.94)
+			(xy 52.07 58.42) (xy 52.07 60.96)
 		)
 		(stroke
 			(width 0)
@@ -6001,7 +6300,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 142.24) (xy 266.7 142.24)
+			(xy 254 139.7) (xy 266.7 139.7)
 		)
 		(stroke
 			(width 0)
@@ -6011,7 +6310,7 @@
 	)
 	(wire
 		(pts
-			(xy 36.83 25.4) (xy 44.45 25.4)
+			(xy 36.83 58.42) (xy 44.45 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6021,7 +6320,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 48.26) (xy 96.52 48.26)
+			(xy 83.82 81.28) (xy 96.52 81.28)
 		)
 		(stroke
 			(width 0)
@@ -6031,7 +6330,7 @@
 	)
 	(wire
 		(pts
-			(xy 52.07 25.4) (xy 63.5 25.4)
+			(xy 52.07 58.42) (xy 63.5 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6041,7 +6340,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 25.4) (xy 114.3 25.4)
+			(xy 96.52 58.42) (xy 114.3 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6058,6 +6357,16 @@
 			(type default)
 		)
 		(uuid "3fa9a4ef-ef17-423c-b14d-b68c6559d9ce")
+	)
+	(wire
+		(pts
+			(xy 50.8 38.1) (xy 57.15 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "420d147a-061d-4dd8-a647-e3d0a4c1f64c")
 	)
 	(wire
 		(pts
@@ -6081,7 +6390,7 @@
 	)
 	(wire
 		(pts
-			(xy 36.83 38.1) (xy 36.83 60.96)
+			(xy 36.83 71.12) (xy 36.83 93.98)
 		)
 		(stroke
 			(width 0)
@@ -6111,7 +6420,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 66.04) (xy 96.52 66.04)
+			(xy 83.82 99.06) (xy 96.52 99.06)
 		)
 		(stroke
 			(width 0)
@@ -6121,7 +6430,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 133.35) (xy 254 142.24)
+			(xy 254 133.35) (xy 254 139.7)
 		)
 		(stroke
 			(width 0)
@@ -6131,7 +6440,7 @@
 	)
 	(wire
 		(pts
-			(xy 57.15 58.42) (xy 44.45 58.42)
+			(xy 57.15 91.44) (xy 44.45 91.44)
 		)
 		(stroke
 			(width 0)
@@ -6141,7 +6450,7 @@
 	)
 	(wire
 		(pts
-			(xy 185.42 144.78) (xy 198.12 144.78)
+			(xy 181.61 144.78) (xy 198.12 144.78)
 		)
 		(stroke
 			(width 0)
@@ -6151,7 +6460,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 22.86) (xy 119.38 27.94)
+			(xy 119.38 55.88) (xy 119.38 60.96)
 		)
 		(stroke
 			(width 0)
@@ -6181,7 +6490,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 63.5) (xy 96.52 63.5)
+			(xy 83.82 96.52) (xy 96.52 96.52)
 		)
 		(stroke
 			(width 0)
@@ -6191,7 +6500,7 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 123.19) (xy 254 123.19)
+			(xy 266.7 125.73) (xy 254 125.73)
 		)
 		(stroke
 			(width 0)
@@ -6211,7 +6520,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 114.3) (xy 254 123.19)
+			(xy 254 119.38) (xy 254 125.73)
 		)
 		(stroke
 			(width 0)
@@ -6231,7 +6540,7 @@
 	)
 	(wire
 		(pts
-			(xy 44.45 27.94) (xy 44.45 25.4)
+			(xy 44.45 60.96) (xy 44.45 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6241,7 +6550,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.38 106.68) (xy 119.38 114.3)
+			(xy 119.38 139.7) (xy 119.38 147.32)
 		)
 		(stroke
 			(width 0)
@@ -6251,13 +6560,23 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 71.12) (xy 96.52 71.12)
+			(xy 83.82 104.14) (xy 96.52 104.14)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "72090d9b-5d2a-47b5-97f6-f7514a0527b9")
+	)
+	(wire
+		(pts
+			(xy 254 125.73) (xy 254 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7489b69f-077a-488e-92f5-662ec730a17a")
 	)
 	(wire
 		(pts
@@ -6281,6 +6600,16 @@
 	)
 	(wire
 		(pts
+			(xy 50.8 35.56) (xy 57.15 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7a20c980-77e7-4c9e-b095-943908f966fd")
+	)
+	(wire
+		(pts
 			(xy 185.42 74.93) (xy 193.04 74.93)
 		)
 		(stroke
@@ -6301,13 +6630,13 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 120.65) (xy 266.7 123.19)
+			(xy 57.15 38.1) (xy 63.5 38.1)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "8597f09d-4a0f-49ae-95f8-8ca57bbdc912")
+		(uuid "80c1517d-7d31-4592-bddd-5c01a97f8317")
 	)
 	(wire
 		(pts
@@ -6331,17 +6660,7 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 139.7) (xy 266.7 142.24)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "92753cdd-0140-4c03-975f-7df79437583e")
-	)
-	(wire
-		(pts
-			(xy 44.45 25.4) (xy 52.07 25.4)
+			(xy 44.45 58.42) (xy 52.07 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6351,7 +6670,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 45.72) (xy 96.52 45.72)
+			(xy 83.82 78.74) (xy 96.52 78.74)
 		)
 		(stroke
 			(width 0)
@@ -6361,7 +6680,7 @@
 	)
 	(wire
 		(pts
-			(xy 114.3 27.94) (xy 114.3 25.4)
+			(xy 114.3 60.96) (xy 114.3 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6381,7 +6700,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 58.42) (xy 96.52 58.42)
+			(xy 83.82 91.44) (xy 96.52 91.44)
 		)
 		(stroke
 			(width 0)
@@ -6401,7 +6720,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 152.4) (xy 259.08 152.4)
+			(xy 254 147.32) (xy 259.08 147.32)
 		)
 		(stroke
 			(width 0)
@@ -6421,7 +6740,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 68.58) (xy 96.52 68.58)
+			(xy 83.82 101.6) (xy 96.52 101.6)
 		)
 		(stroke
 			(width 0)
@@ -6431,7 +6750,7 @@
 	)
 	(wire
 		(pts
-			(xy 36.83 27.94) (xy 36.83 25.4)
+			(xy 36.83 60.96) (xy 36.83 58.42)
 		)
 		(stroke
 			(width 0)
@@ -6441,7 +6760,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 50.8) (xy 96.52 50.8)
+			(xy 83.82 83.82) (xy 96.52 83.82)
 		)
 		(stroke
 			(width 0)
@@ -6471,7 +6790,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 152.4) (xy 254 161.29)
+			(xy 254 147.32) (xy 254 153.67)
 		)
 		(stroke
 			(width 0)
@@ -6481,23 +6800,13 @@
 	)
 	(wire
 		(pts
-			(xy 236.22 107.95) (xy 241.3 107.95)
+			(xy 242.57 116.84) (xy 248.92 116.84)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "c48bae08-e0e1-4b5d-8939-8c581ddad801")
-	)
-	(wire
-		(pts
-			(xy 266.7 161.29) (xy 266.7 158.75)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c506762e-bdf5-48ef-8204-f21a08b2df51")
 	)
 	(wire
 		(pts
@@ -6521,7 +6830,7 @@
 	)
 	(wire
 		(pts
-			(xy 185.42 147.32) (xy 198.12 147.32)
+			(xy 181.61 147.32) (xy 198.12 147.32)
 		)
 		(stroke
 			(width 0)
@@ -6551,7 +6860,7 @@
 	)
 	(wire
 		(pts
-			(xy 124.46 20.32) (xy 124.46 27.94)
+			(xy 124.46 53.34) (xy 124.46 60.96)
 		)
 		(stroke
 			(width 0)
@@ -6571,7 +6880,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 20.32) (xy 124.46 20.32)
+			(xy 96.52 53.34) (xy 124.46 53.34)
 		)
 		(stroke
 			(width 0)
@@ -6581,7 +6890,7 @@
 	)
 	(wire
 		(pts
-			(xy 236.22 109.22) (xy 236.22 107.95)
+			(xy 242.57 121.92) (xy 242.57 116.84)
 		)
 		(stroke
 			(width 0)
@@ -6591,7 +6900,7 @@
 	)
 	(wire
 		(pts
-			(xy 259.08 114.3) (xy 254 114.3)
+			(xy 259.08 119.38) (xy 254 119.38)
 		)
 		(stroke
 			(width 0)
@@ -6601,7 +6910,7 @@
 	)
 	(wire
 		(pts
-			(xy 83.82 60.96) (xy 96.52 60.96)
+			(xy 83.82 93.98) (xy 96.52 93.98)
 		)
 		(stroke
 			(width 0)
@@ -6621,7 +6930,7 @@
 	)
 	(wire
 		(pts
-			(xy 254 142.24) (xy 254 152.4)
+			(xy 254 139.7) (xy 254 147.32)
 		)
 		(stroke
 			(width 0)
@@ -6651,7 +6960,7 @@
 	)
 	(wire
 		(pts
-			(xy 44.45 58.42) (xy 44.45 38.1)
+			(xy 44.45 91.44) (xy 44.45 71.12)
 		)
 		(stroke
 			(width 0)
@@ -6661,7 +6970,7 @@
 	)
 	(wire
 		(pts
-			(xy 236.22 161.29) (xy 254 161.29)
+			(xy 242.57 153.67) (xy 254 153.67)
 		)
 		(stroke
 			(width 0)
@@ -15206,7 +15515,7 @@
 		(uuid "09d0918d-a36d-48d8-920b-459868884a45")
 	)
 	(label "3V3"
-		(at 83.82 25.4 0)
+		(at 96.52 58.42 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15216,7 +15525,7 @@
 		(uuid "1872f0b8-49e3-4a6f-aa1f-6053db7adb98")
 	)
 	(label "3V3"
-		(at 63.5 25.4 0)
+		(at 63.5 58.42 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15245,8 +15554,18 @@
 		)
 		(uuid "1f304965-2243-45b3-bab5-adad722513e7")
 	)
+	(label "5V0"
+		(at 63.5 33.02 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "1fede2e5-85e9-4e1c-bb81-5af88be4eedd")
+	)
 	(label "5V_SYS"
-		(at 83.82 22.86 0)
+		(at 96.52 55.88 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15266,7 +15585,7 @@
 		(uuid "2b4a99e5-2cfa-4c54-91bb-179b8da195ea")
 	)
 	(label "5V0"
-		(at 83.82 20.32 0)
+		(at 96.52 53.34 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15286,7 +15605,7 @@
 		(uuid "2fa2806a-f7cf-4633-a35d-994f05899c9a")
 	)
 	(label "GND"
-		(at 83.82 114.3 0)
+		(at 83.82 147.32 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15306,7 +15625,7 @@
 		(uuid "3ccb3ea6-dc26-4e04-98f5-94b431439bbe")
 	)
 	(label "ENC_SW"
-		(at 83.82 66.04 180)
+		(at 83.82 99.06 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15325,8 +15644,18 @@
 		)
 		(uuid "5bce26b8-9a7d-4105-9111-559c7c619432")
 	)
+	(label "GND"
+		(at 63.5 38.1 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "60c8ae7a-ab70-4f83-9cea-2b273794a66d")
+	)
 	(label "UART_TX"
-		(at 83.82 45.72 180)
+		(at 83.82 78.74 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15336,7 +15665,7 @@
 		(uuid "60dc8cb7-2de5-44a1-b744-92e54b8b9947")
 	)
 	(label "CNF_BTN"
-		(at 83.82 71.12 180)
+		(at 83.82 104.14 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15346,7 +15675,7 @@
 		(uuid "61988939-2351-4c5f-92a2-3770d61017e4")
 	)
 	(label "SCL"
-		(at 57.15 58.42 0)
+		(at 57.15 91.44 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15366,7 +15695,7 @@
 		(uuid "802f21da-8c3e-4bae-8daf-393a2a117ccd")
 	)
 	(label "MOT_DAT"
-		(at 57.15 60.96 0)
+		(at 57.15 93.98 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15386,7 +15715,7 @@
 		(uuid "82f58013-9f7f-4f23-8f02-b258b93f2df5")
 	)
 	(label "DIR"
-		(at 83.82 50.8 180)
+		(at 83.82 83.82 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15426,7 +15755,7 @@
 		(uuid "a2b2a948-6ee3-4adc-bb1b-dd324891c306")
 	)
 	(label "SDA"
-		(at 57.15 55.88 0)
+		(at 57.15 88.9 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15466,7 +15795,7 @@
 		(uuid "bfc17e20-c912-4a61-b7c5-eb29987d532d")
 	)
 	(label "ENC_A"
-		(at 83.82 60.96 180)
+		(at 83.82 93.98 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15476,7 +15805,7 @@
 		(uuid "c0c38a12-0d32-4b9e-86e1-7813907b4b69")
 	)
 	(label "ENC_B"
-		(at 83.82 63.5 180)
+		(at 83.82 96.52 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15486,7 +15815,7 @@
 		(uuid "c10e83a2-69af-43a1-8441-516ada2bb312")
 	)
 	(label "BAK_BTN"
-		(at 83.82 68.58 180)
+		(at 83.82 101.6 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15516,7 +15845,7 @@
 		(uuid "c89ea295-fafb-4410-827b-ade3550274b7")
 	)
 	(label "3V3"
-		(at 241.3 107.95 0)
+		(at 248.92 116.84 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15526,7 +15855,7 @@
 		(uuid "cd3227b0-da18-4ccd-bc95-5c2b36c9a866")
 	)
 	(label "SDA"
-		(at 83.82 55.88 180)
+		(at 83.82 88.9 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15556,7 +15885,7 @@
 		(uuid "dd163aa6-4a27-4295-b3ac-5d58b2147f6f")
 	)
 	(label "SCL"
-		(at 83.82 58.42 180)
+		(at 83.82 91.44 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15566,7 +15895,7 @@
 		(uuid "de1924d0-3cd2-4392-86d6-a780f77cfd8b")
 	)
 	(label "UART_RX"
-		(at 83.82 48.26 180)
+		(at 83.82 81.28 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15586,7 +15915,7 @@
 		(uuid "ebc80e33-24e5-4e67-962d-9a8ec28c389f")
 	)
 	(label "GND"
-		(at 252.73 161.29 180)
+		(at 252.73 153.67 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -15658,7 +15987,7 @@
 	(symbol
 		(lib_name "Conn_01x01_11")
 		(lib_id "orbigator:Conn_01x01_11")
-		(at 91.44 83.82 180)
+		(at 91.44 116.84 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15666,7 +15995,7 @@
 		(dnp no)
 		(uuid "0696d880-c66d-4b7f-bffb-63cc808a15bd")
 		(property "Reference" "J15"
-			(at 87.884 83.82 0)
+			(at 87.884 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15674,7 +16003,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 82.55 0)
+			(at 88.9 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15684,7 +16013,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 83.82 0)
+			(at 91.44 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15693,7 +16022,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 83.82 0)
+			(at 91.44 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15702,7 +16031,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 83.82 0)
+			(at 91.44 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15725,7 +16054,7 @@
 	(symbol
 		(lib_name "Conn_01x01_19")
 		(lib_id "orbigator:Conn_01x01_19")
-		(at 147.32 68.58 0)
+		(at 147.32 101.6 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15734,7 +16063,7 @@
 		(fields_autoplaced yes)
 		(uuid "1ac9ed35-aae4-4891-a12e-0fe82df80a0d")
 		(property "Reference" "J7"
-			(at 149.86 68.58 0)
+			(at 149.86 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15743,7 +16072,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 69.85 0)
+			(at 149.86 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15753,7 +16082,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 68.58 0)
+			(at 147.32 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15762,7 +16091,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 68.58 0)
+			(at 147.32 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15771,7 +16100,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 68.58 0)
+			(at 147.32 101.6 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15794,7 +16123,7 @@
 	(symbol
 		(lib_name "Conn_01x01_23")
 		(lib_id "orbigator:Conn_01x01_23")
-		(at 147.32 58.42 0)
+		(at 147.32 91.44 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -15803,7 +16132,7 @@
 		(fields_autoplaced yes)
 		(uuid "1c5d50d9-7eff-4a1f-8e29-712c8b505842")
 		(property "Reference" "J3"
-			(at 149.86 58.42 0)
+			(at 149.86 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15812,7 +16141,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 59.69 0)
+			(at 149.86 92.71 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15822,7 +16151,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 58.42 0)
+			(at 147.32 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15831,7 +16160,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 58.42 0)
+			(at 147.32 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15840,7 +16169,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 58.42 0)
+			(at 147.32 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15861,27 +16190,25 @@
 		)
 	)
 	(symbol
-		(lib_name "Conn_01x01_17")
-		(lib_id "orbigator:Conn_01x01_17")
-		(at 147.32 78.74 0)
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 176.53 147.32 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "35f3cb2f-9bc5-4ea1-a9ee-b771dd930fff")
-		(property "Reference" "J9"
-			(at 149.86 78.74 0)
+		(uuid "1d118ae1-12fd-4f8f-bbe3-bc1472f8771d")
+		(property "Reference" "J30"
+			(at 172.974 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 80.01 0)
+			(at 173.99 146.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15891,7 +16218,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 78.74 0)
+			(at 176.53 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15900,7 +16227,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 78.74 0)
+			(at 176.53 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15909,7 +16236,143 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 78.74 0)
+			(at 176.53 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "423ae97e-4512-45ef-a7e3-edc48e629eb7")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 176.53 142.24 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2f8fec92-13eb-430e-be4d-d39f3c15ef4f")
+		(property "Reference" "J28"
+			(at 172.974 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 173.99 140.97 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 176.53 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 176.53 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 176.53 142.24 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "9687a2fc-1f4f-4f93-9b8f-d3d6184b6a95")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J28")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_17")
+		(lib_id "orbigator:Conn_01x01_17")
+		(at 147.32 111.76 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "35f3cb2f-9bc5-4ea1-a9ee-b771dd930fff")
+		(property "Reference" "J9"
+			(at 149.86 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 149.86 113.03 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 147.32 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 147.32 111.76 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 147.32 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15937,10 +16400,9 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "3b9995ec-426a-4099-a4a1-eaa9f2a72f0e")
 		(property "Reference" "U2"
-			(at 266.7 124.46 0)
+			(at 266.7 133.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15948,7 +16410,7 @@
 			)
 		)
 		(property "Value" "74LS126"
-			(at 266.7 127 0)
+			(at 266.7 128.778 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16034,73 +16496,9 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 127 171.45 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "4a0640ef-a486-431e-a24f-a9f298e78718")
-		(property "Reference" "H2"
-			(at 129.54 170.18 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 129.54 172.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
-			(at 127 171.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 127 171.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 127 171.45 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "orbigator"
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "H2")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_name "Conn_01x01_21")
 		(lib_id "orbigator:Conn_01x01_21")
-		(at 147.32 63.5 0)
+		(at 147.32 96.52 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16109,7 +16507,7 @@
 		(fields_autoplaced yes)
 		(uuid "4ce7d821-e332-4bfe-807c-926a6883f873")
 		(property "Reference" "J5"
-			(at 149.86 63.5 0)
+			(at 149.86 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16118,7 +16516,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 64.77 0)
+			(at 149.86 97.79 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16128,7 +16526,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 63.5 0)
+			(at 147.32 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16137,7 +16535,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 63.5 0)
+			(at 147.32 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16146,7 +16544,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 63.5 0)
+			(at 147.32 96.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16169,7 +16567,7 @@
 	(symbol
 		(lib_name "Conn_01x01_20")
 		(lib_id "orbigator:Conn_01x01_20")
-		(at 147.32 66.04 0)
+		(at 147.32 99.06 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16178,7 +16576,7 @@
 		(fields_autoplaced yes)
 		(uuid "59ee1b94-97a3-4a33-9e56-20fcda26b178")
 		(property "Reference" "J6"
-			(at 149.86 66.04 0)
+			(at 149.86 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16187,7 +16585,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 67.31 0)
+			(at 149.86 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16197,7 +16595,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 66.04 0)
+			(at 147.32 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16206,7 +16604,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 66.04 0)
+			(at 147.32 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16215,7 +16613,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 66.04 0)
+			(at 147.32 99.06 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16323,7 +16721,7 @@
 	(symbol
 		(lib_name "Conn_01x01_4")
 		(lib_id "orbigator:Conn_01x01_4")
-		(at 91.44 38.1 180)
+		(at 91.44 71.12 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16331,7 +16729,7 @@
 		(dnp no)
 		(uuid "5f1259f5-8631-447e-9302-0c79d04a68e4")
 		(property "Reference" "J22"
-			(at 87.884 38.1 0)
+			(at 87.884 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16339,7 +16737,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 36.83 0)
+			(at 88.9 69.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16349,7 +16747,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 38.1 0)
+			(at 91.44 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16358,7 +16756,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 38.1 0)
+			(at 91.44 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16367,7 +16765,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 38.1 0)
+			(at 91.44 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16382,6 +16780,77 @@
 			(project "orbigator"
 				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
 					(reference "J22")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector:Barrel_Jack_Switch")
+		(at 43.18 35.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "642a2677-1b3c-48e7-9d5d-c6a8ed82fb25")
+		(property "Reference" "J27"
+			(at 43.18 26.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Barrel_Jack_Switch"
+			(at 43.18 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "orbigator:BarrelJack_Horizontal"
+			(at 44.45 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 44.45 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "DC Barrel Jack with an internal switch"
+			(at 43.18 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "b057375f-91ef-48e9-bb04-f1bad3799260")
+		)
+		(pin "3"
+			(uuid "4727e317-5040-4330-a6a7-43b2343c8e6d")
+		)
+		(pin "2"
+			(uuid "8c4f460f-1acc-49d6-972d-1b4692a17b11")
+		)
+		(instances
+			(project ""
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J27")
 					(unit 1)
 				)
 			)
@@ -16415,7 +16884,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "orbigator:JST_GH_BM03B-GHS-TBT_1x03-1MP_P1.25mm_Vertical"
+		(property "Footprint" "orbigator:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical"
 			(at 198.12 91.44 0)
 			(effects
 				(font
@@ -16463,7 +16932,7 @@
 	(symbol
 		(lib_name "Conn_01x01_14")
 		(lib_id "orbigator:Conn_01x01_14")
-		(at 147.32 88.9 0)
+		(at 147.32 121.92 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16472,7 +16941,7 @@
 		(fields_autoplaced yes)
 		(uuid "677b1b3f-bf74-440d-811a-a19c5619b84f")
 		(property "Reference" "J12"
-			(at 149.86 88.9 0)
+			(at 149.86 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16481,7 +16950,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 90.17 0)
+			(at 149.86 123.19 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16491,7 +16960,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 88.9 0)
+			(at 147.32 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16500,7 +16969,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 88.9 0)
+			(at 147.32 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16509,7 +16978,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 88.9 0)
+			(at 147.32 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16532,7 +17001,7 @@
 	(symbol
 		(lib_name "Conn_01x01_1")
 		(lib_id "orbigator:Conn_01x01_1")
-		(at 78.74 20.32 180)
+		(at 91.44 53.34 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16540,7 +17009,7 @@
 		(dnp no)
 		(uuid "68577482-ff9e-4ea5-87e5-6ef98a40e619")
 		(property "Reference" "J25"
-			(at 75.184 20.32 0)
+			(at 87.884 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16548,7 +17017,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 76.2 19.05 0)
+			(at 88.9 52.07 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16558,7 +17027,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 78.74 20.32 0)
+			(at 91.44 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16567,7 +17036,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 78.74 20.32 0)
+			(at 91.44 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16576,7 +17045,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 20.32 0)
+			(at 91.44 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16598,7 +17067,7 @@
 	)
 	(symbol
 		(lib_id "orbigator:R")
-		(at 52.07 33.02 0)
+		(at 52.07 66.04 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16606,7 +17075,7 @@
 		(dnp no)
 		(uuid "6b2739de-e4b6-4b22-a64f-4d79fa76c1d5")
 		(property "Reference" "R3"
-			(at 54.61 31.75 0)
+			(at 54.61 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16615,7 +17084,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 52.07 34.798 90)
+			(at 52.07 67.818 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16624,7 +17093,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
-			(at 52.07 33.02 0)
+			(at 52.07 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16633,7 +17102,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 52.07 33.02 0)
+			(at 52.07 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16642,7 +17111,7 @@
 			)
 		)
 		(property "Description" "resistor"
-			(at 52.07 33.02 0)
+			(at 52.07 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16651,7 +17120,7 @@
 			)
 		)
 		(property "Indicator" "+"
-			(at 48.895 29.845 0)
+			(at 48.895 62.865 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16660,7 +17129,7 @@
 			)
 		)
 		(property "Rating" "W"
-			(at 54.61 36.195 0)
+			(at 54.61 69.215 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16687,7 +17156,7 @@
 	(symbol
 		(lib_name "Conn_01x01_8")
 		(lib_id "orbigator:Conn_01x01_8")
-		(at 91.44 76.2 180)
+		(at 91.44 109.22 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16695,7 +17164,7 @@
 		(dnp no)
 		(uuid "6c78c480-3ee2-4788-9a4d-9d5f6af7995f")
 		(property "Reference" "J18"
-			(at 87.884 76.2 0)
+			(at 87.884 109.22 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16703,7 +17172,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 74.93 0)
+			(at 88.9 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16713,7 +17182,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 76.2 0)
+			(at 91.44 109.22 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16722,7 +17191,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 76.2 0)
+			(at 91.44 109.22 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16731,7 +17200,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 76.2 0)
+			(at 91.44 109.22 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16754,7 +17223,7 @@
 	(symbol
 		(lib_name "Conn_01x01_22")
 		(lib_id "orbigator:Conn_01x01_22")
-		(at 147.32 60.96 0)
+		(at 147.32 93.98 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16763,7 +17232,7 @@
 		(fields_autoplaced yes)
 		(uuid "6d533bef-b7e6-471c-8416-f20763344fb7")
 		(property "Reference" "J4"
-			(at 149.86 60.96 0)
+			(at 149.86 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16772,7 +17241,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 62.23 0)
+			(at 149.86 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16782,7 +17251,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 60.96 0)
+			(at 147.32 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16791,7 +17260,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 60.96 0)
+			(at 147.32 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16800,7 +17269,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 60.96 0)
+			(at 147.32 93.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16822,16 +17291,15 @@
 	)
 	(symbol
 		(lib_id "orbigator:74LS126")
-		(at 236.22 121.92 0)
+		(at 242.57 134.62 0)
 		(unit 5)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "75f59487-6469-48bd-beca-21df3d046af3")
 		(property "Reference" "U2"
-			(at 242.57 120.65 0)
+			(at 240.792 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16840,7 +17308,7 @@
 			)
 		)
 		(property "Value" "74LS126"
-			(at 242.57 123.19 0)
+			(at 249.428 137.668 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16849,7 +17317,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:DIP-14_W7.62mm"
-			(at 236.22 121.92 0)
+			(at 242.57 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16858,7 +17326,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74LS126"
-			(at 236.22 121.92 0)
+			(at 242.57 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16867,7 +17335,7 @@
 			)
 		)
 		(property "Description" "Quad buffer 3-State outputs"
-			(at 236.22 121.92 0)
+			(at 242.57 134.62 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16927,73 +17395,9 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 127 165.1 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "761a59b4-ec80-4856-bfb4-7589add660e0")
-		(property "Reference" "H1"
-			(at 129.54 163.83 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 129.54 166.37 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
-			(at 127 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 127 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 127 165.1 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project ""
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "H1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_name "Conn_01x01_5")
 		(lib_id "orbigator:Conn_01x01_5")
-		(at 91.44 40.64 180)
+		(at 91.44 73.66 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17001,7 +17405,7 @@
 		(dnp no)
 		(uuid "7862564d-9c1e-44ef-ba16-27a280dc25fb")
 		(property "Reference" "J21"
-			(at 87.884 40.64 0)
+			(at 87.884 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17009,7 +17413,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 39.37 0)
+			(at 88.9 72.39 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17019,7 +17423,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 40.64 0)
+			(at 91.44 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17028,7 +17432,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 40.64 0)
+			(at 91.44 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17037,7 +17441,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 40.64 0)
+			(at 91.44 73.66 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17059,16 +17463,15 @@
 	)
 	(symbol
 		(lib_id "orbigator:74LS126")
-		(at 266.7 152.4 0)
+		(at 266.7 147.32 0)
 		(unit 4)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "7f5a11cb-e5a7-4ea9-b49f-e4666b6e4623")
 		(property "Reference" "U2"
-			(at 266.7 143.51 0)
+			(at 266.7 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17076,7 +17479,7 @@
 			)
 		)
 		(property "Value" "74LS126"
-			(at 266.7 146.05 0)
+			(at 266.7 142.748 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17084,7 +17487,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:DIP-14_W7.62mm"
-			(at 266.7 152.4 0)
+			(at 266.7 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17093,7 +17496,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74LS126"
-			(at 266.7 152.4 0)
+			(at 266.7 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17102,7 +17505,7 @@
 			)
 		)
 		(property "Description" "Quad buffer 3-State outputs"
-			(at 266.7 152.4 0)
+			(at 266.7 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17293,7 +17696,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "orbigator:JST_GH_BM03B-GHS-TBT_1x03-1MP_P1.25mm_Vertical"
+		(property "Footprint" "orbigator:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical"
 			(at 198.12 72.39 0)
 			(effects
 				(font
@@ -17341,7 +17744,7 @@
 	(symbol
 		(lib_name "Conn_01x01_1")
 		(lib_id "orbigator:Conn_01x01_1")
-		(at 78.74 114.3 180)
+		(at 78.74 147.32 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17349,7 +17752,7 @@
 		(dnp no)
 		(uuid "815abc5e-5a2b-42ee-8367-965fd8cb7977")
 		(property "Reference" "J26"
-			(at 75.184 114.3 0)
+			(at 75.184 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17357,7 +17760,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 76.2 113.03 0)
+			(at 76.2 146.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17367,7 +17770,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 78.74 114.3 0)
+			(at 78.74 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17376,7 +17779,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 78.74 114.3 0)
+			(at 78.74 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17385,7 +17788,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 114.3 0)
+			(at 78.74 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17408,7 +17811,7 @@
 	(symbol
 		(lib_name "Conn_01x01_12")
 		(lib_id "orbigator:Conn_01x01_12")
-		(at 91.44 88.9 180)
+		(at 91.44 121.92 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17416,7 +17819,7 @@
 		(dnp no)
 		(uuid "8bf93a92-4d29-42aa-bea4-8752a884e59f")
 		(property "Reference" "J14"
-			(at 87.884 88.9 0)
+			(at 87.884 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17424,7 +17827,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 87.63 0)
+			(at 88.9 120.65 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17434,7 +17837,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 88.9 0)
+			(at 91.44 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17443,7 +17846,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 88.9 0)
+			(at 91.44 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17452,7 +17855,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 88.9 0)
+			(at 91.44 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17475,7 +17878,7 @@
 	(symbol
 		(lib_name "Conn_01x01_9")
 		(lib_id "orbigator:Conn_01x01_9")
-		(at 91.44 78.74 180)
+		(at 91.44 111.76 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17483,7 +17886,7 @@
 		(dnp no)
 		(uuid "8e36640b-7c33-4197-a7cb-60a4495864eb")
 		(property "Reference" "J17"
-			(at 87.884 78.74 0)
+			(at 87.884 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17491,7 +17894,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 77.47 0)
+			(at 88.9 110.49 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17501,7 +17904,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 78.74 0)
+			(at 91.44 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17510,7 +17913,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 78.74 0)
+			(at 91.44 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17519,7 +17922,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 78.74 0)
+			(at 91.44 111.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17541,16 +17944,15 @@
 	)
 	(symbol
 		(lib_id "orbigator:74LS126")
-		(at 266.7 114.3 0)
+		(at 266.7 119.38 0)
 		(unit 2)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "8eb5672d-a2c7-497c-ac76-770aa5b32d65")
 		(property "Reference" "U2"
-			(at 266.7 105.41 0)
+			(at 266.7 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17558,7 +17960,7 @@
 			)
 		)
 		(property "Value" "74LS126"
-			(at 266.7 107.95 0)
+			(at 266.7 114.808 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17566,7 +17968,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:DIP-14_W7.62mm"
-			(at 266.7 114.3 0)
+			(at 266.7 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17575,7 +17977,7 @@
 			)
 		)
 		(property "Datasheet" "http://www.ti.com/lit/gpn/sn74LS126"
-			(at 266.7 114.3 0)
+			(at 266.7 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17584,7 +17986,7 @@
 			)
 		)
 		(property "Description" "Quad buffer 3-State outputs"
-			(at 266.7 114.3 0)
+			(at 266.7 119.38 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17646,7 +18048,7 @@
 	(symbol
 		(lib_name "Conn_01x01_3")
 		(lib_id "orbigator:Conn_01x01_3")
-		(at 78.74 25.4 180)
+		(at 91.44 58.42 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17654,7 +18056,7 @@
 		(dnp no)
 		(uuid "94f14604-048e-4755-ab4e-e1feb4286a45")
 		(property "Reference" "J23"
-			(at 75.184 25.4 0)
+			(at 87.884 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17662,7 +18064,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 76.2 24.13 0)
+			(at 88.9 57.15 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17672,7 +18074,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 78.74 25.4 0)
+			(at 91.44 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17681,7 +18083,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 78.74 25.4 0)
+			(at 91.44 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17690,7 +18092,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 25.4 0)
+			(at 91.44 58.42 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17712,7 +18114,7 @@
 	)
 	(symbol
 		(lib_id "orbigator:R")
-		(at 36.83 33.02 0)
+		(at 36.83 66.04 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17720,7 +18122,7 @@
 		(dnp no)
 		(uuid "951cff21-dceb-4fbe-96c5-c35820b1feae")
 		(property "Reference" "R1"
-			(at 39.37 31.75 0)
+			(at 39.37 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17729,7 +18131,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 36.83 34.798 90)
+			(at 36.83 67.818 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17738,7 +18140,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
-			(at 36.83 33.02 0)
+			(at 36.83 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17747,7 +18149,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 36.83 33.02 0)
+			(at 36.83 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17756,7 +18158,7 @@
 			)
 		)
 		(property "Description" "resistor"
-			(at 36.83 33.02 0)
+			(at 36.83 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17765,7 +18167,7 @@
 			)
 		)
 		(property "Indicator" "+"
-			(at 33.655 29.845 0)
+			(at 33.655 62.865 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17774,7 +18176,7 @@
 			)
 		)
 		(property "Rating" "W"
-			(at 39.37 36.195 0)
+			(at 39.37 69.215 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17801,7 +18203,7 @@
 	(symbol
 		(lib_name "Conn_01x01_2")
 		(lib_id "orbigator:Conn_01x01_2")
-		(at 78.74 22.86 180)
+		(at 91.44 55.88 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17809,7 +18211,7 @@
 		(dnp no)
 		(uuid "990d55d6-2c23-45c0-bf05-f943863e03f2")
 		(property "Reference" "J24"
-			(at 75.184 22.86 0)
+			(at 87.884 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17817,7 +18219,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 76.2 21.59 0)
+			(at 88.9 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17827,7 +18229,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 78.74 22.86 0)
+			(at 91.44 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17836,7 +18238,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 78.74 22.86 0)
+			(at 91.44 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17845,7 +18247,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 78.74 22.86 0)
+			(at 91.44 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17868,7 +18270,7 @@
 	(symbol
 		(lib_name "Conn_01x01_13")
 		(lib_id "orbigator:Conn_01x01_13")
-		(at 91.44 91.44 180)
+		(at 91.44 124.46 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17876,7 +18278,7 @@
 		(dnp no)
 		(uuid "9efff27f-0dd4-433a-9d2d-38512cc58b72")
 		(property "Reference" "J13"
-			(at 87.884 91.44 0)
+			(at 87.884 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17884,7 +18286,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 90.17 0)
+			(at 88.9 123.19 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17894,7 +18296,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 91.44 0)
+			(at 91.44 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17903,7 +18305,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 91.44 0)
+			(at 91.44 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17912,7 +18314,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 91.44 0)
+			(at 91.44 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17935,7 +18337,7 @@
 	(symbol
 		(lib_name "Conn_01x01_18")
 		(lib_id "orbigator:Conn_01x01_18")
-		(at 147.32 73.66 0)
+		(at 147.32 106.68 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17944,7 +18346,7 @@
 		(fields_autoplaced yes)
 		(uuid "9f5151ac-6fba-4933-96d2-14c00e8b5d65")
 		(property "Reference" "J8"
-			(at 149.86 73.66 0)
+			(at 149.86 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17953,7 +18355,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 74.93 0)
+			(at 149.86 107.95 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17963,7 +18365,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 73.66 0)
+			(at 147.32 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17972,7 +18374,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 73.66 0)
+			(at 147.32 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17981,7 +18383,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 73.66 0)
+			(at 147.32 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18002,27 +18404,25 @@
 		)
 	)
 	(symbol
-		(lib_name "Conn_01x01_15")
-		(lib_id "orbigator:Conn_01x01_15")
-		(at 147.32 83.82 0)
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 176.53 144.78 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "b146d06d-0c2b-48b1-a3ad-67992df9f4e6")
-		(property "Reference" "J11"
-			(at 149.86 83.82 0)
+		(uuid "aed889a3-edc4-46af-9e22-8b2e8a323729")
+		(property "Reference" "J29"
+			(at 172.974 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(justify left)
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 85.09 0)
+			(at 173.99 143.51 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18032,7 +18432,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 83.82 0)
+			(at 176.53 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18041,7 +18441,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 83.82 0)
+			(at 176.53 144.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18050,7 +18450,76 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 83.82 0)
+			(at 176.53 144.78 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3b3156cc-cf2b-49ac-b977-1fef80ec42c9")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J29")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_15")
+		(lib_id "orbigator:Conn_01x01_15")
+		(at 147.32 116.84 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b146d06d-0c2b-48b1-a3ad-67992df9f4e6")
+		(property "Reference" "J11"
+			(at 149.86 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 149.86 118.11 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 147.32 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 147.32 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 147.32 116.84 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18073,7 +18542,7 @@
 	(symbol
 		(lib_name "Conn_01x01_6")
 		(lib_id "orbigator:Conn_01x01_6")
-		(at 91.44 53.34 180)
+		(at 91.44 86.36 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18081,7 +18550,7 @@
 		(dnp no)
 		(uuid "b982305d-967c-4029-ae47-7ff4323b2e38")
 		(property "Reference" "J20"
-			(at 87.884 53.34 0)
+			(at 87.884 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18089,7 +18558,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 52.07 0)
+			(at 88.9 85.09 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18099,7 +18568,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 53.34 0)
+			(at 91.44 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18108,7 +18577,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 53.34 0)
+			(at 91.44 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18117,7 +18586,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 53.34 0)
+			(at 91.44 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18140,7 +18609,7 @@
 	(symbol
 		(lib_name "Conn_01x01_7")
 		(lib_id "orbigator:Conn_01x01_7")
-		(at 91.44 73.66 180)
+		(at 91.44 106.68 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18148,7 +18617,7 @@
 		(dnp no)
 		(uuid "bdc2e92d-64c1-4e95-96ab-89d592bd8a1a")
 		(property "Reference" "J19"
-			(at 87.884 73.66 0)
+			(at 87.884 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18156,7 +18625,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 72.39 0)
+			(at 88.9 105.41 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18166,7 +18635,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 73.66 0)
+			(at 91.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18175,7 +18644,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 73.66 0)
+			(at 91.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18184,7 +18653,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 73.66 0)
+			(at 91.44 106.68 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18206,7 +18675,7 @@
 	)
 	(symbol
 		(lib_id "orbigator:RaspberryPi_Pico_DebugPins")
-		(at 119.38 68.58 0)
+		(at 119.38 101.6 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18214,7 +18683,7 @@
 		(dnp no)
 		(uuid "bde18907-2085-464e-b32b-8b71c42fccca")
 		(property "Reference" "U1"
-			(at 101.092 98.552 0)
+			(at 101.092 131.572 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18225,7 +18694,7 @@
 			)
 		)
 		(property "Value" "Pico_2"
-			(at 101.092 100.838 0)
+			(at 101.092 133.858 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18236,7 +18705,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:RaspberryPi_Pico_SMD_HandSolder"
-			(at 119.38 118.11 0)
+			(at 119.38 151.13 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18245,7 +18714,7 @@
 			)
 		)
 		(property "Datasheet" "https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf"
-			(at 119.38 120.65 0)
+			(at 119.38 153.67 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18254,7 +18723,7 @@
 			)
 		)
 		(property "Description" "Versatile and inexpensive microcontroller module (with debug pins) powered by RP2040 dual-core Arm Cortex-M0+ processor up to 133 MHz, 264kB SRAM, 2MB QSPI flash"
-			(at 119.38 123.19 0)
+			(at 119.38 156.21 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18401,9 +18870,73 @@
 		)
 	)
 	(symbol
+		(lib_id "orbigator:DC")
+		(at 29.21 35.56 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c4292932-8095-4402-b426-e89760a76203")
+		(property "Reference" "U3"
+			(at 29.21 29.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "DC_polarity"
+			(at 29.21 31.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:DC"
+			(at 29.21 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 29.21 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 29.21 35.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project ""
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "U3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_10")
 		(lib_id "orbigator:Conn_01x01_10")
-		(at 91.44 81.28 180)
+		(at 91.44 114.3 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18411,7 +18944,7 @@
 		(dnp no)
 		(uuid "c4fc93f8-e1cf-403d-940b-3758c3ea573c")
 		(property "Reference" "J16"
-			(at 87.884 81.28 0)
+			(at 87.884 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18419,7 +18952,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 88.9 80.01 0)
+			(at 88.9 113.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18429,7 +18962,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 91.44 81.28 0)
+			(at 91.44 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18438,7 +18971,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 91.44 81.28 0)
+			(at 91.44 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18447,7 +18980,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 91.44 81.28 0)
+			(at 91.44 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18470,7 +19003,7 @@
 	(symbol
 		(lib_name "Conn_01x01_24")
 		(lib_id "orbigator:Conn_01x01_24")
-		(at 147.32 55.88 0)
+		(at 147.32 88.9 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18479,7 +19012,7 @@
 		(fields_autoplaced yes)
 		(uuid "cb7ea74d-5130-4ac4-acd3-a666ea123f8c")
 		(property "Reference" "J2"
-			(at 149.86 55.88 0)
+			(at 149.86 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18488,7 +19021,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 57.15 0)
+			(at 149.86 90.17 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18498,7 +19031,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 55.88 0)
+			(at 147.32 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18507,7 +19040,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 55.88 0)
+			(at 147.32 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18516,7 +19049,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 55.88 0)
+			(at 147.32 88.9 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18537,72 +19070,8 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 127 184.15 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "cee934a9-3934-49cf-b5b2-7f1bd3dc47b0")
-		(property "Reference" "H4"
-			(at 129.54 182.88 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 129.54 185.42 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
-			(at 127 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 127 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 127 184.15 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "orbigator"
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "H4")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "orbigator:Conn_01x01")
-		(at 147.32 53.34 0)
+		(at 147.32 86.36 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18611,7 +19080,7 @@
 		(fields_autoplaced yes)
 		(uuid "dd85b69d-5654-4fb1-b343-96cdaf39f11b")
 		(property "Reference" "J1"
-			(at 149.86 53.34 0)
+			(at 149.86 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18620,7 +19089,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 54.61 0)
+			(at 149.86 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18630,7 +19099,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 53.34 0)
+			(at 147.32 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18639,7 +19108,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 53.34 0)
+			(at 147.32 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18648,7 +19117,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 53.34 0)
+			(at 147.32 86.36 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18695,7 +19164,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "orbigator:PinSocket_1x09_P2.54mm_Vertical"
+		(property "Footprint" "orbigator:OLED_ENC2"
 			(at 194.31 41.91 0)
 			(effects
 				(font
@@ -18759,73 +19228,9 @@
 		)
 	)
 	(symbol
-		(lib_id "Mechanical:MountingHole")
-		(at 127 177.8 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "f2bb246f-5789-4802-abc0-88724b8c2815")
-		(property "Reference" "H3"
-			(at 129.54 176.53 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "MountingHole"
-			(at 129.54 179.07 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "orbigator:MountingHole_3.2mm_M3"
-			(at 127 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 127 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Mounting Hole without connection"
-			(at 127 177.8 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "orbigator"
-				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
-					(reference "H3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_name "Conn_01x01_16")
 		(lib_id "orbigator:Conn_01x01_16")
-		(at 147.32 81.28 0)
+		(at 147.32 114.3 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18834,7 +19239,7 @@
 		(fields_autoplaced yes)
 		(uuid "fc647930-a4ee-4777-bbc3-40c8d6dc338e")
 		(property "Reference" "J10"
-			(at 149.86 81.28 0)
+			(at 149.86 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18843,7 +19248,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 82.55 0)
+			(at 149.86 115.57 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18853,7 +19258,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 81.28 0)
+			(at 147.32 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18862,7 +19267,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 81.28 0)
+			(at 147.32 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18871,7 +19276,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 81.28 0)
+			(at 147.32 114.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18893,7 +19298,7 @@
 	)
 	(symbol
 		(lib_id "orbigator:R")
-		(at 44.45 33.02 0)
+		(at 44.45 66.04 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18901,7 +19306,7 @@
 		(dnp no)
 		(uuid "fde3d791-da71-418e-91a5-fa4b7c6b069f")
 		(property "Reference" "R2"
-			(at 46.99 31.75 0)
+			(at 46.99 64.77 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18910,7 +19315,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 44.45 34.798 90)
+			(at 44.45 67.818 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18919,7 +19324,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal"
-			(at 44.45 33.02 0)
+			(at 44.45 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18928,7 +19333,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 44.45 33.02 0)
+			(at 44.45 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18937,7 +19342,7 @@
 			)
 		)
 		(property "Description" "resistor"
-			(at 44.45 33.02 0)
+			(at 44.45 66.04 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18946,7 +19351,7 @@
 			)
 		)
 		(property "Indicator" "+"
-			(at 41.275 29.845 0)
+			(at 41.275 62.865 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18955,7 +19360,7 @@
 			)
 		)
 		(property "Rating" "W"
-			(at 46.99 36.195 0)
+			(at 46.99 69.215 0)
 			(effects
 				(font
 					(size 1.27 1.27)
