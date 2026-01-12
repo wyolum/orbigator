@@ -399,4 +399,15 @@
 		(uuid "7669a3e5-f552-409a-8c5e-8d00b7a40bad")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/3D_models/DS3232.step"
+		(offset
+			(xyz 0 0 4.5)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz -0 -0 -0)
+		)
+	)
 )

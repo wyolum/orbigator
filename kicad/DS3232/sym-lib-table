@@ -1,0 +1,5 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "orbigator")(type "KiCad")(uri "/home/anool/projects-git/WYOLUM/orbigator/kicad/orbigator.kicad_sym")(options "")(descr ""))
+  (lib (name "ds3232")(type "KiCad")(uri "${KIPRJMOD}/ds3232.kicad_sym")(options "")(descr ""))
+)

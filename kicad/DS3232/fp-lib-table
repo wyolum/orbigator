@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "orbigator")(type "KiCad")(uri "/home/anool/projects-git/WYOLUM/orbigator/kicad/orbigator.pretty")(options "")(descr ""))
+  (lib (name "footprints")(type "KiCad")(uri "${KIPRJMOD}/ul_ds3232sn-/KiCADv6/footprints.pretty")(options "")(descr ""))
+)
