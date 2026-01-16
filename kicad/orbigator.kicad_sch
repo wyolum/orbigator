@@ -6033,10 +6033,28 @@
 		)
 	)
 	(junction
+		(at 83.82 157.48)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "01f09c2c-a55f-4365-8895-50a395c9de34")
+	)
+	(junction
+		(at 83.82 154.94)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "18e08b6f-15ee-4902-9bb4-32ff79928b43")
+	)
+	(junction
 		(at 52.07 58.42)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "1e4ca759-f3d4-459c-bb4d-9601edb83ea0")
+	)
+	(junction
+		(at 83.82 160.02)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "20538ec8-33e5-46a9-a292-92a31ed1fc1e")
 	)
 	(junction
 		(at 254 139.7)
@@ -6051,6 +6069,12 @@
 		(uuid "37a7cb91-b260-4bf0-aad8-3dba6733529a")
 	)
 	(junction
+		(at 83.82 152.4)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "40bd97a5-963c-4bb9-ab94-da40cbf817fa")
+	)
+	(junction
 		(at 208.28 110.49)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -6063,6 +6087,12 @@
 		(uuid "6a81b8fa-3298-4d40-9cce-5d8767d38b40")
 	)
 	(junction
+		(at 83.82 149.86)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "6d9b6467-0139-4291-9fd1-0f42b57c47ab")
+	)
+	(junction
 		(at 254 133.35)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -6073,6 +6103,18 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "7c6f30ca-7e67-4871-a7e4-917860ca7017")
+	)
+	(junction
+		(at 83.82 162.56)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "879d9d4c-d31d-4523-a125-b85358e4f3b0")
+	)
+	(junction
+		(at 83.82 147.32)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "dda718fe-528d-4ea7-994f-0c7f24036209")
 	)
 	(junction
 		(at 254 153.67)
@@ -6260,6 +6302,16 @@
 	)
 	(wire
 		(pts
+			(xy 83.82 160.02) (xy 83.82 162.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "23d4c475-be6a-4925-a98e-8b501fa2dd48")
+	)
+	(wire
+		(pts
 			(xy 52.07 71.12) (xy 52.07 88.9)
 		)
 		(stroke
@@ -6327,6 +6379,16 @@
 			(type default)
 		)
 		(uuid "32f29813-3387-48d2-8905-0f15a1ab3b1b")
+	)
+	(wire
+		(pts
+			(xy 83.82 147.32) (xy 83.82 149.86)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3705a177-82a7-45d8-a560-5be737145920")
 	)
 	(wire
 		(pts
@@ -6420,6 +6482,16 @@
 	)
 	(wire
 		(pts
+			(xy 83.82 157.48) (xy 83.82 160.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "51cdf9cd-e986-49b0-a215-224b890b208f")
+	)
+	(wire
+		(pts
 			(xy 83.82 99.06) (xy 96.52 99.06)
 		)
 		(stroke
@@ -6510,6 +6582,16 @@
 	)
 	(wire
 		(pts
+			(xy 83.82 154.94) (xy 83.82 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "66c3c82d-d889-4dc5-897d-d13d404906f6")
+	)
+	(wire
+		(pts
 			(xy 204.47 27.94) (xy 204.47 39.37)
 		)
 		(stroke
@@ -6537,6 +6619,16 @@
 			(type default)
 		)
 		(uuid "69b7a586-6f35-418c-9d62-a18f0a539a4c")
+	)
+	(wire
+		(pts
+			(xy 151.13 121.92) (xy 142.24 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "69d1dd6c-721e-45fe-b7cf-835637545bfa")
 	)
 	(wire
 		(pts
@@ -6637,6 +6729,16 @@
 			(type default)
 		)
 		(uuid "80c1517d-7d31-4592-bddd-5c01a97f8317")
+	)
+	(wire
+		(pts
+			(xy 83.82 149.86) (xy 83.82 152.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "83382892-ee41-4662-b468-9dd609ea4a79")
 	)
 	(wire
 		(pts
@@ -6867,6 +6969,26 @@
 			(type default)
 		)
 		(uuid "cdb92d1a-d53b-4711-bdc1-5e9d5e0dc0cd")
+	)
+	(wire
+		(pts
+			(xy 83.82 152.4) (xy 83.82 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cfd96ddf-c102-4d9d-9526-9189ef4bde34")
+	)
+	(wire
+		(pts
+			(xy 83.82 162.56) (xy 83.82 165.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d03930fe-ff8c-4d03-be29-691469a7bb65")
 	)
 	(wire
 		(pts
@@ -15564,6 +15686,16 @@
 		)
 		(uuid "1fede2e5-85e9-4e1c-bb81-5af88be4eedd")
 	)
+	(label "GND"
+		(at 143.51 121.92 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "2a8353e6-dba5-45d6-961c-0127cbe1d131")
+	)
 	(label "5V_SYS"
 		(at 96.52 55.88 0)
 		(effects
@@ -16259,6 +16391,73 @@
 	(symbol
 		(lib_name "Conn_01x01_1")
 		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 152.4 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "1d6b07b4-f3f3-436b-bcdd-f8795196a668")
+		(property "Reference" "J32"
+			(at 75.184 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 151.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "85de9fab-7494-412d-baca-60e06f02bd72")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J32")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
 		(at 176.53 142.24 180)
 		(unit 1)
 		(exclude_from_sim no)
@@ -16491,6 +16690,73 @@
 				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
 					(reference "U2")
 					(unit 3)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 162.56 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "486d7164-e1f9-44c3-b68e-6353588b95fe")
+		(property "Reference" "J36"
+			(at 75.184 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 161.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 162.56 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "21114280-faf9-4eff-b1fd-07c8f738c341")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J36")
+					(unit 1)
 				)
 			)
 		)
@@ -16932,7 +17198,7 @@
 	(symbol
 		(lib_name "Conn_01x01_14")
 		(lib_id "orbigator:Conn_01x01_14")
-		(at 147.32 121.92 0)
+		(at 156.21 121.92 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -16941,7 +17207,7 @@
 		(fields_autoplaced yes)
 		(uuid "677b1b3f-bf74-440d-811a-a19c5619b84f")
 		(property "Reference" "J12"
-			(at 149.86 121.92 0)
+			(at 158.75 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16950,7 +17216,7 @@
 			)
 		)
 		(property "Value" "Conn_01x01"
-			(at 149.86 123.19 0)
+			(at 158.75 123.19 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16960,7 +17226,7 @@
 			)
 		)
 		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
-			(at 147.32 121.92 0)
+			(at 156.21 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16969,7 +17235,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 147.32 121.92 0)
+			(at 156.21 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16978,7 +17244,7 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 147.32 121.92 0)
+			(at 156.21 121.92 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17669,6 +17935,73 @@
 		)
 	)
 	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 157.48 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "80f2f44d-5043-42fd-83a8-f3dbbf4fc916")
+		(property "Reference" "J34"
+			(at 75.184 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 157.48 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1d37bb5a-4dac-44a9-b9e8-10b2726bf5a2")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J34")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "orbigator:Conn_01x03")
 		(at 198.12 72.39 0)
 		(unit 1)
@@ -18041,6 +18374,73 @@
 				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
 					(reference "U2")
 					(unit 2)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 160.02 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "9298cb8b-c101-4741-9afa-5018f63d18c6")
+		(property "Reference" "J35"
+			(at 75.184 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 158.75 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 160.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "3691518a-b46e-4669-8d4c-17fad5e4d87d")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J35")
+					(unit 1)
 				)
 			)
 		)
@@ -18607,6 +19007,73 @@
 		)
 	)
 	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 154.94 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ba106726-0505-4013-ac0b-dc5916f8c2c4")
+		(property "Reference" "J33"
+			(at 75.184 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 153.67 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 154.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "66497e40-a5ee-4a7f-8b5f-952745b67fe3")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_name "Conn_01x01_7")
 		(lib_id "orbigator:Conn_01x01_7")
 		(at 91.44 106.68 180)
@@ -18870,6 +19337,73 @@
 		)
 	)
 	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 149.86 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "c126cfcf-89f1-4637-9dbd-a07283cb58ef")
+		(property "Reference" "J31"
+			(at 75.184 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 148.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 149.86 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "fbcb2247-569f-40db-928a-73ca6c041de7")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J31")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "orbigator:DC")
 		(at 29.21 35.56 0)
 		(unit 1)
@@ -19064,6 +19598,73 @@
 			(project "orbigator"
 				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
 					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "Conn_01x01_1")
+		(lib_id "orbigator:Conn_01x01_1")
+		(at 78.74 165.1 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "d89daeb6-411e-4229-8801-0e48f95a5e33")
+		(property "Reference" "J37"
+			(at 75.184 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Conn_01x01"
+			(at 76.2 163.83 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" "orbigator:PinHeader_1x01_P2.54mm_Vertical"
+			(at 78.74 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 78.74 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Generic connector, single row, 01x01, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 78.74 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "ca84554f-0dad-42e6-9475-84bf21ffc82a")
+		)
+		(instances
+			(project "orbigator"
+				(path "/3d523963-06e2-453a-8bb2-b2b8ea33bdb6"
+					(reference "J37")
 					(unit 1)
 				)
 			)
