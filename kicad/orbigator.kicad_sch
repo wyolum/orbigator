@@ -19765,7 +19765,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "orbigator:OLED_ENC2"
+		(property "Footprint" "orbigator:OLED_ENC3"
 			(at 194.31 41.91 0)
 			(effects
 				(font
