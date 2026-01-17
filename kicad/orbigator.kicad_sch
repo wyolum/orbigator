@@ -16927,7 +16927,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "orbigator:DS3232_RTC"
+		(property "Footprint" "orbigator:DS3232_RTC_vert"
 			(at 203.2 139.7 0)
 			(effects
 				(font
