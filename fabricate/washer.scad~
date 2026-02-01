@@ -1,8 +1,0 @@
-D = 8;
-d = 3.5;
-h = 3;
-
-difference(){
-  cylinder(d=D, h=h, center=true);
-  cylinder(d=d, h=h+2, center=true);
-}

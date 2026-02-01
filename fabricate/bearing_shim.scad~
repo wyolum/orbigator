@@ -1,4 +1,0 @@
-difference(){
-  cylinder(d=5, h=5, $fn=30);
-  cylinder(d=3.5, h=5, $fn=30);
-}

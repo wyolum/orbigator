@@ -1,7 +1,0 @@
-// 125 total length
-// 87 handle length
-module sharpie(){
-  cone(h=8.5, d2=10.8, d1=5);
-}
-
-sharpie();
