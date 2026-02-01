@@ -9,12 +9,12 @@ import time
 import framebuf
 
 # Motor configuration
-MOTOR_ID = 2  # 1 EQX, 2 AoV
+MOTOR_ID = 1  # 1 EQX, 2 AoV
 UART_TX_PIN = 0
 UART_RX_PIN = 1
 DIR_PIN = 2
 MOTOR_BAUDRATE = 57600
-VELOCITY = 20
+VELOCITY = 10
 
 # Initialize UART and direction control
 uart = UART(0, baudrate=MOTOR_BAUDRATE, tx=Pin(UART_TX_PIN), rx=Pin(UART_RX_PIN))

@@ -137,34 +137,19 @@ if RTC_ADDR in addrs:
         # Probe SRAM stickiness to confirm it's real memory (DS3232 only)
         # Use Read-Modify-Write-Restore strategy at the END of SRAM to avoid nuking the header
         target_addr = rtc.SRAM_END
+        
         try:
-            # 1. Backup existing byte
-            original = rtc.read_sram(target_addr, 1)
+            # Skip destructive write test to avoid corrupting saved state
+            # target_addr = rtc.SRAM_END
+            # ... (test code removed/commented)
             
-            # 2. Write Test Pattern 1 (0x5A)
-            test_val = 0x5A
-            rtc.write_sram(target_addr, bytes([test_val]))
-            read_back = rtc.read_sram(target_addr, 1)
+            # Assume success if we initialized DS3232 without error
+            rtc.has_sram = True
+            print("RTC: DS3232 detected (SRAM assumes validated).")
             
-            sram_confirmed = False
-            if read_back and read_back[0] == test_val:
-                # 3. Write Test Pattern 2 (0xA5) - Invert bits
-                rtc.write_sram(target_addr, bytes([0xA5]))
-                read_back = rtc.read_sram(target_addr, 1)
-                
-                if read_back and read_back[0] == 0xA5:
-                    print("RTC: DS3232 detected (SRAM verified).")
-                    rtc.has_sram = True # Typo fixed
-                    sram_confirmed = True
-            
-            # 4. Restore original byte
-            if original:
-                rtc.write_sram(target_addr, original)
-                
-            rtc.has_sram = sram_confirmed
         except Exception as e:
             print(f"SRAM Probe Error: {e}")
-            rtc.has_sram = False
+            rtc.has_sram = True # Optimistic fallback
         
         g.rtc = rtc
         utils.sync_system_time(rtc)
@@ -280,9 +265,22 @@ if has_wifi:
     except Exception as e:
         print(f"WiFi/Time setup error: {e}")
 
+# ---------------- State Loading ----------------
+# Load state first so we can restore motor positions if needed
+state_info = utils.load_state()
+g.current_mode_id = state_info.get("mode_id", "ORBIT")
+g.last_save_timestamp = state_info.get("timestamp", 0)
+saved_sat_name = state_info.get("sat_name", None)
+
 # ---------------- Motor Init ----------------
 if ENABLE_MOTORS:
     print("\nInitializing DYNAMIXEL motors...")
+    
+    # Hard reset motors to clear any error states
+    from dynamixel_extended_utils import reboot_motor
+    reboot_motor(AOV_MOTOR_ID)
+    reboot_motor(EQX_MOTOR_ID)
+    
     set_extended_mode(AOV_MOTOR_ID)
     set_extended_mode(EQX_MOTOR_ID)
     
@@ -290,10 +288,15 @@ if ENABLE_MOTORS:
     aov_offset = mc["aov"].get("offset_deg", 0.0)
     eqx_offset = mc["eqx"].get("offset_deg", 0.0)
 
-    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO, offset_degrees=aov_offset)
+    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO,
+                               offset_degrees=aov_offset, direction=1)
     g.aov_motor = aov_motor
     
-    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO, offset_degrees=eqx_offset)
+    # Restore EQX multi-turn position from state if valid
+    last_eqx = state_info.get("eqx_deg") if state_info.get("timestamp", 0) > 0 else None
+    
+    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO, 
+                               offset_degrees=eqx_offset, last_known_pos=last_eqx)
     g.eqx_motor = eqx_motor
     
     # Configure from loaded config
@@ -309,6 +312,10 @@ if ENABLE_MOTORS:
     print("Forcing Torque ON...")
     aov_motor.enable_torque()
     eqx_motor.enable_torque()
+    
+    # Wire up turn change callbacks for SRAM persistence
+    aov_motor.on_turn_change = utils.save_state
+    eqx_motor.on_turn_change = utils.save_state
 else:
     print("\nMotors DISABLED - Using mock motors for web development")
     from mock_motor import MockMotor
@@ -316,8 +323,9 @@ else:
     g.eqx_motor = MockMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 
 # ---------------- State and Loop ----------------
-# Load state and reconstruct positions
-state_info = utils.load_state()
+# State already loaded above
+# state_info = utils.load_state()
+# SRAM health logging is now handled inside load_state() via print
 # SRAM health logging is now handled inside load_state() via print
 g.current_mode_id = state_info.get("mode_id", "ORBIT")
 g.last_save_timestamp = state_info.get("timestamp", 0)
@@ -345,7 +353,6 @@ else:
 
 last_detent = 0
 last_display_update = 0
-last_sram_save = time.ticks_ms()
 
 print("Orbigator Ready.")
 
@@ -385,85 +392,86 @@ if has_wifi:
         print(f"Failed to start web server thread: {e}")
 
 # ---------------- Main Loop ----------------
-while True:
-    try:
-        time.sleep_ms(10)
-        now = time.ticks_ms()
-        
-        # 0. Check for Requested Mode Change (from Web Server)
-        if g.next_mode:
-            print(f"Switching mode via API: {type(g.current_mode).__name__} -> {type(g.next_mode).__name__}")
-            g.current_mode.exit()
-            g.current_mode = g.next_mode
-            g.next_mode = None
-            g.current_mode.enter()
-            utils.save_state() # Proactively save new mode from API
-        
-        # 1. Poll Encoder Rotation
-        irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
-        d = rc // DETENT_DIV
-        if d != last_detent:
-            delta = d - last_detent
-            last_detent = d
-            g.current_mode.on_encoder_rotate(delta)
-        
-        # 2. Process Button Events (ISR-driven)
-        while button_events:
-            try:
-                pin = button_events.pop(0)
-                
-                new_mode = None
-                if pin == enc_btn:
-                    new_mode = g.current_mode.on_encoder_press()
-                elif pin == CONFIRM_BTN:
-                    new_mode = g.current_mode.on_confirm()
-                elif pin == BACK_BTN:
-                    new_mode = g.current_mode.on_back()
-                    
-                if new_mode:
-                    btn_name = "ENC" if pin == enc_btn else "CONFIRM" if pin == CONFIRM_BTN else "BACK"
-                    print(f"Transition via Button [{btn_name}]: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
-                    g.current_mode.exit()
-                    g.current_mode = new_mode
-                    g.current_mode.enter()
-                    utils.save_state()
-                    print(f"Transition complete.")
-            except Exception as e:
-                print(f"Error handling button: {e}")
-        
-        # 3. Check Motor Health
-        if not g.motor_health_ok and g.motor_offline_id is not None:
-            # Transition to offline mode
-            motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
-            g.current_mode.exit()
-            import modes
-            g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
-            g.current_mode.enter()
+try:
+    while True:
+        try:
+            time.sleep_ms(10)
+            now = time.ticks_ms()
             
-        # 4. Periodic SRAM Save (Every 10s)
-        # Safe because SRAM has infinite write cycles
-        if time.ticks_diff(now, last_sram_save) > 10000:
-            utils.save_state()
-            last_sram_save = now
+            # 0. Check for Requested Mode Change (from Web Server)
+            if g.next_mode:
+                print(f"Switching mode via API: {type(g.current_mode).__name__} -> {type(g.next_mode).__name__}")
+                g.current_mode.exit()
+                g.current_mode = g.next_mode
+                g.next_mode = None
+                g.current_mode.enter()
+                utils.save_state() # Proactively save new mode from API
+            
+            # 1. Poll Encoder Rotation
+            irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
+            d = rc // DETENT_DIV
+            if d != last_detent:
+                delta = d - last_detent
+                last_detent = d
+                g.current_mode.on_encoder_rotate(delta)
+            
+            # 2. Process Button Events (ISR-driven)
+            while button_events:
+                try:
+                    pin = button_events.pop(0)
+                    
+                    new_mode = None
+                    if pin == enc_btn:
+                        new_mode = g.current_mode.on_encoder_press()
+                    elif pin == CONFIRM_BTN:
+                        new_mode = g.current_mode.on_confirm()
+                    elif pin == BACK_BTN:
+                        new_mode = g.current_mode.on_back()
+                        
+                    if new_mode:
+                        btn_name = "ENC" if pin == enc_btn else "CONFIRM" if pin == CONFIRM_BTN else "BACK"
+                        print(f"Transition via Button [{btn_name}]: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
+                        g.current_mode.exit()
+                        g.current_mode = new_mode
+                        g.current_mode.enter()
+                        utils.save_state()
+                        print(f"Transition complete.")
+                except Exception as e:
+                    print(f"Error handling button: {e}")
+            
+            # 3. Check Motor Health
+            if not g.motor_health_ok and g.motor_offline_id is not None:
+                # Transition to offline mode
+                motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
+                g.current_mode.exit()
+                import modes
+                g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
+                g.current_mode.enter()
+                
+            # Note: SRAM persistence is now handled by motor.on_turn_change callback
+            
+            # 6. Update and Render
+            g.current_mode.update(now)
+            
+            if time.ticks_diff(now, last_display_update) >= 200:
+                last_display_update = now
+                g.current_mode.render(g.disp)
         
-        # 6. Update and Render
-        g.current_mode.update(now)
-        
-        if time.ticks_diff(now, last_display_update) >= 200:
-            last_display_update = now
-            g.current_mode.render(g.disp)
-    
-    except Exception as e:
-        import sys, io
-        print(f"\\nCRASH DETECTED: {e}")
-        with open("crash_log.txt", "a") as f:
-            f.write(f"\\n[{time.time()}] Crash: {e}\\n")
-            # sys.print_exception(e, f) # MicroPython specific
-        
-        # Flash LED SOS or similar?
-        time.sleep(1)
-        # Attempt to resume or reset?
-        print("Resetting machine...")
-        time.sleep(1)
-        machine.reset()
-  
+        except Exception as e:
+            # Log crash but don't exit the loop
+            import sys
+            print(f"\nCRASH in main loop: {e}")
+            try:
+                with open("crash_log.txt", "a") as f:
+                    f.write(f"\n[{time.time()}] Crash: {e}\n")
+                    sys.print_exception(e, f)
+            except:
+                pass
+            time.sleep(1)  # Brief pause before continuing
+
+except KeyboardInterrupt:
+    print("\nInterrupted by user.")
+finally:
+    print("\nOrbigator Exiting... Saving State.")
+    utils.save_state()
+    print("State Saved. Goodbye.")

@@ -29,21 +29,23 @@ class DynamixelMotor:
     ADDR_POSITION_P_GAIN = 84
     
     
-    def __init__(self, motor_id, name, gear_ratio=1.0, offset_degrees=0.0):
+    def __init__(self, motor_id, name, gear_ratio=1.0, offset_degrees=0.0, direction=None, last_known_pos=None):
         """
         Initialize motor.
         
         Args:
-            motor_id: Dynamixel ID (1 for EQX, 2 for AoV)
-            name: Human-readable name for debugging
-            gear_ratio: Output rotation / Motor rotation (e.g., 120/11 for EQX ring gear)
-            offset_degrees: Software zero offset in OUTPUT degrees (default 0.0)
-                            Output = (Motor / Ratio) - Offset
+            motor_id: Dynamixel ID
+            name: Debug name
+            gear_ratio: Output/Motor ratio
+            offset_degrees: Zero offset
+            direction: Constraint
+            last_known_pos: Last known OUTPUT degrees (for restoring multi-turn state on geared motors)
         """
         self.motor_id = motor_id
         self.name = name
         self.gear_ratio = gear_ratio
         self.offset_degrees = offset_degrees
+        self.direction = direction
         
         # Communication resilience
         self.consecutive_failures = 0
@@ -54,29 +56,49 @@ class DynamixelMotor:
         self.present_output_degrees = 0.0
         self.last_present_read_ticks = 0
         
+        # Turn change detection (for SRAM persistence)
+        self.current_turn = 0  # Will be set after position read
+        self.on_turn_change = None  # Callback when turn count changes
+        
         # Read current motor position on initialization
         motor_ticks = read_present_position(motor_id)
         
         if motor_ticks is None:
             raise RuntimeError(f"Failed to read position from motor {motor_id} ({name})")
-        
+            
         # Convert to motor degrees
         self.motor_degrees = motor_ticks / self.TICKS_PER_MOTOR_DEGREE
-        
-        # Apply offset: Output = (Motor / Ratio) - Offset
+            
+        # Handle Position Restoration after power cycle
+        # After power loss, motor only knows 0-360°. We adjust the offset so the
+        # current physical position corresponds to the saved output position.
+        # This way, no motor movement is required.
+        if last_known_pos is not None:
+            # Raw motor position from hardware (0-360° after power cycle)
+            raw_motor_deg = self.motor_degrees
+            
+            # Calculate offset so that: (raw_motor / ratio) - offset = saved_output
+            # Rearranging: offset = (raw_motor / ratio) - saved_output
+            new_offset = (raw_motor_deg / self.gear_ratio) - last_known_pos
+            
+            print(f"  Restoring position: Raw motor={raw_motor_deg:.1f}°, Saved output={last_known_pos:.1f}°")
+            print(f"  Calculated offset: {new_offset:.4f}° (was {self.offset_degrees})")
+            
+            # Apply the new offset - motor stays physically where it is
+            self.offset_degrees = new_offset
+
+        # Recalculate output with the offset
         self.output_degrees = (self.motor_degrees / gear_ratio) - self.offset_degrees
         self.present_output_degrees = self.output_degrees
+        self.current_turn = int(self.output_degrees // 360)  # Initialize turn count
         self.last_present_read_ticks = time.ticks_ms()
-        
-        # Cache for parameters (DYNAMIXEL defaults)
-        self.p_gain = 800
-        self.i_gain = 0
-        self.d_gain = 0
-        
-        print(f"Motor {motor_id} ({name}) initialized:")
-        print(f"  Motor position: {self.motor_degrees:.2f}°")
-        print(f"  Output position: {self.output_degrees:.2f}°")
         print(f"  Gear ratio: {self.gear_ratio:.3f}:1")
+        if direction == 1:
+            print(f"  Direction constraint: FORWARD-ONLY")
+        elif direction == -1:
+            print(f"  Direction constraint: BACKWARD-ONLY")
+        else:
+            print(f"  Direction constraint: SHORTEST PATH")
     
     def _retry_operation(self, operation, operation_name, max_retries=3):
         """
@@ -171,6 +193,14 @@ class DynamixelMotor:
             # Update tracking
             self.output_degrees = output_degrees
             self.motor_degrees = motor_degrees
+            
+            # Check for turn change (triggers SRAM save)
+            new_turn = int(self.output_degrees // 360)
+            if new_turn != self.current_turn:
+                self.current_turn = new_turn
+                if self.on_turn_change:
+                    self.on_turn_change()
+            
             return True
         else:
             # If we fail, try to read back the actual position to keep software track in sync
@@ -185,21 +215,27 @@ class DynamixelMotor:
         print(f"Homing Motor {self.motor_id} ({self.name})...")
         return self.set_nearest_degrees(angle_deg)
     
-    def set_nearest_degrees(self, target_degrees):
+    def set_nearest_degrees(self, target_degrees, direction_override=None):
         """
-        Set the output angle using the shortest path (nearest route).
+        Set the output angle respecting the motor's direction constraint.
         
-        This method uses get_new_pos() to calculate the shortest path to the target,
-        preventing the motor from wrapping the long way around 0°/360°.
+        This method uses get_new_pos() to calculate the path to the target:
+        - If direction=None/0: Uses shortest path (can go forward or backward)
+        - If direction=1: Always moves forward (positive direction)
+        - If direction=-1: Always moves backward (negative direction)
         
         Args:
             target_degrees: Desired output angle in degrees (normally 0-360)
+            direction_override: Optional override for this specific move (None uses instance direction)
         
         Returns:
             True if successful, False otherwise
         """
-        # Calculate new absolute position using the standardized utility
-        new_degrees = get_new_pos(self.output_degrees, target_degrees)
+        # Use override if provided, otherwise use instance direction
+        effective_direction = direction_override if direction_override is not None else self.direction
+        
+        # Calculate new absolute position using the standardized utility with direction constraint
+        new_degrees = get_new_pos(self.output_degrees, target_degrees, effective_direction)
         
         # Log large moves for troubleshooting
         delta = new_degrees - self.output_degrees
@@ -208,6 +244,7 @@ class DynamixelMotor:
             
         # Command the motor
         return self.set_angle_degrees(new_degrees)
+
     
     def get_angle_degrees(self):
         """

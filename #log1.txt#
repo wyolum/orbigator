@@ -1,0 +1,287 @@
+================================================================================
+log2
+================================================================================
+
+>>> %Run -c $EDITOR_CONTENT
+
+MPY: soft reboot
+Configuration loaded from orbigator_config.json
+Orbigator Booting... System Time: 1769956948
+Software Clock Init: 1769956948 @ 67093ms
+RTC: DS3232 detected (SRAM assumes validated).
+System time synced to RTC: 2026-2-1 19:42:28
+RTC found and initialized.
+Connecting to wyolum...
+Settling network...
+NTP Sync attempt 1...
+Software Clock Init: 1769974958 @ 77356ms
+Time set to: 2026-02-01 19:42:38
+✓ NTP Sync OK: 192.168.86.38
+SRAM state: OK v2
+
+Initializing DYNAMIXEL motors...
+Rebooting Motor 2...
+  ✓ Motor 2 rebooted successfully
+Rebooting Motor 1...
+  ✓ Motor 1 rebooted successfully
+Configuring Motor 2 for Extended Position Mode...
+  ✓ Motor 2 configured for Extended Position Mode
+Configuring Motor 1 for Extended Position Mode...
+  ✓ Motor 1 configured for Extended Position Mode
+  Gear ratio: 1.000:1
+  Direction constraint: FORWARD-ONLY
+  Restoring Multi-Turn: Expected Motor=1569.6°
+  Motor Phase matched: 4 turns added. New Offset: -11.8301 (was 0.0)
+  Gear ratio: 8.571:1
+  Direction constraint: SHORTEST PATH
+  ✓ PID gains updated for motor 2: P=600, I=0, D=0
+  Speed limit set: velocity=20 (higher=faster)
+  ✓ PID gains updated for motor 1: P=600, I=0, D=0
+  Speed limit set: velocity=50 (higher=faster)
+Forcing Torque ON...
+ACTIVE: Motor 2 (AoV) torque enabled.
+ACTIVE: Motor 1 (EQX) torque enabled.
+DEBUG LOAD TLE for ISS:
+L1: 1 25544U 98067A   26032.43601913  .00006280  00000+0  12479-3 0  9991
+L2: 2 25544  51.6317 251.5712 0011128  53.0689 307.1316 15.48319189550710
+Loaded ISS: epoch 2026 day 32.44
+SGP4 Mode: 4 satellites available
+DEBUG LOAD TLE for ISS:
+L1: 1 25544U 98067A   26032.43601913  .00006280  00000+0  12479-3 0  9991
+L2: 2 25544  51.6317 251.5712 0011128  53.0689 307.1316 15.48319189550710
+Loaded ISS: epoch 2026 day 32.44
+Orbigator Ready.
+WiFi hardware detected.
+Web server thread started
+DEBUG: Large move on EQX (ID 1): Δ=167.75°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+
+==================================================
+🌐 Web Server Running!
+==================================================
+URL: http://192.168.86.38/
+Port: 80
+==================================================
+
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=167.75°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=151.31°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=134.34°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=117.11°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=100.17°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Traceback (most recent call last):
+  File "<stdin>", line 471, in <module>
+KeyboardInterrupt: 
+
+MPY: soft reboot
+
+================================================================================
+log2
+================================================================================
+>>> %Run -c $EDITOR_CONTENT
+
+MPY: soft reboot
+Configuration loaded from orbigator_config.json
+Orbigator Booting... System Time: 1769957044
+Software Clock Init: 1769957044 @ 11336ms
+RTC: DS3232 detected (SRAM assumes validated).
+System time synced to RTC: 2026-2-1 19:44:02
+RTC found and initialized.
+Connecting to wyolum...
+Settling network...
+NTP Sync attempt 1...
+Software Clock Init: 1769975055 @ 21640ms
+Time set to: 2026-02-01 19:44:15
+✓ NTP Sync OK: 192.168.86.38
+SRAM state: OK v2
+
+Initializing DYNAMIXEL motors...
+Rebooting Motor 2...
+  ✓ Motor 2 rebooted successfully
+Rebooting Motor 1...
+  ✓ Motor 1 rebooted successfully
+Configuring Motor 2 for Extended Position Mode...
+  ✓ Motor 2 configured for Extended Position Mode
+Configuring Motor 1 for Extended Position Mode...
+  ✓ Motor 1 configured for Extended Position Mode
+  Gear ratio: 1.000:1
+  Direction constraint: FORWARD-ONLY
+  Restoring Multi-Turn: Expected Motor=1567.4°
+  Motor Phase matched: 4 turns added. New Offset: -11.8841 (was 0.0)
+  Gear ratio: 8.571:1
+  Direction constraint: SHORTEST PATH
+  ✓ PID gains updated for motor 2: P=600, I=0, D=0
+  Speed limit set: velocity=20 (higher=faster)
+  ✓ PID gains updated for motor 1: P=600, I=0, D=0
+  Speed limit set: velocity=50 (higher=faster)
+Forcing Torque ON...
+ACTIVE: Motor 2 (AoV) torque enabled.
+ACTIVE: Motor 1 (EQX) torque enabled.
+DEBUG LOAD TLE for ISS:
+L1: 1 25544U 98067A   26032.43601913  .00006280  00000+0  12479-3 0  9991
+L2: 2 25544  51.6317 251.5712 0011128  53.0689 307.1316 15.48319189550710
+Loaded ISS: epoch 2026 day 32.44
+SGP4 Mode: 4 satellites available
+DEBUG LOAD TLE for ISS:
+L1: 1 25544U 98067A   26032.43601913  .00006280  00000+0  12479-3 0  9991
+L2: 2 25544  51.6317 251.5712 0011128  53.0689 307.1316 15.48319189550710
+Loaded ISS: epoch 2026 day 32.44
+Orbigator Ready.
+WiFi hardware detected.
+Web server thread started
+DEBUG: Large move on EQX (ID 1): Δ=167.50°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+
+==================================================
+🌐 Web Server Running!
+==================================================
+URL: http://192.168.86.38/
+Port: 80
+==================================================
+
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=167.50°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=151.08°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=134.11°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=116.86°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+DEBUG: Large move on EQX (ID 1): Δ=99.91°
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+Orbigator Exiting... Saving State.
+State Saved. Goodbye.
+Resetting machine...
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Traceback (most recent call last):
+  File "<stdin>", line 474, in <module>
+KeyboardInterrupt: 
+
+MPY: soft reboot
+MicroPython v1.27.0 on 2025-12-09; Raspberry Pi Pico 2 W with RP2350
+Type "help()" for more information.
+>>> 

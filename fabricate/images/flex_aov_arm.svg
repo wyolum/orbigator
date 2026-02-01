@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="25.223042mm"
+   height="45.119137mm"
+   viewBox="-150 -23 25.223041 45.119136"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="flex_aov_arm.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs1" />
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="8.708798"
+     inkscape:cx="16.075697"
+     inkscape:cy="76.474388"
+     inkscape:window-width="1920"
+     inkscape:window-height="1048"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg1" />
+  <title
+     id="title1">OpenSCAD Model</title>
+  <path
+     id="path2"
+     style="fill:none;stroke:#000000;stroke-width:0.101306"
+     d="m -149.90308,-11.106328 -0.0275,-24.543019 h 1.58522 v 23.106012 c 0.0606,0.614268 0.13321,2.275992 0.21763,2.89383 h -3e-5 c 0.0844,0.617837 0.18064,1.236644 0.28843,1.854788 0.43118,2.472574 1.04755,4.934535 1.8346,7.281401 0.78705,2.3468658 1.74478,4.5786378 2.85868,6.5908338 1.11391,2.012196 2.38399,3.8048148 3.79574,5.2733772 1.41175,1.468562 2.88399,2.721348 4.40735,3.741628 1.52335,1.020281 3.09782,1.808057 4.71402,2.346599 1.6162,0.538542 2.44487,0.910776 4.13515,0.934121 l 1.24624,3.695184 c -1.92586,-0.0015 -2.76236,-0.044 -4.63115,-0.614608 -3.73756,-1.141228 -7.2921,-3.399708 -10.38804,-6.691297 -0.77399,-0.822898 -1.50914,-1.69955 -2.20343,-2.624567 -0.69429,-0.925018 -1.34772,-1.898401 -1.95827,-2.9147616 -0.61055,-1.0163607 -1.17821,-2.075699 -1.70097,-3.1726269 -0.52275,-1.0969279 -1.00059,-2.2314454 -1.4315,-3.3981643 -0.43091,-1.166719 -0.81489,-2.36563937 -1.1499,-3.5913732 -0.69358,-2.5376121 -1.1666,-5.3608508 -1.18884,-5.5485278 -1.3401,4e-7 -2.6253,-0.4866249 -3.57289,-1.3528238 -0.94759,-0.8661977 -1.47994,-2.0410151 -1.47994,-3.2660054 z"
+     sodipodi:nodetypes="ccccssssssssccssssssscscc" />
+  <metadata
+     id="metadata3">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>OpenSCAD Model</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

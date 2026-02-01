@@ -1,0 +1,130 @@
+import numpy as np
+import trimesh
+from shapely.geometry import Polygon, MultiPolygon
+import geopandas as gpd
+
+# ----------------------------
+# Parameters (edit)
+R = 76.2          # mm (6" diameter sphere => R=76.2mm)
+k = 1.05          # raise factor
+# ----------------------------
+
+def d2r(d): return d * np.pi / 180.0
+def r2d(r): return r * 180.0 / np.pi
+
+def stereographic_south_pole_fwd(lon_deg, lat_deg):
+    """
+    South-pole stereographic projection: (lon,lat)->(x,y)
+    Used only for triangulation stability near Antarctica.
+    """
+    lon = d2r(((lon_deg + 180.0) % 360.0) - 180.0)
+    lat = d2r(lat_deg)
+
+    chi = np.pi/2 + lat              # lat=-90 => chi=0
+    r = 2.0 * np.tan(chi / 2.0)
+    x = r * np.sin(lon)
+    y = r * np.cos(lon)
+    return x, y
+
+def stereographic_south_pole_inv(x, y):
+    """
+    Inverse projection: (x,y)->(lon,lat)
+    """
+    r = np.sqrt(x*x + y*y)
+    chi = 2.0 * np.arctan(r / 2.0)
+
+    lon = np.arctan2(x, y)           # matches fwd
+    lat = chi - np.pi/2
+
+    return r2d(lon), r2d(lat)
+
+def ll_to_xyz(lon_deg, lat_deg, radius):
+    lon = d2r(lon_deg)
+    lat = d2r(lat_deg)
+    return np.array([
+        radius * np.cos(lat) * np.cos(lon),
+        radius * np.cos(lat) * np.sin(lon),
+        radius * np.sin(lat)
+    ], dtype=float)
+
+def polygon_to_projected_shapely(poly_ll: Polygon) -> Polygon:
+    """
+    Take a lon/lat polygon and return a polygon in stereographic x/y.
+    Only exterior ring used here; holes could be added with more work.
+    """
+    lonlat = np.array(poly_ll.exterior.coords, dtype=float)
+    xy = np.array([stereographic_south_pole_fwd(lon, lat) for lon, lat in lonlat], dtype=float)
+    return Polygon(xy)
+
+def build_raised_patch_from_polygon_ll(poly_ll: Polygon, R: float, k: float) -> trimesh.Trimesh:
+    """
+    Build a watertight raised spherical patch from a lon/lat polygon.
+    Strategy:
+      - project polygon to 2D for triangulation
+      - triangulate 2D polygon (Trimesh)
+      - inverse-project each 2D vertex back to lon/lat
+      - create inner/outer vertex sets and side walls
+    """
+    poly_xy = polygon_to_projected_shapely(poly_ll)
+
+    # Triangulate filled polygon in 2D
+    tri2d = trimesh.creation.triangulate_polygon(poly_xy)
+    V2 = tri2d.vertices[:, :2]  # (x,y)
+    F = tri2d.faces
+
+    # Map 2D vertices back to lon/lat
+    lonlat = np.array([stereographic_south_pole_inv(x, y) for x, y in V2], dtype=float)
+
+    # Build inner & outer 3D vertices
+    Vin = np.array([ll_to_xyz(lon, lat, R) for lon, lat in lonlat], dtype=float)
+    Vout = np.array([ll_to_xyz(lon, lat, R * k) for lon, lat in lonlat], dtype=float)
+
+    n = len(Vin)
+    V = np.vstack([Vin, Vout])
+
+    faces = []
+
+    # Outer surface
+    for a, b, c in F:
+        faces.append([a + n, b + n, c + n])
+
+    # Inner surface (reverse winding)
+    for a, b, c in F:
+        faces.append([c, b, a])
+
+    # Side walls: we need the boundary edges of the triangulation
+    # Trimesh can give us boundary edges for a planar triangulated mesh
+    boundary = tri2d.outline().entities  # entities of outlines
+
+    # Collect boundary segments in vertex index space:
+    # outline() returns Path2D-like structure; simplest is to use edges_boundary
+    edges = tri2d.edges_boundary  # (m,2) indices into tri2d.vertices
+
+    # Build side wall triangles for each boundary edge
+    for i, j in edges:
+        faces.append([i, j, j + n])
+        faces.append([i, j + n, i + n])
+
+    mesh = trimesh.Trimesh(vertices=V, faces=np.array(faces, dtype=int), process=True)
+    mesh.remove_duplicate_faces()
+    mesh.remove_unreferenced_vertices()
+    mesh.fix_normals()
+    return mesh
+
+# ----------------------------
+# Load Antarctica polygon from Natural Earth via GeoPandas
+world = gpd.read_file(gpd.datasets.get_path("naturalearth_lowres"))
+ant = world[world["name"] == "Antarctica"].geometry.values[0]
+
+# Choose the largest polygon if it is MultiPolygon
+if isinstance(ant, MultiPolygon):
+    poly_ll = max(list(ant.geoms), key=lambda p: p.area)
+else:
+    poly_ll = ant
+
+# Build raised patch mesh
+mesh = build_raised_patch_from_polygon_ll(poly_ll, R=R, k=k)
+
+# Export for printing / inspection
+mesh.export("antarctica_raised_patch.stl")
+print(mesh.is_watertight, mesh.bounds)

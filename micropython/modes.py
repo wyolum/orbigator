@@ -123,8 +123,6 @@ class OrbitMode(Mode):
         self.nudge_target = 0
         self.initialized = False
         self.propagator = None
-        self.last_saved_rev_eqx = 0
-        self.last_saved_rev_aov = 0
         self.last_command_ticks = 0
         self.last_target_aov = 0.0
         self.last_target_eqx = 0.0
@@ -145,51 +143,13 @@ class OrbitMode(Mode):
 
             
         # Check if we are resuming an active session (Menu -> Orbit) or starting fresh (Boot -> Orbit)
-        if g.initialized_orbit:
-            if g.orbital_eccentricity > 0.001:
-                # Elliptical Orbit Resume Strategy: BACKDATE TIME
-                true_anomaly = (g.aov_position_deg - g.orbital_periapsis_deg) % 360.0
-                M_rad = utils.compute_mean_from_true_anomaly(true_anomaly, g.orbital_eccentricity)
-                period_sec = g.orbital_period_min * 60.0
-                n = 2.0 * math.pi / period_sec
-                elapsed_needed = M_rad / n
-                
-                now_unix = utils.get_timestamp()
-                g.run_start_time = now_unix - int(elapsed_needed) 
-                # Note: ticks are for smooth interpolation, time is for propagator
-                
-                now_ticks = time.ticks_ms()
-                g.run_start_ticks = time.ticks_add(now_ticks, -int(elapsed_needed * 1000))
-                current_turns = (g.aov_position_deg // 360) * 360.0
-                g.run_start_aov_deg = current_turns
-            else:
-                # Circular Orbit Resume Strategy: RESET TIME
-                g.run_start_ticks = time.ticks_ms()
-                g.run_start_time = utils.get_timestamp() # FIX: Reset T0 to Now
-                g.run_start_aov_deg = g.aov_position_deg
-                g.run_start_eqx_deg = g.eqx_position_deg
-            
-            # Initialize propagator
-            self.propagator = propagators.KeplerPropagator(
-                g.orbital_altitude_km, g.orbital_inclination_deg, 
-                g.orbital_eccentricity, g.orbital_periapsis_deg,
-                g.run_start_aov_deg, g.run_start_eqx_deg, g.run_start_time
-            )
-            self.initialized = True
-            return
-
-        # Start Fresh Tracking
-        # Start Fresh Tracking
-        if not g.initialized_orbit:
-            # Replaced redundant load_state() with global read
-            saved_ts = getattr(g, 'last_save_timestamp', 0)
-            saved_eqx = getattr(g, 'eqx_position_deg', 0)
-            saved_aov = getattr(g, 'aov_position_deg', 0)
-            g.initialized_orbit = True
-        else:
-            saved_ts = 0
-            saved_eqx = g.eqx_position_deg
-            saved_aov = g.aov_position_deg
+        # Absolute Time Propagation Strategy
+        # The simulated orbit is defined to start at Epoch = 0 (1970).
+        # Position is a pure function of current time.
+        # This eliminates drift, catch-up logic, and state saving needs.
+        
+        g.run_start_time = 0  # Fixed Epoch
+        g.run_start_ticks = 0 # Not used for absolute mode
         
         aov_rate, eqx_rate_sec, eqx_rate_day, period_min = utils.compute_motor_rates(g.orbital_altitude_km)
         g.aov_rate_deg_sec = aov_rate
@@ -197,55 +157,25 @@ class OrbitMode(Mode):
         g.eqx_rate_deg_day = eqx_rate_day
         g.orbital_period_min = period_min
         
-        now = utils.get_timestamp()
-        elapsed = now - saved_ts if saved_ts > 0 else 0
-        if elapsed > 300: # 5 min limit for catch-up
-             elapsed = 0; saved_ts = 0
-        
-        if elapsed > 0 and saved_ts > 0:
-            if g.orbital_eccentricity > 0.001:
-                true_old = (saved_aov - g.orbital_periapsis_deg) % 360.0
-                M_old = utils.compute_mean_from_true_anomaly(true_old, g.orbital_eccentricity)
-                period_sec = g.orbital_period_min * 60.0
-                n = 2.0 * math.pi / period_sec
-                M_new = M_old + (n * elapsed)
-                t_new = M_new / n
-                expected_phase, _ = utils.compute_elliptical_position(
-                    t_new, period_sec, g.orbital_eccentricity, g.orbital_periapsis_deg
-                )
-                saved_turns = (saved_aov // 360) * 360
-                expected_aov = saved_turns + expected_phase
-            else:
-                expected_aov = saved_aov + (g.aov_rate_deg_sec * elapsed)
-            expected_eqx = saved_eqx + (g.eqx_rate_deg_sec * elapsed)
-            
-            # Shortest Path Catch-up
-            curr_aov_w = g.aov_position_deg % 360
-            curr_eqx_w = g.eqx_position_deg % 360
-            exp_aov_w = expected_aov % 360
-            exp_eqx_w = expected_eqx % 360
-            
-            d_aov = utils.get_shortest_path_delta(curr_aov_w, exp_aov_w)
-            d_eqx = utils.get_shortest_path_delta(curr_eqx_w, exp_eqx_w)
-            
-            g.run_start_aov_deg = g.aov_position_deg + d_aov
-            g.run_start_eqx_deg = g.eqx_position_deg + d_eqx
-            g.aov_position_deg = g.run_start_aov_deg
-            g.eqx_position_deg = g.run_start_eqx_deg
-        else:
-            g.run_start_aov_deg = g.aov_position_deg
-            g.run_start_eqx_deg = g.eqx_position_deg
-            
-        g.run_start_time = now
-        g.run_start_ticks = time.ticks_ms()
+        # Initialize propagator with Start Time = 0
+        # This means the satellite has been orbiting since 1970.
         self.propagator = propagators.KeplerPropagator(
             g.orbital_altitude_km, g.orbital_inclination_deg, 
             g.orbital_eccentricity, g.orbital_periapsis_deg,
-            g.run_start_aov_deg, g.run_start_eqx_deg, g.run_start_time
+            0.0, 0.0, 0.0 # Start Phase 0, Start Time 0
         )
-        self.last_saved_rev_eqx = int(g.eqx_position_deg // 360)
-        self.last_saved_rev_aov = int(g.aov_position_deg // 360)
         self.initialized = True
+        
+        # Calculate where we SHOULD be right now
+        target_aov, target_eqx = self.propagator.get_aov_eqx(utils.get_timestamp())
+        
+        print(f"Orbit Init (Abs Time): Target AoV={target_aov:.1f}, EQX={target_eqx:.1f}")
+        
+        # Move motors directly to target (No "Catch Up" animation needed, just go)
+        if g.aov_motor:
+            g.aov_motor.set_nearest_degrees(target_aov % 360, direction_override=0)
+        if g.eqx_motor:
+            g.eqx_motor.set_nearest_degrees(target_eqx % 360, direction_override=0)
 
     def on_encoder_rotate(self, delta):
         # Apply accelerated nudging policy
@@ -253,7 +183,8 @@ class OrbitMode(Mode):
         
         if self.nudge_target == 0:
             g.run_start_aov_deg += delta
-            if self.propagator: self.propagator.nudge_aov(delta)
+        if self.propagator:
+            self.propagator.nudge_aov(delta)
         else:
             g.run_start_eqx_deg += delta
             if self.propagator: self.propagator.nudge_eqx(delta)
@@ -307,16 +238,17 @@ class OrbitMode(Mode):
             self.last_target_eqx = eqx_angle
             self.last_command_ticks = now_ms
             
+            
             if g.eqx_motor:
-                g.eqx_motor.set_nearest_degrees(eqx_angle % 360)
+                g.eqx_motor.set_nearest_degrees(eqx_angle % 360, direction_override=0)
                 g.eqx_motor.update_present_position(force=True) # Poll hardware after move
             if g.aov_motor:
-                g.aov_motor.set_nearest_degrees(aov_angle % 360)
+                g.aov_motor.set_nearest_degrees(aov_angle % 360, direction_override=0)
                 g.aov_motor.update_present_position(force=True) # Poll hardware after move
-
-            # Update shared state for display
-            g.aov_position_deg = aov_angle
-            g.eqx_position_deg = eqx_angle
+                
+            # Update Globals for State Saving (Normalize to 0-360 to preserve precision)
+            g.aov_position_deg = aov_angle % 360.0
+            g.eqx_position_deg = eqx_angle % 360.0
 
         # Revolution counter: increment when crossing south point (AoV = 270°)
         current_aov_wrapped = g.aov_position_deg % 360
@@ -327,13 +259,7 @@ class OrbitMode(Mode):
             utils.save_state()
         self.last_aov_wrapped = current_aov_wrapped
         
-        # Persistence check for motor position changes
-        cur_rev_eqx = int(g.eqx_position_deg // 360)
-        cur_rev_aov = int(g.aov_position_deg // 360)
-        if cur_rev_eqx != self.last_saved_rev_eqx or cur_rev_aov != self.last_saved_rev_aov:
-            utils.save_state()
-            self.last_saved_rev_eqx = cur_rev_eqx
-            self.last_saved_rev_aov = cur_rev_aov
+        # Note: SRAM persistence is now handled by motor.on_turn_change callback
     
     def render(self, disp):
         disp.fill(0)
@@ -1183,7 +1109,8 @@ class SGP4Mode(Mode):
         
         self.satellite_index = index
         self.satellite_name = get_satellite_name(index)
-        norad_id = get_satellite_norad(index)
+        self.norad_id = get_satellite_norad(index)
+        norad_id = self.norad_id
         
         # Check if TLE is in cache
         if self.satellite_name in self.tle_cache:
@@ -1194,16 +1121,39 @@ class SGP4Mode(Mode):
             self.tle_age = utils.get_tle_age_str(last_fetch)
             
             # Check if update needed
-            if utils.tle_needs_update(last_fetch):
-                print(f"TLE for {self.satellite_name} is stale, needs update")
+            needs_update = utils.tle_needs_update(last_fetch)
+            
+            # Validate NORAD ID in TLE Line 2 (chars 2-7) matches expected
+            # Line 2 format: 2 NNNNN ...
+            try:
+                cached_id = line2.split()[1]
+                if str(cached_id) != str(self.norad_id):
+                    print(f"TLE Mismatch! Cached {cached_id} != Expected {self.norad_id}")
+                    needs_update = True
+                    self.tle_age = "WRONG SAT"
+            except:
+                pass
+
+            if needs_update:
+                print(f"TLE for {self.satellite_name} is stale or wrong, needs update")
                 self.tle_age += " OLD"
+                self.fetching = True # Trigger auto-fetch
         else:
             # No TLE in cache - need to fetch
             print(f"No TLE for {self.satellite_name}, need to fetch")
             self.tle_age = "missing"
+            self.fetching = True # Trigger auto-fetch
+            return
+        
+        # If fetching, skip parsing until we have data
+        if self.fetching and self.tle_age == "missing":
             return
         
         # Parse TLE
+        print(f"DEBUG LOAD TLE for {self.satellite_name}:")
+        print(f"L1: {line1}")
+        print(f"L2: {line2}")
+        
         epoch_year, epoch_day = utils.parse_tle_epoch(line1)
         bstar = float(line1[53:59]) * 10.0 ** float(line1[59:61])
         inc = float(line2[8:16])
@@ -1225,12 +1175,77 @@ class SGP4Mode(Mode):
     
     def _fetch_tle(self):
         """Fetch TLE data via WiFi (WiFi hardware required)."""
+        import json
+        import time
+        
+        # Check for WiFi hardware first
         if not self.has_wifi:
-            return
+            print("WiFi not available - cannot fetch TLE")
+            if g.disp:
+                g.disp.fill(0)
+                g.disp.text("No WiFi!", 0, 0)
+                g.disp.text("Cannot fetch TLE", 0, 12)
+                g.disp.show()
+            return False # Indicate failure
+        
+        self.fetching = True
+        if g.disp:
+            g.disp.fill(0)
+            g.disp.text("Fetching TLE...", 0, 0)
+            g.disp.text("Please wait", 0, 12)
+            g.disp.show()
+        print(f"Fetching TLE for {self.satellite_name}...")
+        
+        # Load WiFi config (or rely on system already being connected?)
+        # Ideally system is connected on boot. But we can ensure it.
+        ssid = ""
+        password = ""
+        try:
+            with open("wifi_config.json", "r") as f:
+                config = json.load(f)
+            ssid = config.get("ssid", "")
+            password = config.get("password", "")
+        except:
+            print("No WiFi config found")
             
-        # ... logic ... (keep existing _fetch_tle code, or skipping it if I don't see it)
-        # Wait, I am replacing LINES, I need to see the file to append safely or insert.
-        # I'll rely on ViewFile response first.
+        # Connect to WiFi (safe to re-call)
+        import wifi_setup
+        ip = wifi_setup.connect_wifi(ssid, password)
+        if not ip:
+            print("WiFi connection failed")
+            self.fetching = False
+            return False
+            
+        # Fetch TLE
+        import tle_fetch
+        import orb_utils as utils
+        # Use NORAD ID for precision if available, else fallback to name (unlikely in SGP4Mode)
+        target_id = getattr(self, 'norad_id', self.satellite_name)
+        tle_data = tle_fetch.fetch_tle(target_id)
+        if not tle_data:
+            print("TLE fetch failed")
+            self.fetching = False
+            return False
+        
+        # Update cache
+        if hasattr(self, 'tle_cache'):
+            name, line1, line2 = tle_data
+            self.tle_cache[self.satellite_name] = {
+                "line1": line1,
+                "line2": line2,
+                "last_fetch": int(utils.get_timestamp())
+            }
+            utils.save_tle_cache(self.tle_cache)
+            
+            # Reload satellite
+            self._load_satellite(self.satellite_index)
+            
+            self.fetching = False
+            print(f"✓ TLE updated for {self.satellite_name}")
+            return True
+        else:
+            self.fetching = False
+            return False
     
     def set_manual_tle(self, name, line1, line2):
         """Set TLE manually from API."""
@@ -1375,6 +1390,30 @@ class SGP4Mode(Mode):
     
     def update(self, now_ms):
         """Update satellite position and motors."""
+        """Update satellite position and motors."""
+        
+        # --- Auto-Fetch Logic ---
+        if self.fetching:
+             # Ensure we don't spam fetch (10s retry delay could be added here if needed)
+             # For now, rely on single-shot or blocking call if we want simplicity
+             # But update() is 1Hz. Let's do it once.
+             # Actually, we should probably do this in a thread or check condition
+             # To keep it simple and safe in the main loop:
+             if self.has_wifi and (self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 2000):
+                 # Try to fetch
+                 print("Attempting auto-fetch...")
+                 success = self._fetch_tle()
+                 if not success:
+                     # If failed, stop trying for a bit or forever?
+                     # Let's stop trying for this session to avoid loop
+                     print("Auto-fetch failed. Disabling until manual retry.")
+                     self.fetching = False
+                 else:
+                     # Success - _fetch_tle sets fetching=False and reloads
+                     pass
+                 self.last_command_ticks = now_ms
+             return
+
         if not self.propagator or not self.tracking:
             return
         
@@ -1388,8 +1427,8 @@ class SGP4Mode(Mode):
             
             # print(f"SGP4 Calc: AoV={self.last_aov_angle:.1f} EQX={self.last_eqx_angle:.1f} | Lat={self.lat_deg:.2f} Lon={self.lon_deg:.2f} @ {now_unix}")
 
-            g.aov_position_deg = self.last_aov_angle
-            g.eqx_position_deg = self.last_eqx_angle
+            g.aov_position_deg = self.last_aov_angle % 360.0
+            g.eqx_position_deg = self.last_eqx_angle % 360.0
             self.last_unix = now_unix
         
         # Use cached values for motor commands
@@ -1417,36 +1456,39 @@ class SGP4Mode(Mode):
             self.last_target_eqx = eqx_angle
             self.last_command_ticks = now_ms
             
+            
             if g.aov_motor:
-                g.aov_motor.set_nearest_degrees(aov_angle)
+                g.aov_motor.set_nearest_degrees(aov_angle, direction_override=0)
                 g.aov_motor.update_present_position(force=True) # Poll hardware after move
             
             if g.eqx_motor:
-                g.eqx_motor.set_nearest_degrees(eqx_angle)
+                g.eqx_motor.set_nearest_degrees(eqx_angle, direction_override=0)
                 g.eqx_motor.update_present_position(force=True) # Poll hardware after move
+        
+        # Note: SRAM persistence is now handled by motor.on_turn_change callback
     
     def render(self, disp):
         """Render SGP4 mode display."""
         disp.fill(0)
         
         if not self.satellite_name:
-            disp.text("No Satellite", 0, 0)
-            disp.text("Data", 0, 12)
+            disp.text("No Satellite", 0, 2)
+            disp.text("Data", 0, 14)
             disp.show()
             return
         
         # Title
         mode_str = "TRACKING" if self.tracking else "SELECT"
-        disp.text(f"{mode_str}", 0, 0)
+        disp.text(f"{mode_str}", 0, 2)
         
         # Satellite name (truncate if needed)
         sat_name = self.satellite_name[:16]
-        disp.text(sat_name, 0, 12)
+        disp.text(sat_name, 0, 14)
         
         if self.fetching:
             # Show fetching message
-            disp.text("Fetching TLE...", 0, 24)
-            disp.text("Please wait", 0, 36)
+            disp.text("Fetching TLE...", 0, 26)
+            disp.text("Please wait", 0, 38)
         elif self.tracking and self.sgp4:
             # Catch-up status based on physical hardware feedback
             catching_up = False
@@ -1468,31 +1510,30 @@ class SGP4Mode(Mode):
                 if diff_eqx > 2.0:
                     catching_up = True
                 
-            if catching_up:
-                # Show actual positions during catch-up (replacing Lat/Lon area)
-                act_a = aov_actual % 360
-                act_e = eqx_actual % 360
-                disp.text("** CATCHING UP **", 0, 24)
-                disp.text(f"A{act_a:3.0f} / E{act_e:3.0f} Act", 0, 34)
-                disp.degree(4*8, 34)  # After A###
-                disp.degree(13*8, 34) # After E###
-            else:
+            # Always show tracking info, ignore catch-up warning
+            if True:
                 # Show position
-                la_str = f"Lat: {self.lat_deg:+.2f}"
-                disp.text(la_str, 0, 24)
-                disp.degree(len(la_str)*8 + 1, 24)
+                # LLA Line: Lat (-90 to +90), Lon (-180 to +180), Alt
+                lon_180 = self.lon_deg
+                if lon_180 > 180:
+                    lon_180 -= 360
+                lla_str = f"LLA:{self.lat_deg:+3.0f} {lon_180:+4.0f} {self.alt_km:4.0f}"
+                disp.text(lla_str, 0, 26)
                 
-                lo_str = f"Lon: {self.lon_deg:+.2f}"
-                disp.text(lo_str, 0, 34)
-                disp.degree(len(lo_str)*8 + 1, 34)
+                # IP Line
+                import network
+                try:
+                    ip = network.WLAN(network.STA_IF).ifconfig()[0]
+                    disp.text(f"IP:{ip}", 0, 38)
+                except:
+                    disp.text("IP: N/A", 0, 38)
             
-            disp.text(f"Alt: {self.alt_km:.0f}km", 0, 44)
-            disp.text(f"TLE: {self.tle_age}", 0, 54)
+            disp.text(f"TLE: {self.tle_age}", 0, 50)
         else:
             # Selection mode - show instructions
-            disp.text("Dial: Select", 0, 30)
-            disp.text("Press: Track", 0, 42)
-            disp.text(f"TLE: {self.tle_age}", 0, 54)
+            disp.text("Dial: Select", 0, 32)
+            disp.text("Press: Track", 0, 44)
+            disp.text(f"TLE: {self.tle_age}", 0, 56)
         
         disp.show()
 
@@ -1578,11 +1619,11 @@ class TrackLLMode(SGP4Mode):
                 
                 # Apply offsets/etc if needed, but set_nearest_degrees handles wrapping.
                 if g.aov_motor:
-                    g.aov_motor.set_nearest_degrees(virt_aov)
+                    g.aov_motor.set_nearest_degrees(virt_aov, direction_override=0)
                     g.aov_motor.update_present_position()
                     
                 if g.eqx_motor:
-                    g.eqx_motor.set_nearest_degrees(virt_eqx)
+                    g.eqx_motor.set_nearest_degrees(virt_eqx, direction_override=0)
                     g.eqx_motor.update_present_position()
         except AttributeError:
              print("TrackLL: Propagator missing method")
@@ -1670,11 +1711,11 @@ class TrackLLMode(SGP4Mode):
                 
                 # Apply offsets/etc if needed, but set_nearest_degrees handles wrapping.
                 if g.aov_motor:
-                    g.aov_motor.set_nearest_degrees(virt_aov)
+                    g.aov_motor.set_nearest_degrees(virt_aov, direction_override=0)
                     g.aov_motor.update_present_position()
                     
                 if g.eqx_motor:
-                    g.eqx_motor.set_nearest_degrees(virt_eqx)
+                    g.eqx_motor.set_nearest_degrees(virt_eqx, direction_override=0)
                     g.eqx_motor.update_present_position()
         except AttributeError:
              print("TrackLL: Propagator missing method")

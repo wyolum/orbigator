@@ -1,0 +1,143 @@
+inch = 25.4;
+
+L = 1.5 * inch;
+H = 10;
+W = 6;
+
+// coil_spring.scad
+// OpenSCAD parametric compression spring with "full-circle" end turns.
+// Spec requested:
+//   OD = 5mm
+//   wire diameter = 0.6mm
+//   free length = 10mm
+//   6 coils (active) + one complete circle on each end (closed-ish end turns)
+//
+// Notes:
+// - OpenSCAD has no native sweep-along-curve; this uses linear_extrude + twist
+//   on an offset wire cross-section, which produces a true helical solid.
+// - End “complete circles” are implemented as 1 full turn at each end with
+//   very small axial advance ("end height") so they look/behave like closed ends.
+
+$fn = 64;  // smoothness for the wire cross-section
+
+module helix_turns(mean_r, wire_d, turns, height, slices_per_turn=60) {
+    // A helix created by twisting an offset circle during extrusion.
+    // mean_r: spring mean radius (centerline of wire)
+    // wire_d: wire diameter
+    // turns: number of full revolutions
+    // height: axial height of this helix section
+    // slices_per_turn: controls smoothness along the helix
+    linear_extrude(
+        height = height,
+        twist  = turns * 360,
+        slices = max(5, ceil(turns * slices_per_turn)),
+        convexity = 10
+    )
+        translate([mean_r, 0, 0])
+            circle(d = wire_d);
+}
+
+module coil_spring(
+    OD = 5.0,
+    wire_d = 0.6,
+    free_len = 10.0,
+    active_coils = 6,
+    end_turns = 1,        // "complete circle on each end"
+    end_height = 0.7      // axial height allotted to each end turn (mm)
+) {
+    // Derived geometry
+    mean_r = (OD - wire_d) / 2;   // centerline radius of the wire
+
+    // Ensure we don't go negative
+    end_height = min(end_height, free_len/2 - 0.01);
+    mid_height = free_len - 2 * end_height;
+
+    // Middle section: active_coils turns over mid_height (sets the pitch)
+    // Ends: end_turns turns over end_height (near-closed end loops)
+    union() {
+        // Bottom end loop
+        helix_turns(mean_r, wire_d, end_turns, end_height);
+
+        // Active coils
+        translate([0, 0, end_height])
+            helix_turns(mean_r, wire_d, active_coils, mid_height);
+
+        // Top end loop
+        translate([0, 0, end_height + mid_height])
+            helix_turns(mean_r, wire_d, end_turns, end_height);
+    }
+}
+
+// ---- Build the requested spring ----
+
+
+module swingarm1(){
+  difference(){
+    union(){
+      cube([L, W, H], center=true);
+      translate([-L/2, 0, 0])cylinder(d=W, h=H, center=true, $fn=30);
+      translate([L/2, 0, 0])cylinder(d=W, h=H, center=true, $fn=30);
+    }
+    translate([L/2, 0, 0])difference(){
+      cylinder(d=18, h=6.5, center=true, $fn=30);
+      cylinder(d=8, h=7.5, center=true, $fn=30);
+    }
+    translate([L/2, 0, 0])cylinder(d=18, h=5., center=true, $fn=30);
+    translate([L/2, 0, 0])cylinder(d=3.5, h=H+2, center=true, $fn=30);
+    translate([-L/2, 0, 0])cylinder(d=3.5, h=H+2, center=true, $fn=30);
+    translate([0,-1.5,0])rotate([90,0,0])cylinder(d=6, h=10, $fn=30);
+    translate([-L/2, 0, -3])cylinder(d=13, h=6, center=true, $fn=30);
+  }
+  //translate([0,-1,0])rotate([90,0,0])
+  //  coil_spring(OD=5.0, wire_d=0.6, free_len=9.0, active_coils=6,
+  //end_turns=1, end_height=0.7);
+}
+
+module bearing(){
+  color("silver")difference(){
+    cylinder(d=13, h=5);
+    translate([0,0,-1])cylinder(d=4.6, h=7);
+  }
+}
+
+module swingarm(){
+  translate([0,37.5,0]){
+    swingarm1();
+    //translate([L/2, 0, -2.5])bearing();
+  }
+}
+module base(){
+  zz = 11.5;
+  translate([0,37.5+2.55,0])
+  difference(){
+    union(){
+      translate([0, -13, -10])rotate([45, 0,0])cube([9,15,15],center=true);
+      translate([0,-8,0])rotate([90,0,0])cylinder(d=9, h=5);
+      translate([-9/2,-12.5+2-5/2,-zz])difference()cube([9, 5, zz], center=false);
+    }
+    translate([0,.5, 0])rotate([90, 0, 0])cylinder(d=5.5, h=10);
+    translate([0,0,-24])cube([100, 100, 20], center=true);
+  }
+
+}
+module static_parts(){
+  zz = 11.5;
+  for(theta=[0,120,-120]){
+    rotate([0,0,theta+27])base();
+    //rotate([0,0,theta-3])translate([0,-2.5, -5])cube([25, 5, 5]);
+    //rotate([0,0,theta+24.5])translate([0,-2.5, -5])cube([38, 5, 5]);
+    rotate([0,0,theta+27.4])translate([42,-2.5, -zz])difference(){
+      cylinder(d=12, h=zz);
+      translate([0,0,-1])cylinder(d=3.5, h=22);
+      translate([0,0,-15])cylinder(d=6.5, h=22);
+    }
+  }
+}
+module swingarms(){
+  for(theta=[0,120,-120]){
+    rotate([0,0,theta+27])swingarm();
+  }
+}
+//static_parts();
+rotate([90, 0, 0])swingarm();
+

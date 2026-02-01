@@ -18,19 +18,19 @@ SATELLITES = {
     "STARLINK-1": "STARLINK-1007",
 }
 
-def fetch_tle(satellite_name):
+def fetch_tle(norad_id):
     """
-    Fetch TLE from CelesTrak for a specific satellite.
+    Fetch TLE from CelesTrak for a specific satellite by NORAD ID.
     
     Args:
-        satellite_name: Name of satellite (e.g., "ISS (ZARYA)")
+        norad_id: NORAD Catalog Number (string or int, e.g. "25544")
     
     Returns:
         Tuple of (name, line1, line2) or None on error
     """
     try:
-        url = f"{CELESTRAK_BASE}?NAME={satellite_name}&FORMAT=TLE"
-        print(f"Fetching TLE for {satellite_name}...")
+        url = f"{CELESTRAK_BASE}?CATNR={norad_id}&FORMAT=TLE"
+        print(f"Fetching TLE for ID {norad_id} (URL: {url})...")
         
         response = urequests.get(url)
         if response.status_code != 200:

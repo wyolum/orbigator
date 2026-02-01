@@ -60,9 +60,9 @@ done < "$WHITELIST"
 if [ $COUNT -eq 0 ]; then
     echo "✅ No main file changes detected (or all failed)."
 else
-    echo "✅ Sync attempted for approximately $COUNT items."
+    echo "✅ Sync attempted for $COUNT items."
 fi
 
 # Update timestamp
 touch "$LAST_SYNC"
-echo "Note: If sync failed, run 'rm .last_sync' to force full retry."
+echo "Run 'rm .last_sync' to force full retry."

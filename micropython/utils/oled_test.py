@@ -1,20 +1,53 @@
 # Pico 2 | Encoder +/-1 per detent | OLED (auto SH1106/SSD1306)
 # I2C0: SDA=GP4, SCL=GP5 | Encoder: A=GP6, B=GP7, SW=GP8 (COM wired accordingly)
 
-import machine, time
+import machine, time, sys
 from machine import Pin, I2C
 import framebuf
 
+# Ensure we can import from root directory
+if '.' not in sys.path: sys.path.append('.')
+if '/' not in sys.path: sys.path.append('/')
+
+print("DEBUG PATH:", sys.path)
+import os
+try:
+    print("ROOT FILES:", os.listdir('/'))
+except:
+    print("Could not list root files")
+
+while False:
+    for i in range(80):
+        print('x', end='')
+        time.sleep(.1)
+    print()
 # --- user options ---
 DETENT_DIV     = 4        # edges per detent (most encoders = 4)
 REVERSE        = False    # flip rotation direction
 ZERO_HOLD_MS   = 300      # require >= this many ms pressed to zero
-SW_ACTIVE_LOW  = False    # <-- set False if your button is active-HIGH (pressed==1)
+SW_ACTIVE_LOW  = True    # <-- set True for active-LOW (pressed==0) as per hardware pull-up
 
 # --- OLED detect (SH1106 preferred, SSD1306 fallback) ---
 OLED_W, OLED_H = 128, 64
+
+# Force internal pull-ups just in case (fixes "floating low" false positives)
+sda_pin = Pin(4, Pin.OUT, Pin.PULL_UP)
+scl_pin = Pin(5, Pin.OUT, Pin.PULL_UP)
+sda_pin.value(1); scl_pin.value(1) # Drive high briefly to charge line
+time.sleep_ms(1)
+
+# Init I2C (SoftI2C or HW I2C will take over pins)
 i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=400_000)
+print("Scanning I2C bus...")
 addrs = i2c.scan()
+print("I2C Scan results:", [hex(a) for a in addrs])
+
+if len(addrs) > 100:
+    print("\n!!! CRITICAL HARDWARE ERROR !!!")
+    print("I2C Bus is reporting ALL addresses. This means SDA is stuck LOW.")
+    print("CHECK WIRING: Is SDA shorted to GND?")
+    raise SystemExit("I2C Bus Failure")
+
 if not addrs: raise SystemExit("No I2C OLED on I2C0.")
 ADDR = addrs[0]
 
@@ -92,7 +125,7 @@ t0 = time.ticks_ms()
 prev_raw = 0
 while True:
     time.sleep_ms(40)
-         poll_button_and_maybe_zero()
+    poll_button_and_maybe_zero()
 
     now = time.ticks_ms()
     dt = max(1, time.ticks_diff(now,t0))/1000.0

@@ -1,0 +1,378 @@
+//////////////////////////////////////////////////
+// Custom Wrench.scad v1.1
+// by SteveS42 @ Printables.com
+// Create a custom double ended wrench.
+// v1.1 added hole in handle option
+//////////////////////////////////////////////////
+// Changing the following variable values manually
+// is not recommended. Please use the Customizer.
+// On Window menu, select Customizer - or -
+// On Window menu, uncheck Hide Customizer,
+// Then click the section triangles to open each.
+//////////////////////////////////////////////////
+
+/* [Wrench End A] */
+// diameter of end A
+diameterA = 20; // [0:0.1:200]
+// number of teeth on end A
+toothCountA = 20; // [0:1:400]
+// height of each tooth
+toothHeightA = 1; // [0:0.1:20]
+// width of tooth bottom
+toothWidthBottomA = 1;  // [0:0.1:20]
+// width of tooth tip (0 = point)
+toothWidthTopA = 0; // [0:0.1:20]
+// curve the tooth top?
+toothCurveA = true;
+// width of ring around teeth
+ringThicknessA = 2; // [1:0.1:20]
+
+/* [Wrench End B] */
+// diameter of end B
+diameterB = 20; // [0:0.1:200]
+// number of teeth on end B
+toothCountB = 20; // [0:1:400]
+// height of each tooth
+toothHeightB = 1; // [0:0.1:20]
+// width of tooth bottom
+toothWidthBottomB = 1;  // [0:0.1:20]
+// width of tooth tip (0 = point)
+toothWidthTopB = 0; // [0:0.1:20]
+// curve the tooth top?
+toothCurveB = true;
+// width of ring around teeth
+ringThicknessB = 2; // [1:0.1:20]
+
+/* [Overall] */
+// height of wrench
+wrenchHeight = 4; // [1:0.1:20]
+// length of the handle
+handleLength = 40; // [2:1:200]
+// width of the handle
+handleWidth = 10; // [0:1:50]
+// taper between end & handle
+handleTaper = 2; // [0:0.5:10]
+// add a hole in the handle
+handleHole = true;
+
+/* [Magnet] */
+// number of magnets
+magnetCount = 0; // [0:1:2]
+// diameter of magnet
+magnetDiameter = 8; // [3:0.1:15]
+// height of magnet
+magnetHeight = 3; // [1:0.1:10]
+// clearance around magnet
+magnetClearance = 0.1; // [0:0.1:0.5]
+
+/* [Options] */
+// show only end A for testing
+wrenchAtest = false;
+// show only end B for testing
+wrenchBtest = false;
+// display parts in color for debug
+showColor = true;
+
+/* [Hidden] */
+$fn = 100;
+eps = .1; // extend past surface
+
+//////////////////////////////////////////////////
+// Calculated variables
+
+// end A
+outerDiameterA = diameterA + ringThicknessA*2;
+outerRadiusA = outerDiameterA/2;
+innerRadiusA = diameterA/2;
+// number of degrees for each tooth
+toothAspacing = 
+  (toothCountA>0) ?
+    360/toothCountA :
+    0;
+// triangulate curve radius A²+B²=C²
+toothTipRadiusA = sqrt(
+  ((innerRadiusA-toothHeightA)
+    *(innerRadiusA-toothHeightA))
+  +(toothWidthTopA/2
+    *toothWidthTopA/2));
+//......3
+//..../.|
+//..2...|   if top width = 0,
+//..|...*   points 1 & 2 meet,
+//..1...|   making a point
+//....\.|
+//......0
+A0 = [0,-toothWidthBottomA/2];
+A1 = [-toothHeightA,-toothWidthTopA/2];
+A2 = [-toothHeightA,+toothWidthTopA/2];
+A3 = [0,+toothWidthBottomA/2];
+toothAshape=[A0,A1,A2,A3];
+wrenchAloc = 
+  [handleLength/2+innerRadiusA, 0, 0];
+taperAX = 
+  handleLength/2-(ringThicknessA*handleTaper);
+taperAloc = 
+  [taperAX, -handleWidth/2, 0];
+
+// slot length & position
+hmax=handleLength/8+handleWidth/6;
+rmaxA=handleLength/2-ringThicknessA-handleWidth/4;
+handleHoleAX = (rmaxA < hmax) ?
+          rmaxA :
+          hmax ;
+
+// end B
+outerDiameterB = diameterB + ringThicknessB*2;
+outerRadiusB = outerDiameterB/2;
+innerRadiusB = diameterB/2;
+// number of degrees for each tooth
+toothBspacing = 
+  (toothCountB>0) ?
+    360/toothCountB :
+    0;
+// triangulate curve radius A²+B²=C²
+toothTipRadiusB = sqrt(
+  ((innerRadiusB-toothHeightB)
+    *(innerRadiusB-toothHeightB))
+  +(toothWidthTopB/2
+    *toothWidthTopB/2));
+//......3
+//..../.|
+//..2...|   if top width = 0,
+//..|...*   points 1 & 2 meet,
+//..1...|   making a point
+//....\.|
+//......0
+B0 = [0,-toothWidthBottomB/2];
+B1 = [-toothHeightB,-toothWidthTopB/2];
+B2 = [-toothHeightB,+toothWidthTopB/2];
+B3 = [0,+toothWidthBottomB/2];
+toothBshape=[B0,B1,B2,B3];
+wrenchBloc = 
+  [-handleLength/2-innerRadiusB, 0, 0];
+taperBX = 
+  handleLength/2-(ringThicknessB*handleTaper);
+taperBloc = 
+  [-taperBX, -handleWidth/2, 0];
+
+// slot length & position
+rmaxB=handleLength/2-ringThicknessB-handleWidth/4;
+handleHoleBX = (rmaxB < hmax) ?
+          rmaxB :
+          hmax ;
+
+// magnets
+magRadius = magnetDiameter/2;
+magSpc = handleLength/(magnetCount+1);
+magLocX = 
+  (magnetCount<2) ? // none or 1
+    0 :             // centered
+  ((magRadius+1) > magSpc/2) ? // too big?
+    magRadius+1 : // yes, move them slightly apart
+    magSpc/2;     // no, room for both
+
+//////////////////////////////////////////////////
+// Main
+
+difference() {
+  union() {
+    // create end A
+    if (!wrenchBtest) {
+      makeWrenchEnd(
+        wrenchAloc,
+        #outerRadiusA,
+        innerRadiusA,
+        wrenchHeight,
+        taperAloc,
+        wrenchAtest);
+      // create teeth for end A
+      makeTeeth(
+        wrenchAloc,
+        toothCountA,
+        toothAspacing,
+        innerRadiusA,
+        toothTipRadiusA,
+        wrenchHeight,
+        toothAshape,
+        toothCurveA);
+    }
+    // create end B
+    if (!wrenchAtest) {
+      makeWrenchEnd(
+        wrenchBloc,
+        outerRadiusB,
+        innerRadiusB,
+        wrenchHeight,
+        taperBloc,
+        wrenchBtest);
+      // create teeth for end B
+      makeTeeth(
+        wrenchBloc,
+        toothCountB,
+        toothBspacing,
+        innerRadiusB,
+        toothTipRadiusB,
+        wrenchHeight,
+        toothBshape,
+        toothCurveB);
+    }
+    // create handle
+    if (!wrenchAtest && !wrenchBtest) {
+      makeHandle();
+    }
+  }
+  // cut magnet hole(s)
+  if (magnetCount>0) {  // none
+    if (magnetCount==1) { // one
+      makeMagnetHole();
+    }  else {             // two
+      makeMagnetHole();
+      mirror([1, 0, 0]) {
+        makeMagnetHole();
+      } 
+    }
+  }
+  // cut slot in handle
+  if (handleHole) {
+    makeHandleHole();
+  }
+}
+
+//////////////////////////////////////////////////
+// Subroutines
+
+// create a wrench end
+module makeWrenchEnd(
+        center,
+        outerRadius,
+        innerRadius,
+        height,
+        taper,
+        test) {
+  color(showColor?"springgreen":undef){
+    difference() {
+      hull() {
+        if (!test) {
+          // create taper between handle & end
+          translate(taper) {
+            cube(size=[0.1,handleWidth, height]);
+          }
+        }
+        // create the solid end
+        translate(center) {
+          cylinder(
+            r=outerRadius, 
+            h=height);
+        }
+      }
+      // cut out the hole
+      translate(center) {
+        translate([0, 0, -eps]) {
+          cylinder(
+            r=innerRadius, 
+            h=height+eps*2);
+        }      
+      }
+    }
+  }
+}
+
+// create the teeth
+module makeTeeth(
+        center,
+        count,
+        spacing,
+        toothBaseRadius,
+        toothTipRadius,
+        height,
+        shape,
+        curve) {
+  if (count>0) {
+    color(showColor?"deeppink":undef){
+      difference() {
+        translate(center) {
+          for (i=[0:count]) {
+            rotate([0, 0, i*spacing]) {
+              translate([toothBaseRadius, 0, 0]) {
+                linear_extrude(height)
+                polygon(shape); 
+              }
+            }
+          }
+        }
+        if (curve) {
+          // cut curve in teeth tips
+          translate(center) {
+            translate([0, 0, -eps]) {
+              cylinder(
+                r=toothTipRadius, 
+                h=height+eps*2);
+            }      
+          }
+        }
+      }
+    }
+  }
+}
+
+// create the handle
+module makeHandle() {
+  color(showColor?"skyblue":undef){
+    difference() {
+      translate([
+        -handleLength/2, 
+        -handleWidth/2, 
+        0]) {
+        rotate([0, 0, 0]) {
+        cube(size=[
+          handleLength,
+          handleWidth, 
+          wrenchHeight]);
+        }
+      }
+    }
+  }
+}
+
+// create magnet hole(s)
+module makeMagnetHole() {
+  color(showColor?"coral":undef){
+    translate([
+      magLocX, 
+      0, 
+      -eps]) {
+      rotate([0, 0, 0]) {
+        cylinder(
+          r=magRadius
+            + magnetClearance, 
+          h=magnetHeight);
+      }
+    }
+  }
+}
+
+// cutout slot in handle
+module makeHandleHole() {
+  hull() {
+    translate([
+      -handleHoleBX, 
+      0, 
+      -eps]) {
+      rotate([0, 0, 0]) {
+      cylinder(
+        r=handleWidth/4, 
+        h=wrenchHeight+eps*2);
+      }
+    } 
+    translate([
+      handleHoleAX, 
+      0, 
+      -eps]) {
+      rotate([0, 0, 0]) {
+      cylinder(
+        r=handleWidth/4, 
+        h=wrenchHeight+eps*2);
+      }
+    } 
+  }
+}

@@ -1,0 +1,316 @@
+"""
+EQX + AoV Motor Continuous Forward Test
+Tests slow forward rotation for many revolutions to verify gear engagement
+Motor IDs: 1 (EQX - Equatorial axis), 2 (AoV)
+"""
+
+from machine import Pin, UART, I2C
+import time
+import framebuf
+
+# Motor configuration
+MOTOR_IDS = (1, 2)  # 1 EQX, 2 AoV
+UART_TX_PIN = 0
+UART_RX_PIN = 1
+DIR_PIN = 2
+MOTOR_BAUDRATE = 57600
+VELOCITY = 5  # speed limit value passed to set_speed_limit()
+
+# Initialize UART and direction control
+uart = UART(0, baudrate=MOTOR_BAUDRATE, tx=Pin(UART_TX_PIN), rx=Pin(UART_RX_PIN))
+dir_pin = Pin(DIR_PIN, Pin.OUT)
+
+# Initialize back and confirm buttons (GP9, GP10) with pull-up
+BACK_BUTTON_PIN = 9
+CONFIRM_BUTTON_PIN = 10
+ENCODER_SWITCH_PIN = 8
+back_button = Pin(BACK_BUTTON_PIN, Pin.IN, Pin.PULL_UP)
+confirm_button = Pin(CONFIRM_BUTTON_PIN, Pin.IN, Pin.PULL_UP)
+encoder_switch = Pin(ENCODER_SWITCH_PIN, Pin.IN, Pin.PULL_UP)
+
+# Initialize I2C and OLED
+try:
+    i2c = I2C(0, sda=Pin(4), scl=Pin(5), freq=100000)
+
+    # SH1106 OLED driver
+    class SH1106_I2C:
+        def __init__(self, w, h, i2c, addr=0x3C):
+            self.width, self.height, self.i2c, self.addr = w, h, i2c, addr
+            self.buffer = bytearray(w * h // 8)
+            self.fb = framebuf.FrameBuffer(self.buffer, w, h, framebuf.MONO_VLSB)
+            def cmd(*cs):
+                for c in cs:
+                    self.i2c.writeto(self.addr, b'\x00' + bytes([c]))
+            cmd(
+                0xAE, 0x20, 0x00, 0x40, 0xA1, 0xC8, 0x81, 0x7F, 0xA6, 0xA8, 0x3F,
+                0xAD, 0x8B, 0xD3, 0x00, 0xD5, 0x80, 0xD9, 0x22, 0xDA, 0x12, 0xDB, 0x35, 0xAF
+            )
+            self.fill(0)
+            self.show()
+        def fill(self, c): self.fb.fill(c)
+        def text(self, s, x, y, c=1): self.fb.text(s, x, y, c)
+        def show(self):
+            for p in range(self.height // 8):
+                self.i2c.writeto(self.addr, b'\x00' + bytes([0xB0 + p, 0x02, 0x10]))
+                s = self.width * p
+                e = s + self.width
+                self.i2c.writeto(self.addr, b'\x40' + self.buffer[s:e])
+
+    display = SH1106_I2C(128, 64, i2c, addr=0x3C)
+    HAS_DISPLAY = True
+    print("✓ OLED display initialized")
+except:
+    display = None
+    HAS_DISPLAY = False
+    print("⚠ OLED not found - console only")
+
+# Import motor library and set up globals
+from dynamixel_motor import DynamixelMotor
+import dynamixel_extended_utils as dxl_utils
+
+# Set up global UART for dynamixel functions
+dxl_utils.uart = uart
+dxl_utils.dir_pin = dir_pin
+
+print("=" * 60)
+print("EQX + AoV Motor Continuous Forward Test")
+print("=" * 60)
+print(f"Motor IDs: {MOTOR_IDS}")
+print("Testing slow forward rotation for gear engagement")
+print()
+
+# Initialize motors
+print("Initializing motors...")
+motors = {
+    1: DynamixelMotor(1, "EQX", gear_ratio=120/11),
+    2: DynamixelMotor(2, "AoV", gear_ratio=1),  # adjust if AoV ratio differs
+}
+
+
+# CRITICAL: Configure motors for Extended Position Mode and enable torque
+# (This is what orbigator.py does that was missing!)
+print("Configuring motors for Extended Position Mode...")
+for mid in MOTOR_IDS:
+    if not dxl_utils.set_extended_mode(mid):
+        print(f"Failed to configure motor {mid}")
+        raise RuntimeError(f"Motor {mid} initialization failed")
+
+# Set slow speed limit on both
+print(f"Setting speed limit to {VELOCITY} on both motors...")
+for mid, m in motors.items():
+    m.set_speed_limit(velocity=VELOCITY)
+
+# Read current positions (degrees) for both
+start_pos = {}
+for mid, m in motors.items():
+    pos = m.get_angle_degrees()
+    if pos is None:
+        print(f"Failed to read current position for motor {mid}")
+        raise RuntimeError(f"Motor {mid} communication failed")
+    start_pos[mid] = pos
+    print(f"Motor {mid} current position: {pos}°")
+
+print()
+
+# Test parameters
+DEGREES_PER_REV = 360
+NUM_REVS = 10
+SPEED = 10  # informational only (your library governs actual motion)
+
+print("=" * 60)
+print("Test Parameters:")
+print(f"  Revolutions: {NUM_REVS}")
+print(f"  Speed (informational): {SPEED}°/s")
+print(f"  Total rotation per motor: {NUM_REVS * DEGREES_PER_REV}°")
+print(f"  Estimated time (informational): {(NUM_REVS * DEGREES_PER_REV) / SPEED:.1f} seconds")
+print("=" * 60)
+print()
+print("Press Ctrl+C to stop test")
+print("Press BACK or CONFIRM button to pause/resume")
+print("Press ENCODER button to reverse direction")
+print()
+
+TOL_DEG = 5  # completion tolerance
+paused = False
+direction = 1  # 1 = forward, -1 = reverse
+last_back_button_state = 1  # Buttons are active-low (pressed = 0)
+last_confirm_button_state = 1
+last_encoder_switch_state = 1
+
+def update_display(rev, targets, positions=None, note=None):
+    if not HAS_DISPLAY:
+        return
+    display.fill(0)
+    display.text("EQX+AoV Test", 0, 0)
+    display.text(f"Rev {rev}/{NUM_REVS}", 0, 12)
+
+    if positions is None:
+        display.text(f"T1:{targets[1]:.0f}", 0, 28)
+        display.text(f"T2:{targets[2]:.0f}", 64, 28)
+    else:
+        display.text(f"P1:{positions[1]:.0f}", 0, 28)
+        display.text(f"P2:{positions[2]:.0f}", 64, 28)
+
+    if note:
+        display.text(note[:16], 0, 50)
+
+    display.show()
+
+try:
+    for rev in range(1, NUM_REVS + 1):
+        targets = {
+            1: start_pos[1] + (rev * DEGREES_PER_REV * direction),
+            2: start_pos[2] + (rev * DEGREES_PER_REV * direction),
+        }
+
+        print(f"Revolution {rev}/{NUM_REVS}:")
+        print(f"  Motor 1 target: {targets[1]:.1f}°")
+        print(f"  Motor 2 target: {targets[2]:.1f}°")
+
+        update_display(rev, targets)
+
+        # Command BOTH motors first (so they move together)
+        ok1 = motors[1].set_angle_degrees(targets[1])
+        ok2 = motors[2].set_angle_degrees(targets[2])
+        if not (ok1 and ok2):
+            print(f"Failed to set goal position (ok1={ok1}, ok2={ok2})")
+            break
+
+        # Monitor movement until BOTH are within tolerance
+        start_time = time.time()
+        last_update = time.time()
+
+        last_pos = {1: start_pos[1], 2: start_pos[2]}
+
+        while True:
+            # Check back or confirm button for pause toggle (buttons are active-low)
+            back_state = back_button.value()
+            confirm_state = confirm_button.value()
+            encoder_switch_state = encoder_switch.value()
+            
+            # Trigger pause if either button just pressed
+            if (
+                    (back_state == 0 and last_back_button_state == 1) or
+                    (confirm_state == 0 and last_confirm_button_state == 1)):
+                paused = not paused
+                if paused:
+                    print("  ⏸ PAUSED - Press BACK or CONFIRM to resume")
+                    # Stop motors by setting current position as target
+                    motors[1].set_angle_degrees(motors[1].get_angle_degrees())
+                    motors[2].set_angle_degrees(motors[2].get_angle_degrees())
+                    if HAS_DISPLAY:
+                        display.fill(0)
+                        display.text("PAUSED", 32, 16)
+                        display.text("Press button", 12, 32)
+                        display.text("to resume", 20, 44)
+                        display.show()
+                else:
+                    print("  ▶ RESUMED")
+                    # Resume by re-commanding the original targets
+                    motors[1].set_angle_degrees(targets[1])
+                    motors[2].set_angle_degrees(targets[2])
+                time.sleep(0.3)  # Debounce delay
+            
+            # Check encoder switch for direction reversal
+            if encoder_switch_state == 0 and last_encoder_switch_state == 1:
+                direction *= -1
+                dir_text = "FORWARD" if direction == 1 else "REVERSE"
+                print(f"  🔄 Direction changed to {dir_text}")
+                # Recalculate targets with new direction
+                targets[1] = start_pos[1] + (rev * DEGREES_PER_REV * direction)
+                targets[2] = start_pos[2] - (rev * DEGREES_PER_REV * direction)
+                # Re-command motors with new targets
+                motors[1].set_angle_degrees(targets[1])
+                motors[2].set_angle_degrees(targets[2])
+                if HAS_DISPLAY:
+                    display.fill(0)
+                    display.text("Direction:", 16, 16)
+                    display.text(dir_text, 24, 32)
+                    display.show()
+                time.sleep(0.3)  # Debounce delay
+            
+            last_back_button_state = back_state
+            last_confirm_button_state = confirm_state
+            last_encoder_switch_state = encoder_switch_state
+
+            # Skip movement monitoring if paused
+            if paused:
+                time.sleep(0.1)
+                continue
+
+            pos1 = motors[1].get_angle_degrees()
+            pos2 = motors[2].get_angle_degrees()
+
+            if pos1 is None or pos2 is None:
+                print("Lost communication with one or both motors!")
+                break
+
+            done1 = abs(pos1 - targets[1]) < TOL_DEG
+            done2 = abs(pos2 - targets[2]) < TOL_DEG
+
+            if done1 and done2:
+                elapsed = time.time() - start_time
+                print(f"  ✓ Completed in {elapsed:.1f}s - Pos1: {pos1:.1f}°, Pos2: {pos2:.1f}°")
+                update_display(rev, targets, positions={1: pos1, 2: pos2}, note="Done")
+                break
+
+            # Progress update every ~2 seconds if moving
+            if time.time() - last_update > 2:
+                # Per-motor progress within THIS rev (0..100)
+                prog1 = (pos1 - start_pos[1]) / (rev * DEGREES_PER_REV) * 100 if rev > 0 else 0
+                prog2 = (pos2 - start_pos[2]) / (rev * DEGREES_PER_REV) * 100 if rev > 0 else 0
+
+                print(f"  Progress: M1 {pos1:.1f}° ({prog1:.1f}%), M2 {pos2:.1f}° ({prog2:.1f}%)")
+                update_display(rev, targets, positions={1: pos1, 2: pos2})
+
+                last_pos[1] = pos1
+                last_pos[2] = pos2
+                last_update = time.time()
+
+            time.sleep(0.1)
+
+        time.sleep(0.5)  # pause between revolutions
+
+    print()
+    print("=" * 60)
+    print("Test Complete!")
+    final1 = motors[1].get_position()
+    final2 = motors[2].get_position()
+    print(f"Final position motor 1: {final1}°")
+    print(f"Final position motor 2: {final2}°")
+    print("=" * 60)
+
+    if HAS_DISPLAY:
+        display.fill(0)
+        display.text("Test Complete!", 8, 0)
+        display.text(f"{NUM_REVS} revs", 8, 16)
+        if final1 is not None:
+            display.text(f"M1:{final1:.0f}", 8, 32)
+        if final2 is not None:
+            display.text(f"M2:{final2:.0f}", 8, 48)
+        display.show()
+
+except KeyboardInterrupt:
+    print()
+    print("=" * 60)
+    print("Test stopped by user")
+    final1 = motors[1].get_position()
+    final2 = motors[2].get_position()
+    if final1 is not None and final2 is not None:
+        print(f"Final position motor 1: {final1}° (Δ{final1 - start_pos[1]:.1f}°)")
+        print(f"Final position motor 2: {final2}° (Δ{final2 - start_pos[2]:.1f}°)")
+        if HAS_DISPLAY:
+            display.fill(0)
+            display.text("Test Stopped", 16, 0)
+            display.text(f"M1:{final1:.0f}", 16, 24)
+            display.text(f"M2:{final2:.0f}", 16, 40)
+            display.show()
+    print("=" * 60)
+
+except Exception as e:
+    print()
+    print("=" * 60)
+    print(f"Error: {e}")
+    import sys
+    sys.print_exception(e)
+    print("=" * 60)

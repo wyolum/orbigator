@@ -2,7 +2,7 @@ board_w = 35;
 board_l = 65;
 board_h = 2;
 hole_offset = 3;
-hole_d = 3;
+hole_d = 3.5;
 
 screen_w = 23;
 screen_l = 35;
@@ -79,7 +79,7 @@ module display_screws(){
   for(i=[-1,1]){
     for(j=[-1,1]){
       translate([i * (board_w/2 - hole_offset), j * (board_l/2 - hole_offset), 0])
-	cylinder(d=hole_d+.5, h=30, center=true, $fn=30);
+	cylinder(d=hole_d, h=30, center=true, $fn=30);
     }
   }
 }

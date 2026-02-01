@@ -1,0 +1,62 @@
+inch = 25.4;
+
+D = 297;
+MAGNET_SEP = 7;
+
+module bearing(d=6){
+  sphere(d=d, $fn=50);
+}
+
+module bearings(d=6){
+  sep = MAGNET_SEP;
+  translate([-sep, 0, 0])bearing(d);
+  translate([ sep, 0, 0])bearing(d);
+}
+
+module sled_base(){
+  L = 25;
+  W = 15;
+  H = 6.;
+  up = 2.5;
+  difference(){
+    union(){
+      translate([0,0,up])bearings(7.25);
+      cube([2 * MAGNET_SEP,5, 5.],center=true);
+      translate([0,0,-.3])scale([1,1,1])cylinder(d=15, h=.5, $fn=30);
+    }
+
+    translate([0,0,up])bearings(6.50);
+    translate([0,0,-D/2 -.3])cube(D,center=true);
+    translate([0,0,D/2+4.3])cube(D,center=true);
+    cylinder(d=2, h=10, $fn=40);
+    //translate([10, 0, 0])cube([15, 3, 10], center=true);
+    //translate([-10, 0, 0])cube([15, 3, 10], center=true);
+  }
+
+}
+
+translate([0,0,-2.5])sled_base();
+
+module magnet(){
+  color("silver"){
+    cylinder(h=13, d=3, $fn=30);
+    minkowski(){
+      translate([0,0,.5])
+      cylinder(d=10, h=3, $fn=30);
+      sphere(d=1, $fn=30);
+    }
+  }
+}
+
+module magnets_up(){
+  angle = atan2(MAGNET_SEP, D/2);
+  translate([MAGNET_SEP, 0, 0])rotate([180, +angle/2, 0])magnet();
+  translate([-MAGNET_SEP, 0, 0])rotate([180, -angle/2, 0])magnet();
+}
+module magnets(){
+  translate([2, 0,3.5])
+  rotate([-90,0,90])
+  magnets_up();
+}
+
+//magnets();

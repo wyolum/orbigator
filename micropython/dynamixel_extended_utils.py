@@ -187,6 +187,30 @@ def read_present_position(servo_id):
     """
     return read_dword(servo_id, 132)  # ADDR_PRESENT_POSITION = 132
 
+def reboot_motor(servo_id):
+    """
+    Reboot the motor (hard reset).
+    This clears all error states and reinitializes the motor.
+    
+    Instruction: 0x08 (REBOOT)
+    Motor will take ~500ms to reboot.
+    
+    Returns: True if successful, False otherwise
+    """
+    print(f"Rebooting Motor {servo_id}...")
+    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x03, 0x00, 0x08])
+    crc = calc_crc(packet)
+    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+    response = send_and_receive(bytes(packet), timeout_ms=100)
+    
+    if response is not None and len(response) >= 9 and response[8] == 0:
+        print(f"  ✓ Motor {servo_id} rebooted successfully")
+        time.sleep_ms(500)  # Wait for motor to complete reboot
+        return True
+    else:
+        print(f"  ✗ Motor {servo_id} reboot failed")
+        return False
+
 def set_extended_mode(servo_id):
     """
     Configure servo for Extended Position Mode (Mode 4).
@@ -212,7 +236,7 @@ def set_extended_mode(servo_id):
     print(f"  ✓ Motor {servo_id} configured for Extended Position Mode")
     return True
 
-def get_new_pos(current_pos, command_pos):
+def get_new_pos(current_pos, command_pos, direction=None):
     """
     Calculate new motor position using shortest path in Extended Position Mode.
     
@@ -224,19 +248,34 @@ def get_new_pos(current_pos, command_pos):
         command_pos: Commanded position (typically 0-360°)
     
     Returns:
-        New position with preserved turn count, using shortest path
+        New position with preserved turn count,
+        -- using shortest path if direction is None or 0
+        -- using next positive rotation if direction > 1
+        -- using next negative roation if direction < 0
         
     Examples:
-        current_pos = 358.0, command_pos = 2.0
+        current_pos = 358.0, command_pos = 2.0, direction is None
         Returns: 362.0  # Moves forward +4° (shortest path)
         
-        current_pos = 10.0, command_pos = 350.0
-        Returns: 370.0  # Moves backward -20° (shortest path)
+        current_pos = 10.0, command_pos = 350.0 direction is None
+        Returns: -10.0  # Moves backward -20° (shortest path)
+
+        current_pos = 358.0, command_pos = 2.0, direction < 0
+        Returns: 2  # Moves backward 356° (shortest path)
+        
+        current_pos = 10.0, command_pos = 350.0 direction > 0
+        Returns: 350.0  # Moves forward 340 ° (next occurance path)
+
     """
     turns, pos = divmod(current_pos, 360)
     change = command_pos - pos
     # Normalize change to shortest path: -180 to +180
-    change = (change + 180) % 360 - 180
+    if direction is None or direction == 0:
+        change = (change + 180) % 360 - 180
+    elif direction > 0:
+        change = change % 360
+    else: # direction < 0:
+        change = change % 360 - 360
     return turns * 360 + pos + change
 
 def power_on_routine(servo_id):

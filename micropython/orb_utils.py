@@ -295,10 +295,9 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_VERSION = 2
-STATE_FORMAT_V0 = "<4sQffffffB16sB"  # Original format without version byte
-STATE_FORMAT_V1 = "<4sBQffffffB16sB"  # V1 with version byte
-STATE_FORMAT = "<4sBIffffffIB16sB"  # V2 magic, ver, ts, 6xfloat, rev, mode, sat, crc
+STATE_VERSION = 3
+STATE_FORMAT_V2 = "<4sBIffffffIB16sB"
+STATE_FORMAT = "<4sBIddddddIB16sB"  # V3: Double precision floats (8 bytes)
 STATE_MAGIC = b"ORB!"
 STATE_SIZE = struct.calcsize(STATE_FORMAT)
 
@@ -320,14 +319,15 @@ def _validate_state(config):
 def save_state():
     """Save current orbital parameters and absolute motor positions."""
     try:
+        print(f"DEBUG: Saving state... TS={get_timestamp()}")
         now = get_timestamp()
         config = {
             "altitude_km": g.orbital_altitude_km,
             "inclination_deg": g.orbital_inclination_deg,
             "eccentricity": g.orbital_eccentricity,
             "periapsis_deg": g.orbital_periapsis_deg,
-            "eqx_deg": g.eqx_position_deg,
-            "aov_deg": g.aov_position_deg,
+            "eqx_deg": g.eqx_position_deg % 360.0,  # Normalize to 0-360
+            "aov_deg": g.aov_position_deg % 360.0,  # Normalize to 0-360
             "rev_count": g.orbital_rev_count,
             "mode_id": g.current_mode_id,
             "sat_name": getattr(g.current_mode, 'satellite_name', None) if g.current_mode_id == "SGP4" else "",
@@ -344,12 +344,13 @@ def save_state():
                 sat_name_bytes += b'\x00' * (16 - len(sat_name_bytes)) # Pad to 16
                 
                 # Pack binary block (leaving checksum 0 for now)
+                # V3 Format uses Doubles (d) where V2 used Floats (f)
                 data = struct.pack(STATE_FORMAT, 
                     STATE_MAGIC, STATE_VERSION, int(now) & 0xFFFFFFFF, 
-                    float(g.aov_position_deg), float(g.eqx_position_deg),
-                    float(g.orbital_altitude_km), float(g.orbital_inclination_deg),
-                    float(g.orbital_eccentricity), float(g.orbital_periapsis_deg),
-                    int(g.orbital_rev_count),
+                    float(config["aov_deg"]), float(config["eqx_deg"]),
+                    float(config["altitude_km"]), float(config["inclination_deg"]),
+                    float(config["eccentricity"]), float(config["periapsis_deg"]),
+                    int(config["rev_count"]),
                     m_id, sat_name_bytes, 0
                 )
                 
@@ -363,9 +364,11 @@ def save_state():
                     with g.i2c_lock:
                         if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
                             # SUCCESS: Stop here to avoid flash wear
+                            print("DEBUG: SRAM Write OK")
                             return
                 else:
                     if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
+                        print("DEBUG: SRAM Write OK")
                         return
             except Exception as e:
                 print("SRAM save error:", e)
@@ -391,7 +394,7 @@ def load_state():
                 data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
                 
             if data and data[:4] == STATE_MAGIC:
-                # 1. Try Version 1 (Current)
+                # 1. Try Version 3 (Current - Double Precision)
                 if data[4] == STATE_VERSION:
                     if data[-1] == _compute_checksum(data):
                         mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
@@ -526,7 +529,9 @@ def load_state():
         return {
             "timestamp": timestamp,
             "mode_id": config.get("mode_id", "ORBIT"),
-            "sat_name": config.get("sat_name", None)
+            "sat_name": config.get("sat_name", None),
+            "eqx_deg": last_eqx_deg,
+            "aov_deg": last_aov_deg
         }
     except Exception as e:
         print("Reconstruction error:", e)

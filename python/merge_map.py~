@@ -1,0 +1,12 @@
+from pypdf import PdfMerger
+
+merger = PdfMerger()
+pdfs = ['vector_map_bowl_sheet_1.pdf',
+        'vector_map_bowl_sheet_2.pdf',
+        'vector_map_bowl_sheet_3.pdf',
+        'vector_map_bowl_sheet_4.pdf']
+for pdf in pdfs
+    merger.append(pdf)
+
+merger.write("vector_map_bowl.pdf")
+merger.close()
