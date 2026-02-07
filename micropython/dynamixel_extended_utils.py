@@ -148,6 +148,18 @@ def read_word(servo_id, address):
         return value
     return None
 
+def read_byte(servo_id, address):
+    """Read a single byte value"""
+    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x07, 0x00, 0x02])
+    packet.extend([address & 0xFF, (address >> 8) & 0xFF, 0x01, 0x00])  # Read 1 byte
+    crc = calc_crc(packet)
+    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+    response = send_and_receive(bytes(packet))
+    
+    if response is not None and len(response) >= 10 and response[8] == 0:
+        return response[9]
+    return None
+
 def read_dword(servo_id, address):
     """Read a 4-byte value (for position)"""
     packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x07, 0x00, 0x02])

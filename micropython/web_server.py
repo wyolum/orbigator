@@ -480,8 +480,9 @@ class WebServer:
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(addr)
         s.listen(1)
+        s.settimeout(1.0) # 1 second timeout for responsiveness to shutdown
         
-        while True:
+        while g.web_server_enabled:
             try:
                 client, addr = s.accept()
                 client_ip = addr[0]
@@ -495,12 +496,21 @@ class WebServer:
                 
                 client.close()
                 gc.collect()  # Clean up memory
+            except OSError as e:
+                # ETIMEDOUT (110) or EAGAIN (11) are expected with settimeout
+                if e.args[0] in [110, 11]:
+                    continue
+                print(f"Server socket error: {e}")
+                time.sleep(1)
             except Exception as e:
                 print(f"Server error: {e}")
                 try:
                     client.close()
                 except:
                     pass
+        
+        print("Web server shutting down...")
+        s.close()
 
     def api_wifi_scan(self, method, body):
         """GET /api/wifi/scan - Scan for available networks"""

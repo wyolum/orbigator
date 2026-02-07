@@ -23,6 +23,7 @@ mock_motor.py
 web_server.py
 wifi_setup.py
 input_utils.py
+eqx_tool.py
 
 # Config & Cache
 orbigator_config.json

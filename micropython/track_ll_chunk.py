@@ -80,11 +80,11 @@ class TrackLLMode(SGP4Mode):
                 
                 # Apply offsets/etc if needed, but set_nearest_degrees handles wrapping.
                 if g.aov_motor:
-                    g.aov_motor.set_nearest_degrees(virt_aov)
+                    g.aov_motor.set_nearest_degrees(virt_aov % 360)
                     g.aov_motor.update_present_position()
                     
                 if g.eqx_motor:
-                    g.eqx_motor.set_nearest_degrees(virt_eqx)
+                    g.eqx_motor.set_nearest_degrees(virt_eqx % 360)
                     g.eqx_motor.update_present_position()
         except AttributeError:
              print("TrackLL: Propagator missing method")

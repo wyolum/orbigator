@@ -59,8 +59,12 @@ class MenuMode(Mode):
             wlan = network.WLAN(network.STA_IF)
             # Insert Track Satellite after Orbit! if WiFi available
             self.items.insert(1, "Track Satellite")
+            
+            # Add dynamic web server toggle
+            web_label = "Halt Web Svc" if g.web_server_enabled else "Start Web Svc"
+            self.items.append(web_label)
         except:
-            pass  # No WiFi, skip Track Satellite option
+            pass  # No WiFi, skip Track Satellite and Web Svc options
             
         # Default selection based on current mode to prevent accidental switching
         if g.current_mode_id == "SGP4":
@@ -93,6 +97,17 @@ class MenuMode(Mode):
             return PeriodEditorMode()
         elif item == "Settings":
             return SettingsMode()
+        elif item == "Halt Web Svc":
+            print("Halting Web Server...")
+            g.web_server_enabled = False
+            self.items[self.selection] = "Start Web Svc"
+            return None
+        elif item == "Start Web Svc":
+            print("Starting Web Server...")
+            g.web_server_enabled = True
+            utils.start_web_server_thread()
+            self.items[self.selection] = "Halt Web Svc"
+            return None
         return None
     
     def render(self, disp):
@@ -171,23 +186,23 @@ class OrbitMode(Mode):
         
         print(f"Orbit Init (Abs Time): Target AoV={target_aov:.1f}, EQX={target_eqx:.1f}")
         
-        # Move motors directly to target (No "Catch Up" animation needed, just go)
-        if g.aov_motor:
-            g.aov_motor.set_nearest_degrees(target_aov % 360, direction_override=0)
-        if g.eqx_motor:
-            g.eqx_motor.set_nearest_degrees(target_eqx % 360, direction_override=0)
+        # NOTE: Do NOT command motors here. Phase anchoring in orbigator.py
+        # will handle initial positioning after calculating the offset.
 
     def on_encoder_rotate(self, delta):
         # Apply accelerated nudging policy
         delta = self.nudge_manager.get_delta(delta)
         
         if self.nudge_target == 0:
+            # Nudge AoV (orbital position)
             g.run_start_aov_deg += delta
-        if self.propagator:
-            self.propagator.nudge_aov(delta)
+            if self.propagator:
+                self.propagator.nudge_aov(delta)
         else:
+            # Nudge EQX (equatorial orientation)
             g.run_start_eqx_deg += delta
-            if self.propagator: self.propagator.nudge_eqx(delta)
+            if self.propagator:
+                self.propagator.nudge_eqx(delta)
     
     def on_encoder_press(self):
         self.nudge_target = (self.nudge_target + 1) % 2
@@ -231,24 +246,23 @@ class OrbitMode(Mode):
                 if (diff_aov > 2.0 and not is_wrap_aov) or (diff_eqx > 2.0 and not is_wrap_eqx):
                     dt_ms = time.ticks_diff(now_ms, self.last_command_ticks)
                     print(f"\n[MOTION ALERT] @ TS:{now_unix} (dt={dt_ms}ms)")
-                    print(f"  AoV: {self.last_target_aov:8.2f} -> {aov_angle:8.2f} (Δ={diff_aov:7.2f}°, Turn {int(aov_angle//360)})")
-                    print(f"  EQX: {self.last_target_eqx:8.2f} -> {eqx_angle:8.2f} (Δ={diff_eqx:7.2f}°, Turn {int(eqx_angle//360)})")
+                    print(f"  AoV: {self.last_target_aov % 360:6.1f}° -> {aov_angle % 360:6.1f}° (Δ={diff_aov:+.1f}°)")
+                    print(f"  EQX: {self.last_target_eqx % 360:6.1f}° -> {eqx_angle % 360:6.1f}° (Δ={diff_eqx:+.1f}°)")
             
             self.last_target_aov = aov_angle
             self.last_target_eqx = eqx_angle
             self.last_command_ticks = now_ms
             
-            
-            if g.eqx_motor:
-                g.eqx_motor.set_nearest_degrees(eqx_angle % 360, direction_override=0)
-                g.eqx_motor.update_present_position(force=True) # Poll hardware after move
-            if g.aov_motor:
-                g.aov_motor.set_nearest_degrees(aov_angle % 360, direction_override=0)
-                g.aov_motor.update_present_position(force=True) # Poll hardware after move
-                
-            # Update Globals for State Saving (Normalize to 0-360 to preserve precision)
+            # Update Globals for State Saving
             g.aov_position_deg = aov_angle % 360.0
             g.eqx_position_deg = eqx_angle % 360.0
+            
+            if g.eqx_motor:
+                g.eqx_motor.set_nearest_degrees(g.eqx_position_deg)
+                g.eqx_motor.update_present_position(force=True)
+            if g.aov_motor:
+                g.aov_motor.set_nearest_degrees(g.aov_position_deg)
+                g.aov_motor.update_present_position(force=True)
 
         # Revolution counter: increment when crossing south point (AoV = 270°)
         current_aov_wrapped = g.aov_position_deg % 360
@@ -651,12 +665,12 @@ class HomingMode(Mode):
         if g.aov_motor: g.aov_motor.update_present_position()
         if g.eqx_motor: g.eqx_motor.update_present_position()
         
-        # Check actual positions
-        aov = g.aov_motor.present_output_degrees if g.aov_motor else 0
-        eqx = g.eqx_motor.present_output_degrees if g.eqx_motor else 0
+        # Check actual positions (wrapped to -180..180)
+        aov = g.aov_motor.present_output_degrees if g.aov_motor else 90
+        eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
         
-        # Consider complete if both within 1 degrees of 0
-        if abs(aov) < 1.0 and abs(eqx) < 1.0:
+        # Consider complete if both within 1 degree of home position (AoV=90, EQX=0)
+        if abs(aov - 90) < 1.0 and abs(eqx) < 1.0:
             self.success = True
             
     def on_back(self):
@@ -1427,6 +1441,7 @@ class SGP4Mode(Mode):
             
             # print(f"SGP4 Calc: AoV={self.last_aov_angle:.1f} EQX={self.last_eqx_angle:.1f} | Lat={self.lat_deg:.2f} Lon={self.lon_deg:.2f} @ {now_unix}")
 
+            # Update Globals for State Saving
             g.aov_position_deg = self.last_aov_angle % 360.0
             g.eqx_position_deg = self.last_eqx_angle % 360.0
             self.last_unix = now_unix
@@ -1458,11 +1473,12 @@ class SGP4Mode(Mode):
             
             
             if g.aov_motor:
-                g.aov_motor.set_nearest_degrees(aov_angle, direction_override=0)
+                g.aov_motor.set_nearest_degrees(g.aov_position_deg)
                 g.aov_motor.update_present_position(force=True) # Poll hardware after move
             
             if g.eqx_motor:
-                g.eqx_motor.set_nearest_degrees(eqx_angle, direction_override=0)
+                # Command the PHASE-SHIFTED target
+                g.eqx_motor.set_nearest_degrees(g.eqx_position_deg)
                 g.eqx_motor.update_present_position(force=True) # Poll hardware after move
         
         # Note: SRAM persistence is now handled by motor.on_turn_change callback
@@ -1477,13 +1493,15 @@ class SGP4Mode(Mode):
             disp.show()
             return
         
-        # Title
-        mode_str = "TRACKING" if self.tracking else "SELECT"
-        disp.text(f"{mode_str}", 0, 2)
+        # Title + Satellite name on one line
+        mode_str = "Tracking" if self.tracking else "Select"
+        sat_name = self.satellite_name[:8]  # Shorter to fit on one line
+        disp.text(f"{mode_str} {sat_name}", 0, 2)
         
-        # Satellite name (truncate if needed)
-        sat_name = self.satellite_name[:16]
-        disp.text(sat_name, 0, 14)
+        # AoV/EQX positions (integer degrees)
+        aov_int = int(g.aov_position_deg % 360)
+        eqx_int = int(g.eqx_position_deg % 360)
+        disp.text(f"AoV:{aov_int:3d} EQX:{eqx_int:3d}", 0, 14)
         
         if self.fetching:
             # Show fetching message

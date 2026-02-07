@@ -52,19 +52,29 @@ class KeplerPropagator(Propagator):
         self.period_sec = period_min * 60.0
 
     def get_aov_eqx(self, unix_time):
-        elapsed = unix_time - self.start_time
+        """
+        Calculates motor angles using High-Precision Periodic Time Reduction.
+        This preserves 32-bit float precision by keeping elapsed time within one period.
+        """
+        # Calculate elapsed time within a single period to avoid float precision loss.
+        # (unix_time % period - start_time % period) % period
+        aov_elapsed = (unix_time % self.period_sec - self.start_time % self.period_sec) % self.period_sec
+        
+        # Earth rotation period is ~86400s
+        eqx_period = 360.0 / abs(self.eqx_rate) if self.eqx_rate != 0 else 86400.0
+        eqx_elapsed = (unix_time % eqx_period - self.start_time % eqx_period) % eqx_period
         
         # AoV Position
         if self.eccentricity > 0.001:
             aov_pos, _ = utils.compute_elliptical_position(
-                elapsed, self.period_sec, self.eccentricity, self.periapsis_deg
+                aov_elapsed, self.period_sec, self.eccentricity, self.periapsis_deg
             )
             aov_deg = self.start_aov + aov_pos
         else:
-            aov_deg = self.start_aov + (self.aov_rate * elapsed)
+            aov_deg = self.start_aov + (self.aov_rate * aov_elapsed)
             
         # EQX Position (Constant velocity)
-        eqx_deg = self.start_eqx + (self.eqx_rate * elapsed)
+        eqx_deg = self.start_eqx + (self.eqx_rate * eqx_elapsed)
         
         return aov_deg, eqx_deg
 

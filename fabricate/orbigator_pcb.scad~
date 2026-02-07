@@ -1,0 +1,7 @@
+use <display_encoder_board.scad>
+module orbigator_board(){
+  color("darkgray")difference(){
+    orbigator_pcb();
+    display_screws();
+  }
+}

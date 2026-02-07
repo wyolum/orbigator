@@ -11,7 +11,7 @@ from dynamixel_extended_utils import set_extended_mode
 import orb_globals as g
 import orb_utils as utils
 import pins
-from modes import MenuMode, OrbitMode, DatetimeEditorMode
+from modes import MenuMode, OrbitMode, DatetimeEditorMode, SGP4Mode
 import _thread  # For I2C lock
 
 
@@ -29,8 +29,8 @@ except Exception as e:
     # Fallback/Default Config
     config_data = {
         "motors": {
-            "eqx": {"id": 1, "gear_ratio_num": 120.0, "gear_ratio_den": 14.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 10, "offset_deg": 0.0},
-            "aov": {"id": 2, "gear_ratio_num": 1.0, "gear_ratio_den": 1.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 2, "offset_deg": 0.0}
+            "eqx": {"id": 1, "gear_ratio_num": 120.0, "gear_ratio_den": 14.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 50, "offset_deg": 0.0},
+            "aov": {"id": 2, "gear_ratio_num": 1.0, "gear_ratio_den": 1.0, "pid": {"p": 600, "i": 0, "d": 0}, "speed_limit": 20, "offset_deg": 0.0}
         },
         "system": {"detent_div": 4, "debounce_ms": 200, "oled": {"width": 128, "height": 64}}
     }
@@ -44,6 +44,12 @@ AOV_GEAR_RATIO = mc["aov"]["gear_ratio_num"] / mc["aov"]["gear_ratio_den"]
 
 DETENT_DIV = config_data["system"]["detent_div"]
 DEBOUNCE_MS = 300 # Increased from 200 to filter noise
+
+print("\n--- Motor Configuration ---")
+for m_name, m_cfg in mc.items():
+    ratio = m_cfg['gear_ratio_num'] / m_cfg['gear_ratio_den']
+    print(f"  {m_name.upper()}: ID={m_cfg['id']}, Ratio={ratio:.2f}:1, Limit={m_cfg['speed_limit']}")
+print("---------------------------\n")
 
 # ---------------- OLED Init ----------------
 OLED_W = config_data["system"]["oled"]["width"]
@@ -241,10 +247,15 @@ if has_wifi:
                         try:
                             print(f"NTP Sync attempt {attempt+1}...")
                             ntptime.host = "pool.ntp.org" 
+                            before_sync = time.time()
                             ntptime.settime()
+                            after_sync = time.time()
                             t = machine.RTC().datetime()
                             utils.set_datetime(t[0], t[1], t[2], t[4], t[5], t[6], g.rtc)
+                            
+                            correction = after_sync - before_sync
                             print(f"✓ NTP Sync OK: {ip}")
+                            print(f"  RTC Correction: {correction:+.1f}s")
                             sync_done = True
                             break
                         except Exception as e:
@@ -268,7 +279,8 @@ if has_wifi:
 # ---------------- State Loading ----------------
 # Load state first so we can restore motor positions if needed
 state_info = utils.load_state()
-g.current_mode_id = state_info.get("mode_id", "ORBIT")
+default_mode_id = "SGP4" if has_wifi else "ORBIT"
+g.current_mode_id = state_info.get("mode_id", default_mode_id)
 g.last_save_timestamp = state_info.get("timestamp", 0)
 saved_sat_name = state_info.get("sat_name", None)
 
@@ -277,9 +289,14 @@ if ENABLE_MOTORS:
     print("\nInitializing DYNAMIXEL motors...")
     
     # Hard reset motors to clear any error states
-    from dynamixel_extended_utils import reboot_motor
+    from dynamixel_extended_utils import reboot_motor, read_present_position
     reboot_motor(AOV_MOTOR_ID)
     reboot_motor(EQX_MOTOR_ID)
+    
+    # Verify motors reset to 0-4095 range after reboot
+    aov_raw = read_present_position(AOV_MOTOR_ID)
+    eqx_raw = read_present_position(EQX_MOTOR_ID)
+    print(f"  [POST-REBOOT] AoV raw={aov_raw}, EQX raw={eqx_raw}")
     
     set_extended_mode(AOV_MOTOR_ID)
     set_extended_mode(EQX_MOTOR_ID)
@@ -288,15 +305,25 @@ if ENABLE_MOTORS:
     aov_offset = mc["aov"].get("offset_deg", 0.0)
     eqx_offset = mc["eqx"].get("offset_deg", 0.0)
 
-    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO,
-                               offset_degrees=aov_offset, direction=1)
-    g.aov_motor = aov_motor
-    
-    # Restore EQX multi-turn position from state if valid
+    # Restore orientations from state if valid (V4 uses abs_ticks, Legacy uses deg)
+    last_aov = state_info.get("aov_deg") if state_info.get("timestamp", 0) > 0 else None
     last_eqx = state_info.get("eqx_deg") if state_info.get("timestamp", 0) > 0 else None
     
+    aov_abs = state_info.get("aov_abs_ticks")
+    eqx_abs = state_info.get("eqx_abs_ticks")
+
+    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO,
+                               offset_degrees=aov_offset, 
+                               direction=1, # Slew: Forward Only (Cable Safety)
+                               recovery_direction=1, # Boot: Direction-Aware
+                               last_known_pos=last_aov, last_abs_ticks=aov_abs)
+    g.aov_motor = aov_motor
+    
     eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO, 
-                               offset_degrees=eqx_offset, last_known_pos=last_eqx)
+                               offset_degrees=eqx_offset, 
+                               direction=None, # Slew: Shortest Path
+                               recovery_direction=1, # Boot: Direction-Aware
+                               last_known_pos=last_eqx, last_abs_ticks=eqx_abs)
     g.eqx_motor = eqx_motor
     
     # Configure from loaded config
@@ -322,74 +349,119 @@ else:
     g.aov_motor = MockMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO)
     g.eqx_motor = MockMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 
-# ---------------- State and Loop ----------------
-# State already loaded above
-# state_info = utils.load_state()
-# SRAM health logging is now handled inside load_state() via print
-# SRAM health logging is now handled inside load_state() via print
-g.current_mode_id = state_info.get("mode_id", "ORBIT")
-g.last_save_timestamp = state_info.get("timestamp", 0)
-saved_sat_name = state_info.get("sat_name", None)
+# ---------------- Hardware Detection ----------------
+def check_wifi_available():
+    try:
+        import network
+        # Check if WLAN class exists and can be instantiated
+        if hasattr(network, 'WLAN'):
+            return True
+    except:
+        pass
+    return False
 
-# Check for RTC reset (e.g. battery failure)
-# Check for RTC reset (Year < 2024 invalid implies dead battery or fresh Pico)
-lt = time.localtime()
-if lt[0] < 2024:
-    print(f"RTC Year {lt[0]} invalid! Prompting for time.")
-    g.current_mode_id = "DATETIME"
+HAS_WIFI = check_wifi_available()
+
+# ---------------- Mode Selection ----------------
+# Select initial mode and initialize its parameters
+# Priority: 1. SRAM saved mode, 2. Hardware-specific default
+if g.current_mode_id == "SGP4":
+    g.current_mode = SGP4Mode()
+    g.current_mode.enter()
+    if saved_sat_name:
+        g.current_mode.select_satellite_by_name(saved_sat_name)
+elif g.current_mode_id == "DATETIME":
     g.current_mode = DatetimeEditorMode(next_mode=OrbitMode())
+    g.current_mode.enter()
+elif g.current_mode_id == "ORBIT":
+    g.current_mode = OrbitMode()
+    g.current_mode.enter()
 else:
-    # Resume last mode
-    if g.current_mode_id == "SGP4":
-        import modes
-        g.current_mode = modes.SGP4Mode()
-        g.current_mode.enter()
-        if saved_sat_name:
-            g.current_mode.select_satellite_by_name(saved_sat_name)
+    # Fallback/Default based on Hardware
+    if HAS_WIFI:
+        print("Hardware: Pico 2W detected. Defaulting to SGP4.")
+        g.current_mode = SGP4Mode()
     else:
-        # Default to OrbitMode
+        print("Hardware: Pico 2 detected. Defaulting to Orbit Mode.")
         g.current_mode = OrbitMode()
-        g.current_mode.enter()
+    g.current_mode.enter()
+    if g.current_mode_id == "SGP4" and saved_sat_name:
+        g.current_mode.select_satellite_by_name(saved_sat_name)
+
+# ---------------- Synchronous Alignment ----------------
+if ENABLE_MOTORS and g.current_mode_id != "DATETIME":
+    # 1. Get the TARGET position from the propagator
+    print("\nCalculating initial satellite position...")
+    
+    if hasattr(g.current_mode, 'propagator') and g.current_mode.propagator:
+        result = g.current_mode.propagator.get_aov_eqx(utils.get_timestamp())
+        target_aov = result[0] % 360
+        target_eqx = result[1] % 360
+    else:
+        # Fallback for modes without propagator
+        target_aov = 0.0
+        target_eqx = 0.0
+    
+    # 2. Log current hardware position vs target
+    phys_eqx = eqx_motor.output_degrees % 360
+    phys_aov = aov_motor.output_degrees % 360
+    
+    print(f"  [AoV] Hardware: {phys_aov:.1f}° → Target: {target_aov:.1f}°")
+    print(f"  [EQX] Hardware: {phys_eqx:.1f}° → Target: {target_eqx:.1f}°")
+    
+    # Update globals
+    g.eqx_position_deg = target_eqx
+    g.aov_position_deg = target_aov
+
+    # 3. Synchronous Alignment - motors will catch up to target
+    print("Aligning Motors (Synchronous)...")
+    disp.fill(0)
+    disp.text("Aligning Motors", 0, 16)
+    disp.show()
+
+    # Use configured speed limits for alignment
+    aov_motor.set_speed_limit(mc["aov"]["speed_limit"]) 
+    eqx_motor.set_speed_limit(mc["eqx"]["speed_limit"])
+    
+    # Send initial command (should be near-zero delta)
+    aov_motor.set_nearest_degrees(target_aov)
+    eqx_motor.set_nearest_degrees(target_eqx)
+
+    aligned = False
+    start_align = time.ticks_ms()
+    while not aligned and time.ticks_diff(time.ticks_ms(), start_align) < 20000: # 20s timeout
+        # Poll actual positions
+        now_aov = aov_motor.update_present_position(force=True)
+        now_eqx = eqx_motor.update_present_position(force=True)
+        
+        # Check delta using phase-aware logic
+        # target_aov is already normalized to % 360 in the mode update
+        err_aov = abs((now_aov - target_aov + 180) % 360 - 180)
+        err_eqx = abs((now_eqx - target_eqx + 180) % 360 - 180)
+        
+        if err_aov < 1.0 and err_eqx < 1.0:
+            aligned = True
+            print("✓ Sync Complete.")
+        else:
+            print(f"  Catching up... EQX Phase: {now_eqx % 360:.1f}° -> {target_eqx:.1f}°")
+            time.sleep_ms(500)
+    
+    # Restore simulation speed
+    aov_motor.set_speed_limit(mc["aov"]["speed_limit"])
+    eqx_motor.set_speed_limit(mc["eqx"]["speed_limit"])
 
 last_detent = 0
 last_display_update = 0
-
 print("Orbigator Ready.")
 
 # ---------------- Start Web Server in Background (Pico 2W only) ----------------
 if has_wifi:
-    print("WiFi hardware detected.")
+    status = "Starting web services..." if g.web_server_enabled else "Web services disabled."
+    print(f"WiFi hardware detected. {status}")
+    if g.web_server_enabled:
+        utils.start_web_server_thread()
 else:
-    print("NO WiFi HARDWARE.  Confirmed")
-
-if has_wifi:
-    import _thread
-
-    def start_web_server():
-        """Start web server in background thread"""
-        try:
-            import network
-            wlan = network.WLAN(network.STA_IF)
-            if not wlan.isconnected():
-                print("WiFi not connected. Starting Access Point for dashboard testing...")
-                ap = network.WLAN(network.AP_IF)
-                ap.active(True)
-                # Use a custom SSID so it's easy to find
-                ap.config(essid="Orbigator-Dev", password="orbigator123")
-                print(f"AP Started: Orbigator-Dev (192.168.4.1)")
-            
-            import web_server
-            web_server.start_server(port=80)
-        except Exception as e:
-            print(f"Web server error: {e}")
-
-    # Start web server in separate thread
-    # Start web server in separate thread
-    try:
-        _thread.start_new_thread(start_web_server, ())
-        print("Web server thread started")
-    except Exception as e:
-        print(f"Failed to start web server thread: {e}")
+    print("No WiFi hardware detected.")
 
 # ---------------- Main Loop ----------------
 try:
@@ -450,7 +522,7 @@ try:
                 
             # Note: SRAM persistence is now handled by motor.on_turn_change callback
             
-            # 6. Update and Render
+            # 6. Update and Render	
             g.current_mode.update(now)
             
             if time.ticks_diff(now, last_display_update) >= 200:

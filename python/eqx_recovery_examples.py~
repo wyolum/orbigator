@@ -1,0 +1,24 @@
+from datetime import datetime, timezone
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
+
+
+@dataclass(slots=True)
+class EQXState:
+    last_eqx: float
+    last_motor_encoder_count: int
+    last_cache_time: datetime
+
+    @classmethod
+    def capture(cls, eqx: float, encoder: int) -> "EQXState":
+        return cls(
+            last_eqx=eqx,
+            last_motor_encoder_count=encoder,
+            last_cache_time=datetime.now(timezone.utc),
+        )
+
+
+now = datetime.now(timezone.utc)
+state = EQXState.capture(eqx, encoder_count)
+print(state)

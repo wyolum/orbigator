@@ -1,6 +1,8 @@
 include </home/justin/code/BOSL2/std.scad>
 include </home/justin/code/BOSL2/gears.scad>
 // distance from top of base to aov mount is 73mm
+
+use <orbigator_pcb.scad>
 use <dynamixel_motor.scad>
 use <inclination_aov_mount.scad>
 use <flange.scad>
@@ -246,8 +248,8 @@ module base_with_1010_hole(){
       // hole for t-slot screw to 1010
       translate([0, 0, 16])rotate([-90, 0, 0])cylinder(d=3.5, h=100);
       translate([0, 8, 16])rotate([-90, 0, 0])cylinder(d=10, h=100);
-      translate([0, 0, -13])rotate([-90, 0, 0])cylinder(d=3.5, h=100);
-      translate([0, 8, -13])rotate([-90, 0, 0])cylinder(d=10, h=100);
+      //translate([0, 0, -13])rotate([-90, 0, 0])cylinder(d=3.5, h=100);
+      //translate([0, 8, -13])rotate([-90, 0, 0])cylinder(d=10, h=100);
 
        // big holes in bottom
       //translate([35,0,-50-inch])scale([1,1.7,1])cylinder(d=35, h=100+inch);
@@ -256,9 +258,15 @@ module base_with_1010_hole(){
       // translate([15,-35, -50-inch])cylinder(d=20, h=100+inch);
 
       //motor cables
-      rotate([0,0,113])translate([-15,-35, -50-inch])cylinder(d=20, h=100+inch);
+      rotate([0,0,-10])translate([30,0, -50-inch])scale([1, 1.5, 1])cylinder(d=10, h=100+inch);
+
+      // spring arm access (swingarms)
+      for(ang=[0, 120, 240]){
+	rotate([0,0,27+ang])translate([45,0, -50-inch])scale([1, 1.5, 1])cylinder(d=15, h=100+inch);
+      }
+
+      // motor handling
       translate([0,r-7, -50])cube([25, 38, 100], center=true);
-      translate([0,-r, -30+4])cylinder(d=10, h=5, center=false);
 
       // temporary test print only
       //rotate([0,90,0])scale([.3, 1, 1])translate([0,0,40])cylinder(d=20, h=50);
@@ -266,7 +274,7 @@ module base_with_1010_hole(){
        //pivot mount screw hole
       //translate([0, -19, 0])cylinder(d=4.5, h=100, center=true);
       translate([0, -19, -30+4])cylinder(d=10, h=5, center=false);
-       translate([50,0,-20-inch])cube([40, 75, 20], center=true); // motor cable slot
+      translate([50-40/2,-80/2,-20-inch - 20/2])cube([40, 80, 40], center=false); // motor cable slot
        for(theta=[0, 120, -120]){
 	 rotate([0,0,theta + 54]){
 	   translate([42.1, 0, -100])cylinder(d=3.5, h=200, $fn=30);
@@ -350,8 +358,8 @@ module display_extension(){
     //## EQX Pointer
       translate([60, 0, -base_z_offset+36.5])rotate([0,0,0])
 	rotate([0,90,0])rotate([0, 0, 45]){
-	cube([2, 2, 12],center=true);
-	rotate([0,0,45])translate([0,0,6])cylinder(d1=2*1.4, d2=0, h=2, $fn=4);
+	cube([3, 3, 12],center=true);
+	rotate([0,0,45])translate([0,0,6])cylinder(d1=3*1.4, d2=0, h=2, $fn=4);
       }
     }
     inside_box();
@@ -362,8 +370,8 @@ module display_extension(){
     cylinder(r=R+10, h=2 * globe_d, center=true);
 
     //power outlet
-    translate([143,0,-base_z_offset])rotate([0,90,90])cylinder(d=10, h=120, center=false);
-#translate([151-34.3,50,-base_z_offset])rotate([0,90,90])rotate([0,0,7])cube([10, 15, 100], center=true);
+    translate([70,0,-base_z_offset+15])rotate([0,90,90])cylinder(d=11.5, h=120, center=false);
+    //translate([151-34.3,50,-base_z_offset-4.3])rotate([0,90,90])rotate([0,0,7])cube([10, 15, 100], center=true);
     translate([170-50, 0, -base_z_offset+boost])rotate([0,10,0])mounting_screws();
     translate([170-50, 0, -base_z_offset+boost])rotate([0,10,0])translate([4-30/2,-55/2,-30/2])
       cube([30-11.25, 55-21, 30], center=false);
@@ -506,11 +514,10 @@ module bearing_mounts(h){
 //eqx_motor_assy();
 //translate([0,0,-174.6])bearing_mounts(5);
 //globe_interface_ring();
-if(false){
-  intersection(){
+if(true){
+  difference(){
     base_with_extension();
-    // floor is at z=-166.5
-    //translate([0,0,-170])cylinder(r=100, h=150);
+    translate([0,0,-275])cylinder(d=105, h=100, center=false);
   }
   rotate([0,0,30])translate([0,0,-155.2]){
     static_parts();
@@ -527,4 +534,4 @@ if(false){
   }
 }
 
-display_extension();
+//translate([100,0,-220])orbigator_board();

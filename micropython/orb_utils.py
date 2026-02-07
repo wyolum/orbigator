@@ -295,9 +295,9 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_VERSION = 3
-STATE_FORMAT_V2 = "<4sBIffffffIB16sB"
-STATE_FORMAT = "<4sBIddddddIB16sB"  # V3: Double precision floats (8 bytes)
+STATE_VERSION = 4
+STATE_FORMAT_V3 = "<4sBIddddddIB16sB"
+STATE_FORMAT = "<4sBIddddddIB16siiB"  # V4: +2x Int32 for Abs Ticks
 STATE_MAGIC = b"ORB!"
 STATE_SIZE = struct.calcsize(STATE_FORMAT)
 
@@ -316,45 +316,50 @@ def _validate_state(config):
     except:
         return False
 
-def save_state():
+def save_state(config=None):
     """Save current orbital parameters and absolute motor positions."""
     try:
-        print(f"DEBUG: Saving state... TS={get_timestamp()}")
         now = get_timestamp()
-        config = {
-            "altitude_km": g.orbital_altitude_km,
-            "inclination_deg": g.orbital_inclination_deg,
-            "eccentricity": g.orbital_eccentricity,
-            "periapsis_deg": g.orbital_periapsis_deg,
-            "eqx_deg": g.eqx_position_deg % 360.0,  # Normalize to 0-360
-            "aov_deg": g.aov_position_deg % 360.0,  # Normalize to 0-360
-            "rev_count": g.orbital_rev_count,
-            "mode_id": g.current_mode_id,
-            "sat_name": getattr(g.current_mode, 'satellite_name', None) if g.current_mode_id == "SGP4" else "",
-            "timestamp": now
-        }
+        if config is None:
+            config = {
+                "altitude_km": getattr(g, 'orbital_altitude_km', 400.0),
+                "inclination_deg": getattr(g, 'orbital_inclination_deg', 51.6),
+                "eccentricity": getattr(g, 'orbital_eccentricity', 0.0),
+                "periapsis_deg": getattr(g, 'orbital_periapsis_deg', 0.0),
+                "eqx_deg": (getattr(g, 'eqx_position_deg', 0.0)) % 360.0,
+                "aov_deg": (getattr(g, 'aov_position_deg', 0.0)) % 360.0,
+                "rev_count": getattr(g, 'orbital_rev_count', 0),
+                "mode_id": getattr(g, 'current_mode_id', "ORBIT"),
+                "sat_name": getattr(g.current_mode, 'satellite_name', "") if getattr(g, 'current_mode_id', "") == "SGP4" else "",
+                "timestamp": now
+            }
+        
+        # print(f"DEBUG: Saving state... TS={now}")
         
         # 1. Attempt SRAM save if DS3232
         if g.rtc and getattr(g.rtc, 'has_sram', False):
             try:
                 # Map Mode ID to integer
                 mode_map = {"ORBIT": 0, "SGP4": 1, "DATETIME": 2}
-                m_id = mode_map.get(g.current_mode_id, 0)
-                sat_name_bytes = str(config["sat_name"]).encode('utf-8')[:16]
+                m_id = mode_map.get(config["mode_id"], 0)
+                sat_name_bytes = str(config.get("sat_name", "")).encode('utf-8')[:16]
                 sat_name_bytes += b'\x00' * (16 - len(sat_name_bytes)) # Pad to 16
                 
-                # Pack binary block (leaving checksum 0 for now)
-                # V3 Format uses Doubles (d) where V2 used Floats (f)
+                # Get current absolute ticks from motor tracking
+                aov_abs = int(getattr(g.aov_motor, 'absolute_ticks', 0))
+                eqx_abs = int(getattr(g.eqx_motor, 'absolute_ticks', 0))
+                
+                # Pack binary block
+                # V4 adds aov_abs and eqx_abs
                 data = struct.pack(STATE_FORMAT, 
-                    STATE_MAGIC, STATE_VERSION, int(now) & 0xFFFFFFFF, 
+                    STATE_MAGIC, STATE_VERSION, int(config["timestamp"]) & 0xFFFFFFFF, 
                     float(config["aov_deg"]), float(config["eqx_deg"]),
                     float(config["altitude_km"]), float(config["inclination_deg"]),
                     float(config["eccentricity"]), float(config["periapsis_deg"]),
                     int(config["rev_count"]),
-                    m_id, sat_name_bytes, 0
+                    m_id, sat_name_bytes,
+                    aov_abs, eqx_abs, 0
                 )
-                
-                # print(f"DEBUG SRAM Save: AoV={g.aov_position_deg:.1f} EQX={g.eqx_position_deg:.1f} Alt={g.orbital_altitude_km:.1f}")
                 
                 # Calculate and insert checksum
                 data_list = bytearray(data)
@@ -363,12 +368,9 @@ def save_state():
                 if g.i2c_lock:
                     with g.i2c_lock:
                         if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
-                            # SUCCESS: Stop here to avoid flash wear
-                            print("DEBUG: SRAM Write OK")
                             return
                 else:
                     if g.rtc.write_sram(g.rtc.SRAM_START, data_list):
-                        print("DEBUG: SRAM Write OK")
                         return
             except Exception as e:
                 print("SRAM save error:", e)
@@ -394,16 +396,18 @@ def load_state():
                 data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
                 
             if data and data[:4] == STATE_MAGIC:
-                # 1. Try Version 3 (Current - Double Precision)
+                # 1. Try Version 4 (Current - Abs Ticks)
                 if data[4] == STATE_VERSION:
                     if data[-1] == _compute_checksum(data):
-                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, ck = struct.unpack(STATE_FORMAT, data)
+                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, e_ticks, ck = struct.unpack(STATE_FORMAT, data)
                         config = {
                             "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
                             "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
                             "rev_count": rev,
-                            "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
-                            "sat_name": sat.decode('utf-8').strip('\x00')
+                            "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
+                            "sat_name": sat.decode('utf-8').strip('\x00'),
+                            "aov_abs_ticks": a_ticks,
+                            "eqx_abs_ticks": e_ticks
                         }
                         if _validate_state(config):
                             print(f"SRAM state: OK v{ver}")
@@ -412,51 +416,65 @@ def load_state():
                             config = None
                     else:
                         print("SRAM state: checksum fail")
-                # 2. Backward Compatibility Bridge
+                # 2. Backward Compatibility Bridge (V3)
+                elif data[4] == 3:
+                    try:
+                        v3_size = struct.calcsize(STATE_FORMAT_V3)
+                        v3_data = data[:v3_size]
+                        if v3_data[-1] == _compute_checksum(v3_data):
+                            mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, ck = struct.unpack(STATE_FORMAT_V3, v3_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "rev_count": rev,
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
+                                "sat_name": sat.decode('utf-8').strip('\x00')
+                            }
+                            print("SRAM state: V3 bridge success")
+                    except:
+                        config = None
+                # 3. Older versions...
+                elif data[4] == 1:
+                    try:
+                        v1_size = struct.calcsize(STATE_FORMAT_V1)
+                        v1_data = data[:v1_size]
+                        if v1_data[-1] == _compute_checksum(v1_data):
+                            mag, ver, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V1, v1_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "rev_count": 0,  # V1 didn't have rev count
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
+                                "sat_name": sat.decode('utf-8').strip('\x00')
+                            }
+                            if _validate_state(config):
+                                print("SRAM state: V1 bridge success")
+                            else:
+                                config = None
+                    except Exception as e:
+                        print(f"V1 parse error: {e}")
+                        config = None
+                # Try V0 format (no version byte)
                 else:
-                    print(f"SRAM state: version mismatch (found v{data[4]})")
-                    # Try V1 format (version 1)
-                    if data[4] == 1:
-                        try:
-                            v1_size = struct.calcsize(STATE_FORMAT_V1)
-                            v1_data = data[:v1_size]
-                            if v1_data[-1] == _compute_checksum(v1_data):
-                                mag, ver, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V1, v1_data)
-                                config = {
-                                    "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
-                                    "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
-                                    "rev_count": 0,  # V1 didn't have rev count
-                                    "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
-                                    "sat_name": sat.decode('utf-8').strip('\x00')
-                                }
-                                if _validate_state(config):
-                                    print("SRAM state: V1 bridge success")
-                                else:
-                                    config = None
-                        except Exception as e:
-                            print(f"V1 parse error: {e}")
-                            config = None
-                    # Try V0 format (no version byte)
-                    else:
-                        try:
-                            v0_size = struct.calcsize(STATE_FORMAT_V0)
-                            v0_data = data[:v0_size]
-                            if v0_data[-1] == _compute_checksum(v0_data):
-                                mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V0, v0_data)
-                                config = {
-                                    "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
-                                    "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
-                                    "rev_count": 0,  # V0 didn't have rev count
-                                    "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
-                                    "sat_name": sat.decode('utf-8').strip('\x00')
-                                }
-                                if _validate_state(config):
-                                    print("SRAM state: V0 bridge success")
-                                else:
-                                    config = None
-                        except Exception as e:
-                            print(f"V0 parse error: {e}")
-                            config = None
+                    try:
+                        v0_size = struct.calcsize(STATE_FORMAT_V0)
+                        v0_data = data[:v0_size]
+                        if v0_data[-1] == _compute_checksum(v0_data):
+                            mag, ts, aov, eqx, alt, inc, ecc, per, mid, sat, ck = struct.unpack(STATE_FORMAT_V0, v0_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "rev_count": 0,  # V0 didn't have rev count
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "ORBIT"),
+                                "sat_name": sat.decode('utf-8').strip('\x00')
+                            }
+                            if _validate_state(config):
+                                print("SRAM state: V0 bridge success")
+                            else:
+                                config = None
+                    except Exception as e:
+                        print(f"V0 parse error: {e}")
+                        config = None
             else:
                 print("SRAM state: empty or invalid")
         except Exception as e:
@@ -531,7 +549,9 @@ def load_state():
             "mode_id": config.get("mode_id", "ORBIT"),
             "sat_name": config.get("sat_name", None),
             "eqx_deg": last_eqx_deg,
-            "aov_deg": last_aov_deg
+            "aov_deg": last_aov_deg,
+            "aov_abs_ticks": config.get("aov_abs_ticks", None),
+            "eqx_abs_ticks": config.get("eqx_abs_ticks", None)
         }
     except Exception as e:
         print("Reconstruction error:", e)
@@ -708,4 +728,37 @@ def save_motor_calibration(motor_name, offset_deg):
         return False
     except Exception as e:
         print(f"Error saving calibration: {e}")
+        return False
+
+def start_web_server_thread():
+    """Start web server in background thread using g.web_server_enabled flag."""
+    import _thread
+    
+    def _run_server():
+        try:
+            import network
+            import web_server
+            
+            # Ensure we are connected or in AP mode
+            wlan = network.WLAN(network.STA_IF)
+            if not wlan.isconnected():
+                print("WiFi not connected. Starting Access Point for dashboard...")
+                ap = network.WLAN(network.AP_IF)
+                ap.active(True)
+                ap.config(essid="Orbigator-Dev", password="orbigator123")
+                print(f"AP Started: Orbigator-Dev (192.168.4.1)")
+            
+            web_server.start_server(port=80)
+        except Exception as e:
+            print(f"Web server thread error: {e}")
+        finally:
+            print("Web server thread exiting.")
+            # Note: We don't force g.web_server_enabled = False here 
+            # to allow for retry logic if we ever add it.
+    
+    try:
+        _thread.start_new_thread(_run_server, ())
+        return True
+    except Exception as e:
+        print(f"Failed to start thread: {e}")
         return False
