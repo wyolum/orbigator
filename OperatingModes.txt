@@ -1,0 +1,258 @@
+ORBIGATOR DESIGN DOC — DUAL HARDWARE / DUAL MODE OPERATION
+Version: v0.1
+Date: 2026-02-08
+Owner: Justin / Orbigator
+
+GOAL
+Prevent feature bleed and breakage when switching between two Pico variants:
+- Pico 2 W (Wi-Fi capable): supports web-enabled operations.
+- Pico 2 (no Wi-Fi): supports offline-only operations.
+
+The system must run on both devices from the same codebase, with deterministic behavior:
+- Web features MUST NOT appear (or execute) on Pico 2.
+- Offline mode MUST remain stable and fully functional on Pico 2.
+- Web-enabled mode MUST retain SGP4 tracking + web server + NTP on Pico 2 W.
+
+NON-GOALS
+- No attempt to emulate Wi-Fi in Pico 2.
+- No partial web behavior (e.g., “web menu items but not functional”).
+- No runtime crashes due to missing modules (network, socket, urequests, etc.).
+
+DEFINITIONS
+Hardware Types:
+- HW_PICO2W: Raspberry Pi Pico 2 W (Wi-Fi present)
+- HW_PICO2:  Raspberry Pi Pico 2 (no Wi-Fi)
+
+Operating Modes (user-visible):
+- MODE_WEB_ENABLED: for HW_PICO2W only
+- MODE_WEB_DISABLED: for HW_PICO2 only
+
+Feature Sets (capabilities):
+- CAP_SGP4_TRACKING
+- CAP_WEB_SERVER
+- CAP_NTP_TIME_SYNC
+- CAP_NETWORKING
+- CAP_ORBIT_OFFLINE (offline orbit sim / basic tracking without web)
+- CAP_RTC (DS3232 time)
+- CAP_MOTOR_CONTROL (Dynamixel)
+- CAP_STATE_CACHE (SRAM/flash persistence)
+
+REQUIREMENTS
+
+R1. Single Codebase, Two Builds
+- Same repository and directory structure.
+- Two build targets (or two runtime paths) must produce:
+  - Pico 2 W image: web-enabled features available.
+  - Pico 2 image: web-disabled features available.
+
+R2. Capability-Driven Feature Gating (Hard Boundary)
+- UI/menu/API must be generated from capabilities, not from “what we think is running.”
+- No web server code import/execution path allowed unless CAP_WEB_SERVER is true.
+- No NTP sync attempt unless CAP_NTP_TIME_SYNC is true.
+- Any feature requiring web access must be behind CAP_NETWORKING true.
+
+R3. Module Import Safety
+- On Pico 2, importing Wi-Fi modules must not occur at import-time.
+- Wi-Fi and web modules must be imported only inside guarded code paths
+  (e.g., inside functions that are called only if CAP_NETWORKING is true).
+
+R4. Deterministic Startup Sequence
+Boot pipeline must be stable on both boards:
+1) Load configuration
+2) Identify hardware + compute capabilities
+3) Initialize core subsystems (RTC, cache, motors)
+4) Enter operating mode:
+   - Pico2W: optionally bring up Wi-Fi and web
+   - Pico2: skip network entirely
+5) Start selected orbit/tracking behavior
+
+R5. User-Facing Behavior
+- Pico2W: exposes SGP4 Tracking Mode, web server toggles, NTP time sync, and all web-backed UX.
+- Pico2: exposes offline Orbit Mode only (no web toggles, no NTP options, no “web server” UI).
+
+ARCHITECTURE OVERVIEW
+
+A) Capability Layer (single source of truth)
+Create a module: capabilities.py
+
+Responsibility:
+- Identify hardware and return a Capabilities object.
+- Enforce invariants: HW_PICO2 implies CAP_NETWORKING=False, etc.
+
+Outputs:
+- hw_type: HW_PICO2W or HW_PICO2
+- caps: set of capabilities booleans
+- operating_mode: MODE_WEB_ENABLED or MODE_WEB_DISABLED
+
+B) Feature Modules (separate concerns)
+Modules that require networking MUST be isolated:
+- web_server.py (only imported/used when CAP_WEB_SERVER)
+- ntp_sync.py (only imported/used when CAP_NTP_TIME_SYNC)
+- networking.py (Wi-Fi bringup)
+
+Offline modules must never import networking code:
+- orbit_offline.py
+- motor_control.py
+- rtc.py
+- state_cache.py
+
+C) Main Orchestrator (boot.py / main.py)
+- Boot loads config
+- Gets capabilities
+- Builds a FeatureRegistry and UI/command surface from capabilities
+- Runs chosen mode pipeline
+
+CAPABILITY MODEL
+
+Capabilities object:
+- has_wifi: bool
+- has_web_server: bool
+- has_ntp: bool
+- has_sgp4: bool
+- has_orbit_offline: bool
+- has_rtc: bool
+- has_cache: bool
+- has_motors: bool
+
+Derived rules (MUST hold):
+- HW_PICO2W:
+    has_wifi = True
+    has_web_server = True (if compiled in)
+    has_ntp = True (if compiled in)
+    has_sgp4 = True (required)
+    has_orbit_offline = True (optional but recommended as fallback)
+- HW_PICO2:
+    has_wifi = False
+    has_web_server = False
+    has_ntp = False
+    has_sgp4 = False OR True (allowed only if it does not require networking)
+    has_orbit_offline = True (required)
+
+Critical invariant:
+- Any “web feature” requires has_wifi AND has_web_server.
+- Any “time sync via NTP” requires has_ntp AND has_wifi.
+
+HARDWARE IDENTIFICATION STRATEGY
+
+Preferred (robust):
+- Detect Wi-Fi capability by attempting safe import:
+    try: import network
+    except ImportError: no wifi
+- Optionally confirm by checking known pins/hardware id, but import-based is simplest.
+
+Do NOT:
+- Assume based on config alone.
+- Show web UI options on Pico2 even if config contains them.
+
+CONFIGURATION STRATEGY
+
+config.json contains both general settings and optional web settings.
+
+Example schema:
+- general:
+    - device_name
+    - timezone / UTC preference
+    - default_mode (requested mode)
+- motors:
+    - ids, gear ratios, limits, etc.
+- orbit:
+    - offline orbit mode config (always valid)
+- web (optional):
+    - enable_web_server (bool)
+    - port
+    - hostname
+    - ntp_server(s)
+    - enable_ntp_sync (bool)
+
+Rules:
+- On Pico2:
+    - web.* keys are ignored (but not deleted).
+    - UI never shows web.* settings.
+    - no warnings unless debug enabled.
+- On Pico2W:
+    - web.* keys are honored.
+
+FEATURE REGISTRY (prevents forgetting)
+
+Implement a registry that declares:
+- feature name
+- required capabilities
+- entrypoints (start/stop)
+- configuration keys used
+- UI elements exposed
+
+Example features:
+- Feature: OrbitOffline
+  requires: CAP_ORBIT_OFFLINE
+- Feature: SGP4Tracking
+  requires: CAP_SGP4_TRACKING
+- Feature: WebServer
+  requires: CAP_WEB_SERVER
+- Feature: NTPSync
+  requires: CAP_NTP_TIME_SYNC
+
+UI and command surface is built only from “enabled features.”
+
+BOOT FLOWS
+
+FLOW 1: Pico2W (Web Enabled)
+1) cap = detect_capabilities() => MODE_WEB_ENABLED
+2) init RTC/cache/motors
+3) if config.web.enable_ntp_sync: attempt NTP sync (guarded)
+4) compute initial satellite state (SGP4)
+5) if config.web.enable_web_server: start web server
+6) run tracking loop (SGP4 tracking)
+
+FLOW 2: Pico2 (Web Disabled)
+1) cap = detect_capabilities() => MODE_WEB_DISABLED
+2) init RTC/cache/motors
+3) skip Wi-Fi, skip NTP, skip web server
+4) run offline orbit mode loop
+5) any web config is ignored and never shown
+
+ERROR HANDLING RULES
+
+- If code tries to start a feature without required capabilities: raise a clear error in debug logs and skip feature.
+- Never crash at import-time because of missing network modules.
+- Network errors on Pico2W (NTP timeouts etc.) must degrade gracefully:
+  - proceed with RTC/local time
+  - do not block boot indefinitely
+
+TEST PLAN (must be automated or at least scriptable)
+
+T1. Import Safety Test (Pico2)
+- Run boot on Pico2 with config containing web options.
+- Assert: no ImportError from network modules.
+- Assert: no “web server” menu or options shown.
+- Assert: orbit offline mode runs.
+
+T2. Capability Boundary Test
+- Force config.web.enable_web_server = True on Pico2.
+- Assert: web server is NOT started, and no UI shows it.
+
+T3. Pico2W Web Mode Test
+- Boot Pico2W with web enabled and NTP enabled.
+- Assert: NTP attempt occurs.
+- Assert: web server starts.
+- Assert: SGP4 tracking mode available.
+
+T4. Pico2W Offline Fallback
+- Boot Pico2W with NTP failing.
+- Assert: system continues using RTC/local time.
+- Assert: tracking still runs.
+
+T5. Regression: Hardware Swap
+- Move SD/config between Pico2W and Pico2.
+- Both boots must succeed with no manual config edits.
+
+IMPLEMENTATION NOTES (to prevent feature bleed)
+- No global “ENABLE_WIFI” constant scattered across files.
+- One module owns capability detection and returns a single object.
+- Every feature module declares its required caps.
+- UI generation is based only on enabled features.
+
+DONE CRITERIA
+- Swapping Pico2W <-> Pico2 never exposes invalid options.
+- Pico2 never attempts networking, NTP, or web server.
+- Pico2W provides web features reliably and degrades gracefully when network is unavailable.
+- No import-time failures on Pico2.

@@ -209,12 +209,13 @@ CONFIRM_BTN.irq(trigger=Pin.IRQ_FALLING, handler=_button_isr)
 
 # ---------------- Startup Time Sync (Pico 2W only) ----------------
 has_wifi = False
-try:
-    import network
-    wlan = network.WLAN(network.STA_IF)
-    has_wifi = True
-except Exception:
-    has_wifi = False
+if True: ## False to disable wifi for debugging
+    try:
+        import network
+        wlan = network.WLAN(network.STA_IF)
+        has_wifi = True
+    except Exception:
+        has_wifi = False
 
 if has_wifi:
     try:

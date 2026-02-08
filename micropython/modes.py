@@ -145,7 +145,7 @@ class OrbitMode(Mode):
         self.tracking = True # Toggle with Confirm button
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
-        self.nudge_manager = input_utils.NudgeManager()
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         self.last_aov_wrapped = 0.0  # Track wrapped AoV for south point detection
     
     def enter(self) :
@@ -644,12 +644,14 @@ class EQXCalibrationMode(Mode):
         disp.show()
 
 class HomingMode(Mode):
-    """Commands motors to zero position."""
+    """Commands motors to zero position, then allows EQX offset adjustment."""
     def __init__(self):
         super().__init__()
         self.start_time = time.ticks_ms()
         self.sent_command = False
         self.success = False
+        self.eqx_offset_adjust = 0.0  # Track how much user has nudged EQX
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         
     def enter(self):
         print("Homing motors...")
@@ -667,20 +669,44 @@ class HomingMode(Mode):
         
         # Check actual positions (wrapped to -180..180)
         aov = g.aov_motor.present_output_degrees if g.aov_motor else 90
+        aov = aov % 360
         eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
         
         # Consider complete if both within 1 degree of home position (AoV=90, EQX=0)
-        if abs(aov - 90) < 1.0 and abs(eqx) < 1.0:
+        if abs(aov - 90) < 1.0 and abs(eqx - self.eqx_offset_adjust) < 1.0:
             self.success = True
+            
+    def on_encoder_rotate(self, delta):
+        """After homing, allow nudging EQX to align globe with 0° longitude."""
+        if self.success and g.eqx_motor:
+            d = self.nudge_manager.get_delta(delta)
+            self.eqx_offset_adjust += d
+            # Move the motor but keep EQX "value" at 0
+            g.eqx_motor.set_nearest_degrees(self.eqx_offset_adjust)
             
     def on_back(self):
         if not self.success:
-            g.aov_motor.stop()
-            g.eqx_motor.stop()
+            if g.aov_motor: g.aov_motor.stop()
+            if g.eqx_motor: g.eqx_motor.stop()
             
         return SettingsMode(selection=6)  # Home Motors is index 6
         
     def on_confirm(self):
+        if self.success and self.eqx_offset_adjust != 0.0:
+            # Apply the nudge to the calibration offset
+            if g.eqx_motor:
+                g.eqx_motor.offset_degrees += self.eqx_offset_adjust
+                # Save to config
+                import json
+                try:
+                    with open("orbigator_config.json", "r") as f:
+                        config = json.load(f)
+                    config["motors"]["eqx"]["offset_deg"] = g.eqx_motor.offset_degrees
+                    with open("orbigator_config.json", "w") as f:
+                        json.dump(config, f)
+                    print(f"EQX offset saved: {g.eqx_motor.offset_degrees:.2f}")
+                except Exception as e:
+                    print(f"Config save failed: {e}")
         return SettingsMode(selection=6)
         
     def render(self, disp):
@@ -691,14 +717,16 @@ class HomingMode(Mode):
         eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
         
         if self.success:
-            disp.text("HOMING COMPLETE", 0, 10)
-            disp.text("Motors at ZERO", 0, 22)
-            disp.text("Press Confirm", 0, 40)
+            disp.text("HOMING COMPLETE", 0, 2)
+            disp.text("Nudge to align", 0, 14)
+            disp.text("globe to 0 LON", 0, 26)
+            disp.text(f"Offset: {self.eqx_offset_adjust:+.1f}", 0, 40)
+            disp.text("Confirm to Save", 0, 52)
         else:
             disp.text("HOMING MOTORS...", 0, 10)
             disp.text("Please wait", 0, 22)
+            disp.text(f"A:{aov:.1f} E:{eqx:.1f}", 0, 54)
         
-        disp.text(f"A:{aov:.1f} E:{eqx:.1f}", 0, 54)
         disp.show()
 
 class AltitudeEditorMode(Mode):
@@ -1065,7 +1093,7 @@ class SGP4Mode(Mode):
         self.last_eqx_angle = 0.0
         self.last_command_ticks = 0
         self.inclination = 0.0
-        self.nudge_manager = input_utils.NudgeManager()
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         
         # Check WiFi availability
         try:
