@@ -34,24 +34,36 @@ while IFS= read -r line || [ -n "$line" ]; do
     if [[ "$MODE" == "FILES" ]]; then
         SRC="$SRC_BASE/$line"
         if [ -f "$SRC" ]; then
-            # Check if file is newer than last sync marker
             if [ "$SRC" -nt "$LAST_SYNC" ] || [ $FIRST_RUN -eq 1 ]; then
-                echo "📤 Uploading $line..."
-                mpremote fs cp "$SRC" ":$line"
-                if [ $? -eq 0 ]; then ((COUNT++)); else echo "❌ Failed: $line"; fi
+                # Handle nested dirs
+                if [[ "$line" == */* ]]; then
+                    PARENT_DIR="${line%/*}"
+                    mpremote fs ls ":$PARENT_DIR" >/dev/null 2>&1 || mpremote fs mkdir ":$PARENT_DIR" >/dev/null 2>&1
+                fi
+                echo "📤 $line"
+                mpremote fs cp "$SRC" ":$line" && ((COUNT++))
             fi
         fi
         
     elif [[ "$MODE" == "DIRS" ]]; then
-        # Check files inside dir
         DIR_PATH="$SRC_BASE/$line"
         if [ -d "$DIR_PATH" ]; then
-            # Find files in dir that are newer
-            find "$DIR_PATH" -type f -newer "$LAST_SYNC" | while read -r filepath; do
-                relpath="${filepath#$SRC_BASE/}"
-                echo "   📄 $relpath"
-                mpremote fs cp "$filepath" ":$relpath"
-            done
+            echo "📁 Processing directory :$line..."
+            mpremote fs ls ":$line" >/dev/null 2>&1 || mpremote fs mkdir ":$line" >/dev/null 2>&1
+            
+            # Find and sync files inside DIR
+            while read -r fpath; do
+                if [ "$fpath" -nt "$LAST_SYNC" ] || [ $FIRST_RUN -eq 1 ]; then
+                    relpath="${fpath#$SRC_BASE/}"
+                    # Ensure nested dirs within this DIR entry
+                    if [[ "$relpath" == */* ]]; then
+                        D="${relpath%/*}"
+                        mpremote fs ls ":$D" >/dev/null 2>&1 || mpremote fs mkdir ":$D" >/dev/null 2>&1
+                    fi
+                    echo "   📄 $relpath"
+                    mpremote fs cp "$fpath" ":$relpath" && ((COUNT++))
+                fi
+            done < <(find "$DIR_PATH" -type f)
         fi
     fi
 

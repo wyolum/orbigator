@@ -531,9 +531,8 @@ class WebServer:
             return {'error': 'Method not allowed'}, 405
         
         try:
-            data = json.loads(body)
-            ssid = data.get('ssid')
-            password = data.get('password')
+            ssid = body.get('ssid')
+            password = body.get('password')
             
             if not ssid:
                 return {'error': 'SSID required'}, 400
@@ -541,14 +540,10 @@ class WebServer:
             import wifi_setup
             wifi_setup.save_config(ssid, password)
             
-            # Restart after a short delay to allow response to send
+            # Restart after a short delay
             import machine
-            def restart(t):
-                print("Restarting for WiFi config...")
-                machine.reset()
-                
             timer = machine.Timer(-1)
-            timer.init(period=2000, mode=machine.Timer.ONE_SHOT, callback=restart)
+            timer.init(period=2000, mode=machine.Timer.ONE_SHOT, callback=lambda t: machine.reset())
             
             return {'message': 'Config saved. System will restart in 2 seconds.'}, 200
         except Exception as e:

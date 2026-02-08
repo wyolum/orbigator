@@ -11,7 +11,12 @@ Best practices for Extended Position Control Mode (Mode 4):
 from machine import UART, Pin
 import time
 import pins
-import orb_globals as g
+
+# Optional import - g.uart_lock used if available
+try:
+    import orb_globals as g
+except ImportError:
+    g = None
 
 # UART setup
 uart = UART(pins.DYNAMIXEL_UART_ID, baudrate=57600, bits=8, parity=None, stop=1)
@@ -63,7 +68,9 @@ def calc_crc(data):
 
 def send_and_receive(packet, timeout_ms=100):
     """Send packet and get response with precise half-duplex timing"""
-    if g.uart_lock:
+    # Acquire lock if available
+    has_lock = g is not None and hasattr(g, 'uart_lock') and g.uart_lock is not None
+    if has_lock:
         g.uart_lock.acquire()
         
     try:
@@ -101,7 +108,7 @@ def send_and_receive(packet, timeout_ms=100):
             
         return None
     finally:
-        if g.uart_lock:
+        if has_lock:
             g.uart_lock.release()
 
 def write_byte(servo_id, address, value):
@@ -198,6 +205,30 @@ def read_present_position(servo_id):
     Returns: Current position as signed 32-bit integer, or None on error
     """
     return read_dword(servo_id, 132)  # ADDR_PRESENT_POSITION = 132
+
+
+def ping_motor(servo_id):
+    """
+    Ping a motor to check if it responds.
+    
+    Args:
+        servo_id: Motor ID to ping
+    
+    Returns:
+        True if motor responds, False otherwise
+    """
+    # Build ping packet (instruction 0x01)
+    packet = bytearray([0xFF, 0xFF, 0xFD, 0x00, servo_id, 0x03, 0x00, 0x01])
+    crc = calc_crc(packet)
+    packet.extend([crc & 0xFF, (crc >> 8) & 0xFF])
+    
+    response = send_and_receive(bytes(packet), timeout_ms=100)
+    
+    if response is not None and len(response) >= 9:
+        # Check for valid status response (instruction 0x55, no error)
+        if response[7] == 0x55 and response[8] == 0:
+            return True
+    return False
 
 def reboot_motor(servo_id):
     """

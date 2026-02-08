@@ -220,6 +220,84 @@
       text-transform: uppercase;
       letter-spacing: 1px;
     }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 32px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h2 {
+      margin-top: 0;
+      font-size: 1.2rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 12px;
+      color: #fff;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .scan-results {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+    }
+
+    .net-item {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      text-align: left;
+    }
+
+    .net-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
   </style>
 </head>
 
@@ -285,7 +363,36 @@
           <!-- Loaded dynamically -->
         </div>
       </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Connectivity</h2>
+        </div>
+        <button class="btn" style="width: 100%" onclick="showWifiModal()">WiFi Settings</button>
+      </div>
     </main>
+
+    <div class="modal-overlay" id="wifi-modal">
+      <div class="modal">
+        <h2>WiFi Settings</h2>
+        <div class="form-group">
+          <label>Network</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="wifi-ssid" class="form-control" placeholder="SSID">
+            <button class="btn" onclick="scanWifi()" id="btn-scan">Scan</button>
+          </div>
+          <div id="scan-list" class="scan-results" style="display: none;"></div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="wifi-pass" class="form-control" placeholder="••••••••">
+        </div>
+        <div style="display: flex; gap: 12px; margin-top: 24px;">
+          <button class="btn" style="flex: 1; background: #334155" onclick="hideWifiModal()">Cancel</button>
+          <button class="btn" style="flex: 1" onclick="saveWifi()">Save & Restart</button>
+        </div>
+      </div>
+    </div>
 
     <div class="footer" id="footer-time">
       Pico Ready
@@ -440,6 +547,71 @@
         });
         if (res.ok) updateStatus();
       } catch (e) { alert("Mode toggle failed"); }
+    }
+
+    function showWifiModal() {
+      document.getElementById('wifi-modal').style.display = 'flex';
+    }
+
+    function hideWifiModal() {
+      document.getElementById('wifi-modal').style.display = 'none';
+      document.getElementById('scan-list').style.display = 'none';
+    }
+
+    async function scanWifi() {
+      const btn = document.getElementById('btn-scan');
+      const list = document.getElementById('scan-list');
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/wifi/scan`);
+        const data = await res.json();
+        list.innerHTML = '';
+        data.networks.forEach(net => {
+          const div = document.createElement('div');
+          div.className = 'net-item';
+          div.textContent = net;
+          div.onclick = () => {
+            document.getElementById('wifi-ssid').value = net;
+            list.style.display = 'none';
+          };
+          list.appendChild(div);
+        });
+        list.style.display = 'block';
+      } catch (e) {
+        alert("Scan failed");
+      } finally {
+        btn.textContent = 'Scan';
+        btn.disabled = false;
+      }
+    }
+
+    async function saveWifi() {
+      const ssid = document.getElementById('wifi-ssid').value;
+      const pass = document.getElementById('wifi-pass').value;
+
+      if (!ssid) return alert("SSID required");
+
+      const ok = confirm(`Connect to ${ssid}? System will restart.`);
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/wifi/config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ssid, password: pass })
+        });
+        if (res.ok) {
+          alert("Settings saved. Reconnecting...");
+          hideWifiModal();
+        } else {
+          const err = await res.json();
+          alert("Error: " + err.error);
+        }
+      } catch (e) {
+        alert("Save failed");
+      }
     }
 
     // 0.5Hz polling (every 2 seconds) to reduce Pico overhead as requested

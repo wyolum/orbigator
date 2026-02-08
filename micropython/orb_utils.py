@@ -746,7 +746,17 @@ def start_web_server_thread():
                 ap = network.WLAN(network.AP_IF)
                 ap.active(True)
                 ap.config(essid="Orbigator-Dev", password="orbigator123")
-                print(f"AP Started: Orbigator-Dev (192.168.4.1)")
+                ap_ip = "192.168.4.1"
+                print(f"AP Started: Orbigator-Dev ({ap_ip})")
+                
+                # Update display to show AP info if available
+                if g.disp:
+                    g.disp.fill(0)
+                    g.disp.text("AP MODE ACTIVE", 0, 0)
+                    g.disp.text("SSID: Orbigator-Dev", 0, 16)
+                    g.disp.text(ap_ip, 0, 32)
+                    g.disp.show()
+                    time.sleep(2)
             
             web_server.start_server(port=80)
         except Exception as e:
@@ -762,3 +772,15 @@ def start_web_server_thread():
     except Exception as e:
         print(f"Failed to start thread: {e}")
         return False
+
+def draw_network_status(disp):
+    """Draw IP address if connected or in AP mode."""
+    if not g.caps.has_wifi:
+        return
+        
+    import networking
+    ip = networking.get_ip()
+    if ip:
+        # Mini status in corner or bottom
+        # OLED is 128x64. Let's put it on the bottom line.
+        disp.text(ip, 0, 56)

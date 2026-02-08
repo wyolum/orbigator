@@ -50,21 +50,17 @@ class MenuMode(Mode):
     def __init__(self):
         super().__init__()
         self.selection = 0
-        # Build menu items - only include Track Satellite if WiFi available
+        # Build menu items based on capabilities (R5)
         self.items = ["Orbit!", "Set Period", "Settings"]
         
-        # Check for WiFi hardware
-        try:
-            import network
-            wlan = network.WLAN(network.STA_IF)
-            # Insert Track Satellite after Orbit! if WiFi available
+        if g.caps.has_wifi:
+            # Insert Track Satellite after Orbit!
             self.items.insert(1, "Track Satellite")
             
-            # Add dynamic web server toggle
-            web_label = "Halt Web Svc" if g.web_server_enabled else "Start Web Svc"
-            self.items.append(web_label)
-        except:
-            pass  # No WiFi, skip Track Satellite and Web Svc options
+            if g.caps.has_web_server:
+                # Add dynamic web server toggle
+                web_label = "Halt Web Svc" if g.web_server_enabled else "Start Web Svc"
+                self.items.append(web_label)
             
         # Default selection based on current mode to prevent accidental switching
         if g.current_mode_id == "SGP4":
@@ -127,6 +123,7 @@ class MenuMode(Mode):
             prefix = ">" if i == self.selection else " "
             y = 16 + (i - start_idx) * 12
             disp.text(f"{prefix} {item}", 0, y)
+        utils.draw_network_status(disp)
         disp.show()
 
 
@@ -315,9 +312,9 @@ class OrbitMode(Mode):
         catching_up = False
         # Use a 2.0 degree threshold to account for settling/backlash
         aov_target = g.aov_position_deg % 360
-        aov_actual = g.aov_motor.present_output_degrees % 360 if g.aov_motor else 0
+        aov_actual = g.aov_motor.output_degrees % 360 if g.aov_motor else 0
         eqx_target = g.eqx_position_deg % 360
-        eqx_actual = g.eqx_motor.present_output_degrees % 360 if g.eqx_motor else 0
+        eqx_actual = g.eqx_motor.output_degrees % 360 if g.eqx_motor else 0
         
         if g.aov_motor:
             diff_aov = abs(aov_target - aov_actual)
@@ -344,6 +341,7 @@ class OrbitMode(Mode):
         else:
             disp.text(f"Rev: {g.orbital_rev_count:05d}", 0, 31)
             
+        utils.draw_network_status(disp)
         disp.show()
 
 
@@ -510,8 +508,8 @@ class EQXCalibrationMode(Mode):
         self.field = 0
         
         # Pre-populate with current logical angle if available
-        if g.eqx_motor and g.eqx_motor.present_output_degrees is not None:
-             curr = g.eqx_motor.present_output_degrees
+        if g.eqx_motor and g.eqx_motor.output_degrees is not None:
+             curr = g.eqx_motor.output_degrees
              val = int(round(curr))
              
              if val < 0:
@@ -635,7 +633,7 @@ class EQXCalibrationMode(Mode):
         # We need raw, which is (present + offset)
         raw_val = 0.0
         if g.eqx_motor:
-             curr = g.eqx_motor.present_output_degrees
+             curr = g.eqx_motor.output_degrees
              if curr is None: curr = 0.0
              raw_val = curr + g.eqx_motor.offset_degrees
              
@@ -668,9 +666,9 @@ class HomingMode(Mode):
         if g.eqx_motor: g.eqx_motor.update_present_position()
         
         # Check actual positions (wrapped to -180..180)
-        aov = g.aov_motor.present_output_degrees if g.aov_motor else 90
+        aov = g.aov_motor.output_degrees if g.aov_motor else 90
         aov = aov % 360
-        eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
+        eqx = utils.wrap_phase_deg(g.eqx_motor.output_degrees if g.eqx_motor else 0)
         
         # Consider complete if both within 1 degree of home position (AoV=90, EQX=0)
         if abs(aov - 90) < 1.0 and abs(eqx - self.eqx_offset_adjust) < 1.0:
@@ -713,8 +711,8 @@ class HomingMode(Mode):
         disp.fill(0)
         
         # Show actual positions
-        aov = utils.wrap_phase_deg(g.aov_motor.present_output_degrees if g.aov_motor else 0)
-        eqx = utils.wrap_phase_deg(g.eqx_motor.present_output_degrees if g.eqx_motor else 0)
+        aov = utils.wrap_phase_deg(g.aov_motor.output_degrees if g.aov_motor else 0)
+        eqx = utils.wrap_phase_deg(g.eqx_motor.output_degrees if g.eqx_motor else 0)
         
         if self.success:
             disp.text("HOMING COMPLETE", 0, 2)
@@ -1095,14 +1093,7 @@ class SGP4Mode(Mode):
         self.inclination = 0.0
         self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         
-        # Check WiFi availability
-        try:
-            import network
-            wlan = network.WLAN(network.STA_IF)
-            self.has_wifi = True
-        except:
-            self.has_wifi = False
-            print("SGP4 Mode: WiFi not available - TLE refresh disabled")
+        # WiFi is handled globally by g.caps (R4.2)
         
     def enter(self):
         """Initialize SGP4 tracking mode."""
@@ -1216,79 +1207,71 @@ class SGP4Mode(Mode):
         print(f"Loaded {self.satellite_name}: epoch {epoch_year} day {epoch_day:.2f}")
     
     def _fetch_tle(self):
-        """Fetch TLE data via WiFi (WiFi hardware required)."""
+        """Fetch TLE data via WiFi (WiFi hardware/capability required)."""
+        # 1. Hardware/Capability Check (R4.2)
+        if not g.caps.has_wifi:
+            print("SGP4: WiFi capability not enabled.")
+            return False
+
+        # 2. Config Check
         import json
-        import time
-        
-        # Check for WiFi hardware first
-        if not self.has_wifi:
-            print("WiFi not available - cannot fetch TLE")
-            if g.disp:
-                g.disp.fill(0)
-                g.disp.text("No WiFi!", 0, 0)
-                g.disp.text("Cannot fetch TLE", 0, 12)
-                g.disp.show()
-            return False # Indicate failure
-        
-        self.fetching = True
-        if g.disp:
-            g.disp.fill(0)
-            g.disp.text("Fetching TLE...", 0, 0)
-            g.disp.text("Please wait", 0, 12)
-            g.disp.show()
-        print(f"Fetching TLE for {self.satellite_name}...")
-        
-        # Load WiFi config (or rely on system already being connected?)
-        # Ideally system is connected on boot. But we can ensure it.
-        ssid = ""
-        password = ""
+        import os
+        if "wifi_config.json" not in os.listdir():
+            print("SGP4: wifi_config.json missing. Cannot fetch TLE.")
+            return False
+
+        # 3. Load Config
         try:
             with open("wifi_config.json", "r") as f:
-                config = json.load(f)
-            ssid = config.get("ssid", "")
-            password = config.get("password", "")
-        except:
-            print("No WiFi config found")
-            
-        # Connect to WiFi (safe to re-call)
-        import wifi_setup
-        ip = wifi_setup.connect_wifi(ssid, password)
+                cfg = json.load(f)
+                ssid = cfg.get("ssid")
+                password = cfg.get("password")
+                if not ssid: raise ValueError("Empty SSID")
+        except Exception as e:
+            print(f"SGP4: Invalid WiFi config: {e}")
+            return False
+
+        # 4. Fetching UI
+        self.fetching = True
+        g.disp.fill(0)
+        g.disp.text("Fetching TLE...", 0, 0)
+        g.disp.text("Please wait", 0, 12)
+        g.disp.show()
+        print(f"Fetching TLE for {self.satellite_name}...")
+        
+        # 5. Connect to WiFi using standard networking module
+        import networking
+        ip = networking.connect_wifi(ssid, password, display=g.disp)
         if not ip:
-            print("WiFi connection failed")
+            print("SGP4: WiFi connection failed")
             self.fetching = False
             return False
-            
-        # Fetch TLE
+        
+        # 6. Fetch TLE Data
         import tle_fetch
         import orb_utils as utils
-        # Use NORAD ID for precision if available, else fallback to name (unlikely in SGP4Mode)
+        # Use NORAD ID if available
         target_id = getattr(self, 'norad_id', self.satellite_name)
         tle_data = tle_fetch.fetch_tle(target_id)
         if not tle_data:
-            print("TLE fetch failed")
+            print("SGP4: TLE fetch failed")
             self.fetching = False
             return False
+            
+        # 7. Update cache and reload
+        name, line1, line2 = tle_data
+        self.tle_cache[self.satellite_name] = {
+            "line1": line1,
+            "line2": line2,
+            "last_fetch": int(utils.get_timestamp())
+        }
+        utils.save_tle_cache(self.tle_cache)
+        self._load_satellite(self.satellite_index)
         
-        # Update cache
-        if hasattr(self, 'tle_cache'):
-            name, line1, line2 = tle_data
-            self.tle_cache[self.satellite_name] = {
-                "line1": line1,
-                "line2": line2,
-                "last_fetch": int(utils.get_timestamp())
-            }
-            utils.save_tle_cache(self.tle_cache)
-            
-            # Reload satellite
-            self._load_satellite(self.satellite_index)
-            
-            self.fetching = False
-            print(f"✓ TLE updated for {self.satellite_name}")
-            return True
-        else:
-            self.fetching = False
-            return False
-    
+        self.fetching = False
+        print(f"✓ SGP4: TLE updated for {self.satellite_name}")
+        return True
+
     def set_manual_tle(self, name, line1, line2):
         """Set TLE manually from API."""
         import sgp4
@@ -1321,72 +1304,7 @@ class SGP4Mode(Mode):
         except Exception as e:
             print(f"Manual TLE error: {e}")
             return False, str(e)
-        import json
-        import time
-        
-        # Check for WiFi hardware first
-        if not self.has_wifi:
-            print("WiFi not available - cannot fetch TLE")
-            g.disp.fill(0)
-            g.disp.text("No WiFi!", 0, 0)
-            g.disp.text("Cannot fetch TLE", 0, 12)
-            g.disp.show()
-            time.sleep(2)
-            return False # Indicate failure
-        
-        self.fetching = True
-        g.disp.fill(0)
-        g.disp.text("Fetching TLE...", 0, 0)
-        g.disp.text("Please wait", 0, 12)
-        g.disp.show()
-        print(f"Fetching TLE for {self.satellite_name}...")
-        
-        # Load WiFi config
-        try:
-            with open("wifi_config.json", "r") as f:
-                config = json.load(f)
-            ssid = config["ssid"]
-            password = config["password"]
-        except:
-            print("No WiFi config found - run wifi_setup.py first")
-            self.fetching = False
-            return False
-        
-        # Connect to WiFi
-        import wifi_setup
-        ip = wifi_setup.connect_wifi(ssid, password)
-        if not ip:
-            print("WiFi connection failed")
-            self.fetching = False
-            return False
-        
-        print(f"Connected to {ssid} ({ip})")
-        
-        # Fetch TLE
-        import tle_fetch
-        import orb_utils as utils
-        tle_data = tle_fetch.fetch_tle(self.satellite_name)
-        if not tle_data:
-            print("TLE fetch failed")
-            self.fetching = False
-            return False
-        
-        # Update cache
-        name, line1, line2 = tle_data
-        self.tle_cache[self.satellite_name] = {
-            "line1": line1,
-            "line2": line2,
-            "last_fetch": int(utils.get_timestamp())
-        }
-        utils.save_tle_cache(self.tle_cache)
-        
-        # Reload satellite
-        self._load_satellite(self.satellite_index)
-        
-        self.fetching = False
-        print(f"✓ TLE updated for {self.satellite_name}")
-        return True
-    
+
     def on_encoder_rotate(self, delta):
         import input_utils
         delta = input_utils.normalize_encoder_delta(delta)
@@ -1403,12 +1321,12 @@ class SGP4Mode(Mode):
     def on_encoder_press(self):
         """Force TLE refresh (WiFi required)."""
         if self.satellite_name:
-            if self.has_wifi:
+            if g.caps.has_wifi:
                 self._fetch_tle()
             else:
                 # No WiFi hardware
                 import time
-                print("WiFi not available")
+                print("SGP4: WiFi not available")
                 g.disp.fill(0)
                 g.disp.text("No WiFi!", 0, 0)
                 g.disp.text("Cannot refresh", 0, 12)
@@ -1441,7 +1359,7 @@ class SGP4Mode(Mode):
              # But update() is 1Hz. Let's do it once.
              # Actually, we should probably do this in a thread or check condition
              # To keep it simple and safe in the main loop:
-             if self.has_wifi and (self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 2000):
+             if g.caps.has_wifi and (self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 2000):
                  # Try to fetch
                  print("Attempting auto-fetch...")
                  success = self._fetch_tle()
@@ -1540,9 +1458,9 @@ class SGP4Mode(Mode):
             catching_up = False
             # Use same robust comparison as OrbitMode
             aov_target = g.aov_position_deg % 360
-            aov_actual = g.aov_motor.present_output_degrees % 360 if g.aov_motor else 0
+            aov_actual = g.aov_motor.output_degrees % 360 if g.aov_motor else 0
             eqx_target = g.eqx_position_deg % 360
-            eqx_actual = g.eqx_motor.present_output_degrees % 360 if g.eqx_motor else 0
+            eqx_actual = g.eqx_motor.output_degrees % 360 if g.eqx_motor else 0
 
             if g.aov_motor:
                 diff_aov = abs(aov_target - aov_actual)
@@ -1565,14 +1483,6 @@ class SGP4Mode(Mode):
                     lon_180 -= 360
                 lla_str = f"LLA:{self.lat_deg:+3.0f} {lon_180:+4.0f} {self.alt_km:4.0f}"
                 disp.text(lla_str, 0, 26)
-                
-                # IP Line
-                import network
-                try:
-                    ip = network.WLAN(network.STA_IF).ifconfig()[0]
-                    disp.text(f"IP:{ip}", 0, 38)
-                except:
-                    disp.text("IP: N/A", 0, 38)
             
             disp.text(f"TLE: {self.tle_age}", 0, 50)
         else:
@@ -1581,6 +1491,7 @@ class SGP4Mode(Mode):
             disp.text("Press: Track", 0, 44)
             disp.text(f"TLE: {self.tle_age}", 0, 56)
         
+        utils.draw_network_status(disp)
         disp.show()
 
 
@@ -1718,6 +1629,7 @@ class TrackLLMode(SGP4Mode):
         else:
              disp.text("Waiting...", 0, 20)
              
+        utils.draw_network_status(disp)
         disp.show()
 
     def update(self, now_ms):

@@ -1,34 +1,41 @@
-# Core Project Files
+# Orbigator Sync Whitelist - Required files for full application
+# Hardware Drivers
+pins.py
+oled_display.py
+rotary_encoder.py
+ssd1306.py
+sh1106.py
+ds323x.py
+rtc.py
+buttons.py
+dynamixel_extended_utils.py
+dynamixel_motor.py
+
+# Architecture & Capabilities
+capabilities.py
+networking.py
+ntp_sync.py
+
+# Core Application
 orbigator.py
 modes.py
-orb_globals.py
 orb_utils.py
-pins.py
+orb_globals.py
+input_utils.py
 propagators.py
-sgp4.py
+web_server.py
+satellite_position.py
 satellite_catalog.py
 tle_fetch.py
-satellite_position.py
-
-
-# Motor & Hardware Drivers
-dynamixel_motor.py
-dynamixel_extended_utils.py
-ds323x.py
-ds3231.py
-ss1306.py
-mock_motor.py
-
-# Utilities
-web_server.py
+track_ll_chunk.py
+sgp4.py
 wifi_setup.py
-input_utils.py
-eqx_tool.py
+web/index.html
 
-# Config & Cache
+# Data & Config
 orbigator_config.json
-tle_cache.json
 
-# Directories (Recursive)
+# Directories
 [DIRS]
+tests
 web
