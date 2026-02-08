@@ -28,7 +28,8 @@ class DynamixelMotor:
     ADDR_POSITION_D_GAIN = 80
     
     # SRAM Checkpoint Constants
-    SRAM_MAGIC = 0xDEAD
+    SRAM_MAGIC = 0xDEAD       # V1: wrapped degrees (legacy)
+    SRAM_MAGIC_V2 = 0xBEEF   # V2: absolute ticks
     SRAM_ADDR_EQX = 0x14
     CHECKPOINT_INTERVAL_TICKS = 512  # 45 degrees
     
@@ -55,9 +56,16 @@ class DynamixelMotor:
         if h_pos is None:
             raise RuntimeError(f"Failed to read motor {motor_id}")
             
-        # 3. Recover software absolute position (stitched from SRAM)
-        if self.name == "EQX" and self.rtc:
-            self._raw_ticks = self._try_recovery(h_pos)
+        # 3. Recover software absolute position
+        if self.name == "EQX":
+            if last_abs_ticks is not None and last_abs_ticks != 0:
+                # Primary: bounded-delta from saved abs ticks (test-proven)
+                self._raw_ticks = self._recover_from_abs_ticks(h_pos, last_abs_ticks)
+            elif self.rtc:
+                # Fallback: SRAM checkpoint recovery
+                self._raw_ticks = self._try_recovery(h_pos)
+            else:
+                self._raw_ticks = h_pos
         else:
             self._raw_ticks = h_pos
             
@@ -101,63 +109,74 @@ class DynamixelMotor:
         write_byte(self.motor_id, 64, 1) # Torque ON
         time.sleep_ms(50)
 
+    def _recover_from_abs_ticks(self, current_phase, last_abs_ticks):
+        """
+        Recover absolute position using bounded-delta (3-candidate) algorithm.
+        Matches eqx_power_fail_test.py / orb_utils.calculate_absolute_position().
+        """
+        CPR = self.TICKS_PER_REV
+        raw = current_phase % CPR
+        revs = last_abs_ticks // CPR
+        candidates = [
+            (revs - 1) * CPR + raw,
+            revs * CPR + raw,
+            (revs + 1) * CPR + raw
+        ]
+        recovered = min(candidates, key=lambda x: abs(x - last_abs_ticks))
+        print(f"  [{self.name}] ABS TICK RECOVERY: cached={last_abs_ticks}, phase={raw}, recovered={recovered} (delta={recovered - last_abs_ticks})")
+        return recovered
+
     def _try_recovery(self, current_phase_ticks):
-        """Recover wrapped position from RTC SRAM with deep telemetry."""
+        """Recover from RTC SRAM checkpoint (fallback when no abs_ticks from state)."""
         data = self.rtc.read_sram(self.SRAM_ADDR_EQX, 12)
         if not data:
             print(f"  [{self.name}] No SRAM data found")
             return current_phase_ticks
-            
+
         try:
-            timestamp, magic, s_phase, s_deg = struct.unpack("<IHHf", data)
-            if magic != self.SRAM_MAGIC:
+            timestamp, magic, s_phase = struct.unpack("<IHH", data[:8])
+
+            if magic == self.SRAM_MAGIC_V2:
+                # V2: absolute ticks stored - use bounded-delta
+                saved_abs = struct.unpack("<i", data[8:12])[0]
+                print(f"  [{self.name}] SRAM V2 checkpoint (T={timestamp})")
+                return self._recover_from_abs_ticks(current_phase_ticks, saved_abs)
+            elif magic == self.SRAM_MAGIC:
+                # V1 legacy: wrapped degrees - phase-stitch (best effort)
+                s_deg = struct.unpack("<f", data[8:12])[0]
+                CPR = self.TICKS_PER_REV
+                delta_ticks = (current_phase_ticks - s_phase + CPR//2) % CPR - CPR//2
+                delta_gear_deg = (delta_ticks / self.gear_ratio / self.TICKS_PER_DEGREE)
+                recovered_eqx = self.wrap_180(s_deg + delta_gear_deg)
+                recovered_abs_ticks = int(recovered_eqx * self.gear_ratio * self.TICKS_PER_DEGREE)
+                print(f"  [{self.name}] SRAM V1 LEGACY (T={timestamp}): {s_deg:.2f}° + {delta_gear_deg:.2f}° = {recovered_eqx:.2f}°")
+                return recovered_abs_ticks
+            else:
                 print(f"  [{self.name}] SRAM magic mismatch: {magic:04X}")
                 return current_phase_ticks
-            
-            # Phase Stitch Logic (short path delta)
-            CPR = self.TICKS_PER_REV
-            delta_ticks = (current_phase_ticks - s_phase + CPR//2) % CPR - CPR//2
-            
-            # Convert motor delta to gear degrees
-            delta_gear_deg = (delta_ticks / self.gear_ratio / self.TICKS_PER_DEGREE)
-            recovered_eqx = self.wrap_180(s_deg + delta_gear_deg)
-            
-            # Reconstruct absolute software ticks
-            recovered_abs_ticks = int(recovered_eqx * self.gear_ratio * self.TICKS_PER_DEGREE)
-            
-            print(f"  [{self.name}] RECOVERY TELEMETRY (T={timestamp}):")
-            print(f"     SRAM: {s_deg:.2f}° @ phase {s_phase}")
-            print(f"     BOOT: phase {current_phase_ticks} (dt={delta_ticks} ticks, {delta_gear_deg:.2f} deg)")
-            print(f"     FINAL: {recovered_eqx:.2f}° (wrapped)")
-            
-            return recovered_abs_ticks
         except Exception as e:
             print(f"  [{self.name}] Recovery error: {e}")
             return current_phase_ticks
 
     def _save_checkpoint(self, h_pos_sync=None):
-        """Save current position with precise hardware-software sync."""
+        """Save absolute ticks + phase to RTC SRAM (V2 format)."""
         if self.rtc and self.name == "EQX":
             import utime
             dt = self.rtc.datetime()
             now = utime.mktime(dt) if dt else 0
-            
+
             if h_pos_sync is None:
                 from dynamixel_extended_utils import read_present_position
                 h_pos_sync = read_present_position(self.motor_id)
-            
+
             if h_pos_sync is not None:
-                # Calculate software degrees exactly for this hardware tick
                 s_ticks = h_pos_sync - self._hw_offset
-                deg = (s_ticks / self.TICKS_PER_REV) * 360.0 / self.gear_ratio
-                
-                gear_phase = self.wrap_180(deg)
                 phase_mod = h_pos_sync % self.TICKS_PER_REV
-                
-                data = struct.pack("<IHHf", now, self.SRAM_MAGIC, int(phase_mod), gear_phase)
+
+                # V2: store abs_ticks directly (no wrapping precision loss)
+                data = struct.pack("<IHHi", now, self.SRAM_MAGIC_V2, int(phase_mod), s_ticks)
                 if self.rtc.write_sram(self.SRAM_ADDR_EQX, data):
                     self._last_checkpoint_ticks = s_ticks
-                    # print(f"  [{self.name}] Saved: {gear_phase:.2f}° @ {phase_mod}")
 
     @property
     def position(self):
@@ -167,6 +186,11 @@ class DynamixelMotor:
     @property
     def position_ticks(self):
         """Get current position in raw ticks."""
+        return self._raw_ticks
+
+    @property
+    def absolute_ticks(self):
+        """Current absolute ticks for state persistence (used by save_state)."""
         return self._raw_ticks
     
     def update_position(self):
