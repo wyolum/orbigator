@@ -291,6 +291,10 @@ class DynamixelMotor:
         target_abs = current_deg + delta
         return self.set_position(target_abs, direction_override)
     
+    def home(self, target_degrees=0):
+        """Move motor to a home position (default 0°)."""
+        return self.set_nearest_degrees(target_degrees, direction_override=0)
+
     def enable_torque(self, enable=True):
         from dynamixel_extended_utils import write_byte
         write_byte(self.motor_id, 64, 1 if enable else 0)
