@@ -149,7 +149,7 @@ class WebServer:
             else:
                 return {'error': f'Satellite {satellite} not found'}, 404
         else:
-             return {'error': 'Not in Sentry/SGP4 mode'}, 409
+            return {'error': 'Not in Sentry/SGP4 mode'}, 409
     
     def api_sync(self, method, body):
         """POST /api/sync - Manually trigger time sync and TLE refresh"""
@@ -179,7 +179,7 @@ class WebServer:
             g.current_mode.tracking = tracking
             return {'success': True, 'tracking': tracking}, 200
         else:
-             return {'error': 'Not in Sentry/SGP4 mode'}, 409
+            return {'error': 'Not in Sentry/SGP4 mode'}, 409
     
     def api_orbit_params(self, method, body):
         """POST /api/orbit/params - Update orbital parameters"""
@@ -241,7 +241,7 @@ class WebServer:
             else:
                 return {'error': msg}, 400
         else:
-             return {'error': 'System must be in Track Satellite mode'}, 409
+            return {'error': 'System must be in Track Satellite mode'}, 409
     
     def api_motors(self, method, body):
         """GET /api/motors - Motor status"""
@@ -412,7 +412,9 @@ class WebServer:
             # Stream the file in chunks
             # Use smaller chunks and a small delay to prevent network stack overflow
             gc.collect()
-            print(f"  -> Streaming {filepath} {'(GZ)' if is_gz else ''}...")
+            print(f"  -> Streaming {filepath}...")
+            if is_gz:
+                print("     (GZ)")
             CHUNK_SIZE = 512
             with open(filepath, 'rb') as f:
                 while True:
@@ -466,9 +468,9 @@ class WebServer:
         wlan = network.WLAN(network.STA_IF)
         if wlan.isconnected():
             ip = wlan.ifconfig()[0]
-            print(f"\n{'='*50}")
+            print("\n" + "="*50)
             print(f"🌐 Web Server Running!")
-            print(f"{'='*50}")
+            print("="*50)
             print(f"URL: http://{ip}/")
             print(f"Port: {self.port}")
             print(f"{'='*50}\n")

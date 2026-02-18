@@ -2,7 +2,7 @@
 import time
 import math
 from sgp4 import SGP4
-import propagators
+import propagate
 import satellite_position
 
 def run_audit():
@@ -22,7 +22,7 @@ def run_audit():
     # bstar, inc, raan, ecc, argp, m, n
     sgp4_obj.init(epoch_year, epoch_day, 0.00012345, 51.6416, 245.1234, 0.0006789, 123.4567, 236.5432, 15.5)
     
-    prop = propagators.SGP4Propagator(sgp4_obj)
+    prop = propagate.MicroSGP4(sgp4_obj)
     
     # 2. Find Ascending Node (AoV = 0)
     # Start at TLE epoch roughly (INTEGER TIMESTAMP for precision safety)

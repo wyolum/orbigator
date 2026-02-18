@@ -5,9 +5,10 @@ Responsible for hardware identification and feature gating.
 
 import json
 
-# Global Override Constant (Set to True/False to skip detection, None to auto-detect)
-# This acts as both a test hook and a manual user override.
-OVERRIDE_WIFI = None
+# Global Override Constant
+# Set to True to force Wi-Fi OFF (even on Pico 2 W).
+# Set to False to use Wi-Fi if available.
+DISABLE_WIFI = False
 
 class Capabilities:
     def __init__(self, hw_type, has_wifi, has_web_server, has_ntp, has_sgp4, has_orbit_offline, has_rtc, has_cache, has_motors):
@@ -29,7 +30,7 @@ def get_capabilities(config_path="orbigator_config.json"):
     Identifies hardware and returns a Capabilities object.
     Enforces deterministic behavior between Pico 2 and Pico 2 W.
     """
-    global OVERRIDE_WIFI
+    global DISABLE_WIFI
     
     # 1. Detect hardware Wi-Fi presence
     hw_has_wifi = False
@@ -41,19 +42,18 @@ def get_capabilities(config_path="orbigator_config.json"):
     except ImportError:
         hw_has_wifi = False
 
-    # 2. Check for manual overrides
-    final_wifi = hw_has_wifi
-    
-    # Constant override (highest priority, used for TDD and hard-coding)
-    if OVERRIDE_WIFI is not None:
-        final_wifi = OVERRIDE_WIFI
+    # 2. Apply DISABLE_WIFI override
+    if DISABLE_WIFI:
+        final_wifi = False
     else:
-        # Config override (only if constant is None)
+        final_wifi = hw_has_wifi
+
+    # 3. Check config for additional overrides (only if not already improved)
+    if final_wifi:
         try:
             with open(config_path, "r") as f:
                 config = json.load(f)
                 web_cfg = config.get("web", {})
-                # Note: config can only DISABLE wifi features, never enable on Pico 2 (R2)
                 if not web_cfg.get("enable_web", True):
                     final_wifi = False
         except:

@@ -10,6 +10,8 @@ rtc.py
 buttons.py
 dynamixel_extended_utils.py
 dynamixel_motor.py
+absolute_motor.py
+persistence.py
 
 # Architecture & Capabilities
 capabilities.py
@@ -22,7 +24,7 @@ modes.py
 orb_utils.py
 orb_globals.py
 input_utils.py
-propagators.py
+propagate.py
 web_server.py
 satellite_position.py
 satellite_catalog.py
@@ -31,6 +33,10 @@ track_ll_chunk.py
 sgp4.py
 wifi_setup.py
 web/index.html
+
+# Demos
+demo_eqx_negative.py
+demo_eqx_recovery.py
 
 # Data & Config
 orbigator_config.json

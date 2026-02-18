@@ -83,6 +83,11 @@ class SGP4:
         cos_e = math.cos(e_anom)
         nu = math.atan2(math.sqrt(1.0 - self.ecc * self.ecc) * sin_e, cos_e - self.ecc)
 
+        # Expose orbital elements for external consumers (e.g. propagate.py)
+        self._raan_curr = raan_curr
+        self._argp_curr = argp_curr
+        self._nu = nu
+
         # Radial distance
         r = self.aodp * (1.0 - self.ecc * cos_e)
 

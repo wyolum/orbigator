@@ -17,8 +17,8 @@
             "gear_ratio_num": 1.0,
             "gear_ratio_den": 1.0,
             "pid": {
-                "p": 1000,
-                "i": 50,
+                "p": 850,
+                "i": 0,
                 "d": 0
             },
             "speed_limit": 10,

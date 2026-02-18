@@ -7,6 +7,7 @@ from machine import Pin, I2C
 import framebuf
 from ds323x import DS323x
 from dynamixel_motor import DynamixelMotor
+from absolute_motor import AbsoluteDynamixel
 from dynamixel_extended_utils import set_extended_mode
 import orb_globals as g
 import orb_utils as utils
@@ -72,39 +73,21 @@ if g.i2c_lock is None: g.i2c_lock = _thread.allocate_lock()
 if g.uart_lock is None: g.uart_lock = _thread.allocate_lock()
 
 # Display (Simplified logic for brevity in refactor)
-class SH1106_I2C:
-    def __init__(self, w,h,i2c,addr=0x3C):
-        self.width,self.height,self.i2c,self.addr = w,h,i2c,addr
-        self.buffer = bytearray(w*h//8)
-        self.fb = framebuf.FrameBuffer(self.buffer, w, h, framebuf.MONO_VLSB)
-        def cmd(*cs):
-            if g.i2c_lock:
-                with g.i2c_lock:
-                    for c in cs: self.i2c.writeto(self.addr, b'\x00'+bytes([c]))
-            else:
-                for c in cs: self.i2c.writeto(self.addr, b'\x00'+bytes([c]))
-        cmd(0xAE,0x20,0x00,0x40,0xA1,0xC8,0x81,0x7F,0xA6,0xA8,0x3F,
-            0xAD,0x8B,0xD3,0x00,0xD5,0x80,0xD9,0x22,0xDA,0x12,0xDB,0x35,0xAF)
-        self.fill(0); self.show()
-    def fill(self,c): self.fb.fill(c)
-    def text(self,s,x,y,c=1): self.fb.text(s,x,y,c)
-    def degree(self,x,y,c=1):
-        self.fb.pixel(x+1, y, c)
-        self.fb.pixel(x, y+1, c); self.fb.pixel(x+2, y+1, c); self.fb.pixel(x+1, y+2, c)
-    def show(self):
-        try:
-            if g.i2c_lock:
-                with g.i2c_lock:
-                    for p in range(self.height//8):
-                        self.i2c.writeto(self.addr, b'\x00'+bytes([0xB0+p,0x02,0x10]))
-                        s = self.width*p; e = s+self.width
-                        self.i2c.writeto(self.addr, b'\x40'+self.buffer[s:e])
-            else:
-                for p in range(self.height//8):
-                    self.i2c.writeto(self.addr, b'\x00'+bytes([0xB0+p,0x02,0x10]))
-                    s = self.width*p; e = s+self.width
-                    self.i2c.writeto(self.addr, b'\x40'+self.buffer[s:e])
-        except: pass
+# Display 
+try:
+    from sh1106 import SH1106_I2C
+except ImportError:
+    # Fallback if file missing
+    print("Warning: sh1106.py missing, using dummy display")
+    class SH1106_I2C:
+        def __init__(self, w,h,i2c,addr=0x3C): pass
+        def fill(self,c): pass 
+        def text(self,s,x,y,c=1): pass
+        def degree(self,x,y,c=1): pass
+        def show(self): pass
+        def line(self,x1,y1,x2,y2,c=1): pass
+        def pixel(self,x,y,c=1): pass
+
 
 OLED_W = config_data.get("system", {}).get("oled", {}).get("width", 128)
 OLED_H = config_data.get("system", {}).get("oled", {}).get("height", 64)
@@ -212,44 +195,24 @@ saved_sat_name = state_info.get("sat_name", None)
 if ENABLE_MOTORS:
     print("\nInitializing DYNAMIXEL motors...")
     
-    # Hard reset motors to clear any error states
-    from dynamixel_extended_utils import reboot_motor, read_present_position
-    reboot_motor(AOV_MOTOR_ID)
-    reboot_motor(EQX_MOTOR_ID)
+    # Motors initialized by AbsoluteDynamixel class (includes reboot & mode set)
     
-    # Verify motors reset to 0-4095 range after reboot
-    aov_raw = read_present_position(AOV_MOTOR_ID)
-    eqx_raw = read_present_position(EQX_MOTOR_ID)
-    print(f"  [POST-REBOOT] AoV raw={aov_raw}, EQX raw={eqx_raw}")
-    
-    set_extended_mode(AOV_MOTOR_ID)
-    set_extended_mode(EQX_MOTOR_ID)
-    
-    # Pass offset_degrees to constructor
     aov_offset = mc["aov"].get("offset_deg", 0.0)
     eqx_offset = mc["eqx"].get("offset_deg", 0.0)
-
-    # Restore orientations from state if valid (V4 uses abs_ticks, Legacy uses deg)
-    last_aov = state_info.get("aov_deg") if state_info.get("timestamp", 0) > 0 else None
-    last_eqx = state_info.get("eqx_deg") if state_info.get("timestamp", 0) > 0 else None
     
-    aov_abs = state_info.get("aov_abs_ticks")
-    eqx_abs = state_info.get("eqx_abs_ticks")
-
-    aov_motor = DynamixelMotor(AOV_MOTOR_ID, "AoV", gear_ratio=AOV_GEAR_RATIO,
-                               rtc=g.rtc,
-                               offset_degrees=aov_offset, 
-                               direction=1, # Slew: Forward Only (Cable Safety)
-                               recovery_direction=1, # Boot: Direction-Aware
-                               last_known_pos=last_aov, last_abs_ticks=aov_abs)
+    # AoV: SRAM Slot 1 (starts at 0x80 + 10 = 0x8A)
+    # Direction 1 = Forward Only
+    from absolute_motor import AbsoluteDynamixel
+    aov_motor = AbsoluteDynamixel(AOV_MOTOR_ID, g.rtc, gear_ratio=AOV_GEAR_RATIO, 
+                                  sram_slot=1, offset_degrees=aov_offset, direction=1)
+    aov_motor.name = "AoV"
     g.aov_motor = aov_motor
     
-    eqx_motor = DynamixelMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO, 
-                               rtc=g.rtc,
-                               offset_degrees=eqx_offset, 
-                               direction=None, # Slew: Shortest Path
-                               recovery_direction=1, # Boot: Direction-Aware
-                               last_known_pos=last_eqx, last_abs_ticks=eqx_abs)
+    # EQX: SRAM Slot 0 (starts at 0x80)
+    # Direction None = Shortest Path
+    eqx_motor = AbsoluteDynamixel(EQX_MOTOR_ID, g.rtc, gear_ratio=EQX_GEAR_RATIO, 
+                                  sram_slot=0, offset_degrees=eqx_offset, direction=None)
+    eqx_motor.name = "EQX"
     g.eqx_motor = eqx_motor
     
     # Configure from loaded config
@@ -266,9 +229,7 @@ if ENABLE_MOTORS:
     aov_motor.enable_torque()
     eqx_motor.enable_torque()
     
-    # Wire up turn change callbacks for SRAM persistence
-    aov_motor.on_turn_change = utils.save_state
-    eqx_motor.on_turn_change = utils.save_state
+    # EQX & AoV now handle persistence internally via AbsoluteDynamixel
 else:
     print("\nMotors DISABLED - Using mock motors for web development")
     from mock_motor import MockMotor
@@ -276,31 +237,38 @@ else:
     g.eqx_motor = MockMotor(EQX_MOTOR_ID, "EQX", gear_ratio=EQX_GEAR_RATIO)
 
 # ---------------- Mode Selection (R4.5) ----------------
-if g.current_mode_id == "SGP4":
-    g.current_mode = SGP4Mode()
-    g.current_mode.enter()
-    if saved_sat_name:
-        g.current_mode.select_satellite_by_name(saved_sat_name)
-elif g.current_mode_id == "DATETIME":
-    g.current_mode = DatetimeEditorMode(next_mode=OrbitMode())
-    g.current_mode.enter()
-else:
-    # Use default_mode_id calculated in Phase 3
-    if default_mode_id == "SGP4":
-        g.current_mode = SGP4Mode()
-    else:
-        g.current_mode = OrbitMode()
-    g.current_mode.enter()
-    if g.current_mode_id == "SGP4" and saved_sat_name:
-        g.current_mode.select_satellite_by_name(saved_sat_name)
+import modes
+g.ui = modes.ModeStack()
 
+if g.current_mode_id == "SGP4" or default_mode_id == "SGP4":
+    # If SGP4 is requested (or default), try to set it up
+    # If standard boot, verify SGP4 works?
+    mode = SGP4Mode()
+    g.ui.set_root(mode)
+    if saved_sat_name:
+        mode.select_satellite_by_name(saved_sat_name)
+elif g.current_mode_id == "DATETIME":
+    # Booting into Date/Time editor (wizard)
+    # We push Orbit as root, then push Datetime
+    g.ui.set_root(OrbitMode())
+    dt_mode = DatetimeEditorMode()
+    # Logic in modes.py handles next_mode if needed, or we just rely on pop()
+    # But DatetimeEditorMode on boot typically leads to OrbitMode.
+    # If we push it on top of OrbitMode, popping it returns to OrbitMode. Perfect.
+    g.ui.push(dt_mode)
+else:
+    # Default to Orbit
+    g.ui.set_root(OrbitMode())
+    
 # ---------------- Synchronous Alignment ----------------
 if ENABLE_MOTORS and g.current_mode_id != "DATETIME":
     # 1. Get the TARGET position from the propagator
     print("\nCalculating initial satellite position...")
     
-    if hasattr(g.current_mode, 'propagator') and g.current_mode.propagator:
-        result = g.current_mode.propagator.get_aov_eqx(utils.get_timestamp())
+    active_mode = g.ui.current
+    
+    if hasattr(active_mode, 'propagator') and active_mode.propagator:
+        result = active_mode.propagator.get_aov_eqx(utils.get_timestamp())
         target_aov = result[0] % 360
         target_eqx = result[1] % 360
     else:
@@ -349,7 +317,7 @@ if ENABLE_MOTORS and g.current_mode_id != "DATETIME":
             aligned = True
             print("✓ Sync Complete.")
         else:
-            print(f"  Catching up... EQX Phase: {now_eqx % 360:.1f}° -> {target_eqx:.1f}°")
+            print(f"  Catching up... AoV: {now_aov % 360:.1f}°->{target_aov:.1f}° (Err:{err_aov:.1f}) | EQX: {now_eqx % 360:.1f}°->{target_eqx:.1f}° (Err:{err_eqx:.1f})")
             time.sleep_ms(500)
     
     # Restore simulation speed
@@ -374,16 +342,14 @@ try:
     while True:
         try:
             time.sleep_ms(10)
-            now = time.ticks_ms()
+            now_ms = time.ticks_ms()
             
             # 0. Check for Requested Mode Change (from Web Server)
             if g.next_mode:
-                print(f"Switching mode via API: {type(g.current_mode).__name__} -> {type(g.next_mode).__name__}")
-                g.current_mode.exit()
-                g.current_mode = g.next_mode
+                print(f"Switching mode via API: -> {type(g.next_mode).__name__}")
+                g.ui.set_root(g.next_mode)
                 g.next_mode = None
-                g.current_mode.enter()
-                utils.save_state() # Proactively save new mode from API
+                utils.save_state()
             
             # 1. Poll Encoder Rotation
             irq = machine.disable_irq(); rc = raw_count; machine.enable_irq(irq)
@@ -391,29 +357,20 @@ try:
             if d != last_detent:
                 delta = d - last_detent
                 last_detent = d
-                g.current_mode.on_encoder_rotate(delta)
+                g.ui.handle_input("ENC_ROTATE", delta)
             
             # 2. Process Button Events (ISR-driven)
             while button_events:
                 try:
                     pin = button_events.pop(0)
                     
-                    new_mode = None
                     if pin == enc_btn:
-                        new_mode = g.current_mode.on_encoder_press()
+                        g.ui.handle_input("ENC_PRESS")
                     elif pin == CONFIRM_BTN:
-                        new_mode = g.current_mode.on_confirm()
+                        g.ui.handle_input("CONFIRM")
                     elif pin == BACK_BTN:
-                        new_mode = g.current_mode.on_back()
+                        g.ui.handle_input("BACK")
                         
-                    if new_mode:
-                        btn_name = "ENC" if pin == enc_btn else "CONFIRM" if pin == CONFIRM_BTN else "BACK"
-                        print(f"Transition via Button [{btn_name}]: {type(g.current_mode).__name__} -> {type(new_mode).__name__}")
-                        g.current_mode.exit()
-                        g.current_mode = new_mode
-                        g.current_mode.enter()
-                        utils.save_state()
-                        print(f"Transition complete.")
                 except Exception as e:
                     print(f"Error handling button: {e}")
             
@@ -421,19 +378,15 @@ try:
             if not g.motor_health_ok and g.motor_offline_id is not None:
                 # Transition to offline mode
                 motor_name = "AoV" if g.motor_offline_id == 2 else "EQX"
-                g.current_mode.exit()
-                import modes
-                g.current_mode = modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error)
-                g.current_mode.enter()
+                if not isinstance(g.ui.current, modes.MotorOfflineMode):
+                     g.ui.push(modes.MotorOfflineMode(g.motor_offline_id, motor_name, g.motor_offline_error))
                 
-            # Note: SRAM persistence is now handled by motor.on_turn_change callback
+            # 4. Update and Render	
+            g.ui.update(now_ms)
             
-            # 6. Update and Render	
-            g.current_mode.update(now)
-            
-            if time.ticks_diff(now, last_display_update) >= 200:
-                last_display_update = now
-                g.current_mode.render(g.disp)
+            if time.ticks_diff(now_ms, last_display_update) >= 200:
+                last_display_update = now_ms
+                g.ui.render(g.disp)
         
         except Exception as e:
             # Log crash but don't exit the loop

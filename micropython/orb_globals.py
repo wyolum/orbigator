@@ -49,3 +49,4 @@ current_mode_id = "SGP4" # ORBIT, SGP4, MENU, etc.
 current_mode = None # The actual Mode instance (e.g. OrbitMode())
 next_mode = None # For requesting mode changes from other threads (e.g. Web Server)
 web_server_enabled = True # Whether the web server should be running (Pico 2W)
+ui = None # The Mode Stack Interface

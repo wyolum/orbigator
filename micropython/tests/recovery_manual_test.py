@@ -35,7 +35,7 @@ def run_test():
     print(f"\nSTEP 2: Moving to {target:.1f}° to trigger multiple checkpoints...")
     eqx.enable_torque()
     eqx.set_speed(70) # Slightly faster
-    eqx.set_position(target)
+    eqx.set_nearest_degrees(target)
     
     # Wait for arrival
     for i in range(120): # 60 seconds

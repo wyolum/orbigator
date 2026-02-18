@@ -123,7 +123,7 @@ try:
         if encoder.button_pressed:
             if motor and moving:
                 motor.update_position()
-                motor.set_position(motor.output_degrees)  # Stop at current
+                motor.set_nearest_degrees(motor.output_degrees)  # Stop at current
                 print(f"STOPPED at {motor.output_degrees:.1f}°")
                 moving = False
             time.sleep_ms(200)  # Debounce
@@ -142,7 +142,7 @@ try:
             if motor and not moving:
                 motor.set_speed(50)  # Medium speed
                 motor.enable_torque()
-                motor.set_position(target_degrees)
+                motor.set_nearest_degrees(target_degrees)
                 move_start_time = time.ticks_ms()
                 moving = True
                 print(f"Moving {motor.name} to {target_degrees:.1f}°...")

@@ -11,20 +11,19 @@ import math
 import time
 from sgp4 import SGP4
 
-def compute_julian_date(year, month, day, hour=0, minute=0, second=0):
-    """
-    Compute Julian Date from calendar date.
-    Note: For precise time offsets on 32-bit MicroPython, avoid using JD 
-    subtraction. Use Unix timestamps instead.
-    """
-    if month <= 2:
-        year -= 1
-        month += 12
-    a = year // 100
-    b = 2 - a + a // 4
-    jd = int(365.25 * (year + 4716)) + int(30.6001 * (month + 1)) + day + b - 1524.5
-    jd += (hour + (minute + second / 60.0) / 60.0) / 24.0
-    return jd
+# Shim for UTC timestamp conversion
+try:
+    # CPython (Host testing)
+    import calendar
+    def timegm(tuple):
+        return calendar.timegm(tuple)
+except ImportError:
+    # MicroPython (Target)
+    # time.mktime on Pico is typically UTC/Epoch based as there is no TZ support
+    def timegm(tuple):
+        return time.mktime(tuple)
+
+
 
 def gmst_from_unix(unix_timestamp):
     """
@@ -90,7 +89,7 @@ def ecef_to_geodetic(x, y, z):
     
     return math.degrees(lat), math.degrees(lon), alt
 
-def compute_satellite_geodetic(sgp4_obj, tle_epoch_year, tle_epoch_day, current_time_tuple=None):
+def compute_satellite_geodetic(sgp4_obj, tle_epoch_year, tle_epoch_day, current_time_tuple=None, unix_timestamp=None):
     """
     Compute satellite geodetic position from SGP4 object
     
@@ -99,24 +98,28 @@ def compute_satellite_geodetic(sgp4_obj, tle_epoch_year, tle_epoch_day, current_
         tle_epoch_year: TLE epoch year (4-digit)
         tle_epoch_day: TLE epoch day (fractional day of year)
         current_time_tuple: (year, month, day, hour, minute, second) or None for current time
+        unix_timestamp: Optional direct unix timestamp (UTC). Overrides current_time_tuple.
     
     Returns:
         dict with 'latitude', 'longitude', 'altitude', 'eci', 'ecef', 'gmst'
     """
     # Get current time
-    if current_time_tuple is None:
-        t = time.gmtime()
-        current_time_tuple = (t[0], t[1], t[2], t[3], t[4], t[5])
-    
-    # Compute Unix timestamp for current_time_tuple
-    if len(current_time_tuple) < 9:
-        # Pad with 0s for wday, yday, isdst if needed
-        tmp = list(current_time_tuple)
-        while len(tmp) < 9:
-            tmp.append(0)
-        current_time_tuple = tuple(tmp)
+    if unix_timestamp is not None:
+        unix_now = unix_timestamp
+    else:
+        if current_time_tuple is None:
+            t = time.gmtime()
+            current_time_tuple = (t[0], t[1], t[2], t[3], t[4], t[5])
         
-    unix_now = time.mktime(current_time_tuple)
+        # Compute Unix timestamp for current_time_tuple
+        if len(current_time_tuple) < 9:
+            # Pad with 0s for wday, yday, isdst if needed
+            tmp = list(current_time_tuple)
+            while len(tmp) < 9:
+                tmp.append(0)
+            current_time_tuple = tuple(tmp)
+            
+        unix_now = timegm(current_time_tuple)
     
     # Compute Unix timestamp for TLE epoch
     # Handle 2-digit years (assume 2000+)
@@ -124,16 +127,30 @@ def compute_satellite_geodetic(sgp4_obj, tle_epoch_year, tle_epoch_day, current_
     if year < 100:
         year += 2000
         
-    # Start with Jan 1st of epoch year
-    epoch_jan1_jd = compute_julian_date(year, 1, 1, 0, 0, 0)
-    # JD 1970 is 2440587.5
-    epoch_jan1_unix = int((epoch_jan1_jd - 2440587.5) * 86400.0)
+    # Epoch: Jan 1 00:00:00 of that year
+    # Use timegm for consistent UTC handling
+    # Must be 9-tuple (year, month, day, hour, min, sec, wday, yday, isdst)
+    epoch_jan1_unix = timegm((year, 1, 1, 0, 0, 0, 0, 0, 0))
     
-    # Add day of year (tle_epoch_day is 1-indexed for Jan 1st)
-    epoch_unix = epoch_jan1_unix + int((tle_epoch_day - 1.0) * 86400.0)
+    # tle_epoch_day is formatted like 123.456789
+    # Split into integer days and fractional part to preserve precision
+    day_int = int(tle_epoch_day)
+    day_frac = tle_epoch_day - day_int
     
-    # Calculate minutes since epoch using integer subtraction for precision
-    t_min = (int(unix_now) - epoch_unix) / 60.0
+    # Calculate difference in seconds
+    # t_min = (current - epoch) / 60
+    # Keep main operands as integers as long as possible
+    
+    # Days offset from Jan 1 (1-based, so subtract 1)
+    # seconds_int = (day_int - 1) * 86400
+    
+    # Calculate integer seconds difference first
+    diff_sec_int = int(unix_now) - int(epoch_jan1_unix) - (day_int - 1) * 86400
+    
+    # Then subtract fractional day seconds (this is safe for float32 now as diff is small)
+    diff_sec_total = diff_sec_int - (day_frac * 86400.0)
+    
+    t_min = diff_sec_total / 60.0
     
     # Propagate to current time (returns ECI coordinates)
     x_eci, y_eci, z_eci = sgp4_obj.propagate(t_min)

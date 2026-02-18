@@ -295,11 +295,13 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_VERSION = 4
+STATE_VERSION = 5
+STATE_FORMAT_V4 = "<4sBIddddddIB16siiB"  # V4: aov_abs + eqx_abs (legacy)
 STATE_FORMAT_V3 = "<4sBIddddddIB16sB"
-STATE_FORMAT = "<4sBIddddddIB16siiB"  # V4: +2x Int32 for Abs Ticks
+STATE_FORMAT = "<4sBIddddddIB16siB"       # V5: aov_abs only (EQX owns its SRAM)
 STATE_MAGIC = b"ORB!"
-STATE_SIZE = struct.calcsize(STATE_FORMAT)
+# Read enough bytes to cover the largest legacy format (V4)
+STATE_SIZE = max(struct.calcsize(STATE_FORMAT), struct.calcsize(STATE_FORMAT_V4))
 
 def _compute_checksum(data):
     """Simple 8-bit checksum for data except the last byte."""
@@ -345,20 +347,18 @@ def save_state(config=None):
                 sat_name_bytes = str(config.get("sat_name", "")).encode('utf-8')[:16]
                 sat_name_bytes += b'\x00' * (16 - len(sat_name_bytes)) # Pad to 16
                 
-                # Get current absolute ticks from motor tracking
+                # AoV absolute ticks for state recovery
                 aov_abs = int(getattr(g.aov_motor, 'absolute_ticks', 0))
-                eqx_abs = int(getattr(g.eqx_motor, 'absolute_ticks', 0))
-                
-                # Pack binary block
-                # V4 adds aov_abs and eqx_abs
-                data = struct.pack(STATE_FORMAT, 
-                    STATE_MAGIC, STATE_VERSION, int(config["timestamp"]) & 0xFFFFFFFF, 
+                # EQX: AbsoluteDynamixel owns its own SRAM — not stored here
+
+                data = struct.pack(STATE_FORMAT,
+                    STATE_MAGIC, STATE_VERSION, int(config["timestamp"]) & 0xFFFFFFFF,
                     float(config["aov_deg"]), float(config["eqx_deg"]),
                     float(config["altitude_km"]), float(config["inclination_deg"]),
                     float(config["eccentricity"]), float(config["periapsis_deg"]),
                     int(config["rev_count"]),
                     m_id, sat_name_bytes,
-                    aov_abs, eqx_abs, 0
+                    aov_abs, 0
                 )
                 
                 # Calculate and insert checksum
@@ -396,18 +396,19 @@ def load_state():
                 data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
                 
             if data and data[:4] == STATE_MAGIC:
-                # 1. Try Version 4 (Current - Abs Ticks)
-                if data[4] == STATE_VERSION:
-                    if data[-1] == _compute_checksum(data):
-                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, e_ticks, ck = struct.unpack(STATE_FORMAT, data)
+                # 1. Try Version 5 (Current — EQX removed, AoV abs only)
+                if data[4] == 5:
+                    v5_size = struct.calcsize(STATE_FORMAT)
+                    v5_data = data[:v5_size]
+                    if v5_data[-1] == _compute_checksum(v5_data):
+                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, ck = struct.unpack(STATE_FORMAT, v5_data)
                         config = {
                             "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
                             "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
                             "rev_count": rev,
                             "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
                             "sat_name": sat.decode('utf-8').strip('\x00'),
-                            "aov_abs_ticks": a_ticks,
-                            "eqx_abs_ticks": e_ticks
+                            "aov_abs_ticks": a_ticks
                         }
                         if _validate_state(config):
                             print(f"SRAM state: OK v{ver}")
@@ -416,7 +417,25 @@ def load_state():
                             config = None
                     else:
                         print("SRAM state: checksum fail")
-                # 2. Backward Compatibility Bridge (V3)
+                # 2. Backward Compatibility Bridge (V4 — had eqx_abs_ticks)
+                elif data[4] == 4:
+                    try:
+                        v4_size = struct.calcsize(STATE_FORMAT_V4)
+                        v4_data = data[:v4_size]
+                        if v4_data[-1] == _compute_checksum(v4_data):
+                            mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, _e_ticks, ck = struct.unpack(STATE_FORMAT_V4, v4_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "rev_count": rev,
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
+                                "sat_name": sat.decode('utf-8').strip('\x00'),
+                                "aov_abs_ticks": a_ticks
+                            }
+                            print("SRAM state: V4 bridge success")
+                    except:
+                        config = None
+                # 3. Backward Compatibility Bridge (V3)
                 elif data[4] == 3:
                     try:
                         v3_size = struct.calcsize(STATE_FORMAT_V3)
@@ -498,18 +517,14 @@ def load_state():
         g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
         g.orbital_rev_count = config.get("rev_count", 0)
         
-        # Import get_new_pos for shortest path calculation
-        # Import get_new_pos for shortest path calculation
         from dynamixel_extended_utils import get_new_pos
-        
-        last_eqx_deg = config.get("eqx_deg", 0.0)
+
         last_aov_deg = config.get("aov_deg", 0.0)
         timestamp = config.get("timestamp", 0)
-        
-        if g.eqx_motor:
-            raw_motor_val = g.eqx_motor.get_angle_degrees()
-            g.eqx_position_deg = get_new_pos(last_eqx_deg, raw_motor_val % 360)
-            
+
+        # EQX: AbsoluteDynamixel self-recovers from its own SRAM — trust the motor
+        g.eqx_position_deg = config.get("eqx_deg", 0.0)
+
         if g.aov_motor:
             raw_motor_val = g.aov_motor.get_angle_degrees()
             g.aov_position_deg = get_new_pos(last_aov_deg, raw_motor_val % 360)
@@ -548,10 +563,9 @@ def load_state():
             "timestamp": timestamp,
             "mode_id": config.get("mode_id", "ORBIT"),
             "sat_name": config.get("sat_name", None),
-            "eqx_deg": last_eqx_deg,
+            "eqx_deg": config.get("eqx_deg", 0.0),
             "aov_deg": last_aov_deg,
-            "aov_abs_ticks": config.get("aov_abs_ticks", None),
-            "eqx_abs_ticks": config.get("eqx_abs_ticks", None)
+            "aov_abs_ticks": config.get("aov_abs_ticks", None)
         }
     except Exception as e:
         print("Reconstruction error:", e)
@@ -677,7 +691,7 @@ def tle_needs_update(last_fetch_timestamp):
     now = get_timestamp()
     age_hours = (now - last_fetch_timestamp) / 3600.0
     
-    return age_hours > 24.0
+    return age_hours > 12.0
 
 def get_tle_age_str(last_fetch_timestamp):
     """
@@ -773,7 +787,7 @@ def start_web_server_thread():
         print(f"Failed to start thread: {e}")
         return False
 
-def draw_network_status(disp):
+def draw_network_status(disp, x=0, y=56):
     """Draw IP address if connected or in AP mode."""
     if not g.caps.has_wifi:
         return
@@ -783,4 +797,4 @@ def draw_network_status(disp):
     if ip:
         # Mini status in corner or bottom
         # OLED is 128x64. Let's put it on the bottom line.
-        disp.text(ip, 0, 56)
+        disp.text(ip, x, y)

@@ -5,7 +5,7 @@ This module is isolated to prevent network imports on non-WiFi hardware.
 
 import time
 import machine
-import utils
+import orb_utils as utils
 import orb_globals as g
 
 def sync_ntp(display=None):

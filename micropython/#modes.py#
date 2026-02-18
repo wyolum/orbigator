@@ -1,4 +1,4 @@
-"""
+`"""
 Orbigator UI Modes
 Mode-based architecture for clean UI state management
 """
@@ -10,7 +10,7 @@ import time
 import math
 
 # SGP4 imported locally in SGP4Mode
-import propagate
+import propagators
 
 
 class Mode:
@@ -23,13 +23,13 @@ class Mode:
         pass
     
     def on_encoder_press(self):
-        self.on_confirm()
+        return self.on_confirm()
     
     def on_confirm(self):
-        pass
+        return None
     
     def on_back(self):
-        pass
+        return None
     
     def update(self, dt):
         pass
@@ -42,107 +42,6 @@ class Mode:
     
     def exit(self):
         pass
-
-    def on_pause(self):
-        """Called when a new mode is pushed on top of this one."""
-        pass
-
-    def on_resume(self):
-        """Called when the mode on top is popped."""
-        pass
-
-
-class ModeStack:
-    """
-    Manages a stack of Mode objects.
-    The top of the stack is the active mode.
-    """
-    def __init__(self):
-        self.stack = []
-    
-    def push(self, mode):
-        if self.stack:
-            self.stack[-1].on_pause()
-        self.stack.append(mode)
-        mode.enter()
-        print(f"UI Push: {type(mode).__name__} (Depth: {len(self.stack)})")
-        
-    def pop(self):
-        if not self.stack: return
-        
-        # Don't pop the root mode (TrackMode/OrbitMode)
-        if len(self.stack) == 1:
-            print("UI Pop ignored: Cannot pop root mode.")
-            return
-
-        mode = self.stack.pop()
-        mode.exit()
-        print(f"UI Pop: {type(mode).__name__} (New Depth: {len(self.stack)})")
-        
-        if self.stack:
-            self.stack[-1].on_resume()
-            
-    def replace(self, mode):
-        """Replace current mode (pop + push)."""
-        if self.stack:
-            old = self.stack.pop()
-            old.exit()
-        self.stack.append(mode)
-        mode.enter()
-        print(f"UI Replace: {type(mode).__name__}")
-        
-    def set_root(self, mode):
-        """Clear stack and set new root mode."""
-        # Pop everything down to the last element (which pop() protects)
-        while len(self.stack) > 1:
-            self.pop()
-            
-        # Manually remove the last element if it exists
-        if self.stack:
-             old = self.stack.pop()
-             old.exit()
-
-        # Stack is empty
-        self.stack.append(mode)
-        mode.enter()
-        print(f"UI Root Set: {type(mode).__name__}")
-        
-    def handle_input(self, event_type, value=None):
-        if not self.stack: return
-        
-        active = self.stack[-1]
-        
-        if event_type == "ENC_ROTATE":
-            active.on_encoder_rotate(value)
-        elif event_type == "ENC_PRESS":
-            # Some modes handle press differently, defaults to confirm or toggle
-            active.on_encoder_press()
-        elif event_type == "CONFIRM":
-            active.on_confirm()
-        elif event_type == "BACK":
-            active.on_back()
-            
-    def update(self, dt):
-        # 1. Always update Root Mode (Physics/Motors) if it exists and isn't active
-        if len(self.stack) > 1:
-             # Assuming root is index 0
-             # We need a standard contract for "Update Physics vs UI"
-             # For now, let's just assume Root needs a tick if it's OrbitMode/SGP4Mode
-             root = self.stack[0]
-             if hasattr(root, "update_background"):
-                 root.update_background(dt)
-        
-        # 2. Update Active Mode (UI)
-        if self.stack:
-            self.stack[-1].update(dt)
-            
-    def render(self, disp):
-        if self.stack:
-            self.stack[-1].render(disp)
-            
-    @property
-    def current(self):
-        return self.stack[-1] if self.stack else None
 
 
 class MenuMode(Mode):
@@ -187,25 +86,25 @@ class MenuMode(Mode):
     def on_confirm(self):
         item = self.items[self.selection]
         if item == "Orbit!":
-            g.ui.set_root(OrbitMode())
+            return OrbitMode()
         elif item == "Track Satellite":
-            g.ui.set_root(SGP4Mode())
+            return SGP4Mode()
         elif item == "Set Period":
-            g.ui.push(PeriodEditorMode())
+            return PeriodEditorMode()
         elif item == "Settings":
-            g.ui.push(SettingsMode())
+            return SettingsMode()
         elif item == "Halt Web Svc":
             print("Halting Web Server...")
             g.web_server_enabled = False
             self.items[self.selection] = "Start Web Svc"
+            return None
         elif item == "Start Web Svc":
             print("Starting Web Server...")
             g.web_server_enabled = True
             utils.start_web_server_thread()
             self.items[self.selection] = "Halt Web Svc"
-        
-    def on_back(self):
-        g.ui.pop()
+            return None
+        return None
     
     def render(self, disp):
         disp.fill(0)
@@ -272,7 +171,7 @@ class OrbitMode(Mode):
         
         # Initialize propagator with Start Time = 0
         # This means the satellite has been orbiting since 1970.
-        self.propagator = propagate.KeplerJ2(
+        self.propagator = propagators.KeplerPropagator(
             g.orbital_altitude_km, g.orbital_inclination_deg, 
             g.orbital_eccentricity, g.orbital_periapsis_deg,
             0.0, 0.0, 0.0 # Start Phase 0, Start Time 0
@@ -313,11 +212,11 @@ class OrbitMode(Mode):
         return None
         
     def on_back(self):
-        # Push Main Menu instead of returning it
-        g.ui.push(MenuMode())
+        # Note: on_back shouldn't call save_state() directly as orbigator.py 
+        # handles it after the mode transition is confirmed.
+        return MenuMode()
     
-    def update_background(self, now_ms):
-        """Physics/Motor update loop that runs even when menu is open."""
+    def update(self, now_ms):
         if not self.initialized or not self.tracking: return
         
         # 1. Update target orientation from propagator (cache by second)
@@ -332,20 +231,20 @@ class OrbitMode(Mode):
         
         # 2. Throttled Motor Update (strictly 1Hz)
         if self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 1000:
-            # Diagnostic logic omitted for brevity in background optimization, 
-            # or keep it if essential. Let's keep the jump detection.
+            # Diagnostic: Check for mathematical jumps in the propagator targets
             diff_aov = abs(aov_angle - self.last_target_aov)
             diff_eqx = abs(eqx_angle - self.last_target_eqx)
             
-            if self.last_command_ticks != 0: 
+            if self.last_command_ticks != 0: # Skip first run diagnostic
+                # Ignore jumps that look like a 360->0 or 0->360 wrap
                 is_wrap_aov = diff_aov > 350
                 is_wrap_eqx = diff_eqx > 350
                 
                 if (diff_aov > 2.0 and not is_wrap_aov) or (diff_eqx > 2.0 and not is_wrap_eqx):
-                     # Print check might interfere with UI if UART shared?
-                     # Ideally logging should be buffered or suppressed in bg?
-                     # For now, let it print.
-                     pass 
+                    dt_ms = time.ticks_diff(now_ms, self.last_command_ticks)
+                    print(f"\n[MOTION ALERT] @ TS:{now_unix} (dt={dt_ms}ms)")
+                    print(f"  AoV: {self.last_target_aov % 360:6.1f}° -> {aov_angle % 360:6.1f}° (Δ={diff_aov:+.1f}°)")
+                    print(f"  EQX: {self.last_target_eqx % 360:6.1f}° -> {eqx_angle % 360:6.1f}° (Δ={diff_eqx:+.1f}°)")
             
             self.last_target_aov = aov_angle
             self.last_target_eqx = eqx_angle
@@ -362,16 +261,16 @@ class OrbitMode(Mode):
                 g.aov_motor.set_nearest_degrees(g.aov_position_deg)
                 g.aov_motor.update_present_position(force=True)
 
-        # Revolution counter
+        # Revolution counter: increment when crossing south point (AoV = 270°)
         current_aov_wrapped = g.aov_position_deg % 360
+        # Detect south point crossing: previous < 270 and current >= 270
         if self.last_aov_wrapped < 270 and current_aov_wrapped >= 270:
             g.orbital_rev_count += 1
+            print(f"South point crossed! Rev count: {g.orbital_rev_count}")
             utils.save_state()
         self.last_aov_wrapped = current_aov_wrapped
-
-    def update(self, now_ms):
-        # When active, run background physics + any foreground logic
-        self.update_background(now_ms)
+        
+        # Note: SRAM persistence is now handled by motor.on_turn_change callback
     
     def render(self, disp):
         disp.fill(0)
@@ -481,13 +380,13 @@ class PeriodEditorMode(Mode):
             g.orbital_period_min = new_period_min
             g.orbital_altitude_km, _ = utils.compute_altitude_from_period(new_period_min)
             utils.save_state()
-        g.ui.pop()
+        return MenuMode()
     
     def on_back(self):
         if self.field > 0:
             self.field -= 1
             return None
-        g.ui.pop()
+        return MenuMode()
     
     def render(self, disp):
         disp.fill(0)
@@ -537,8 +436,7 @@ class SettingsMode(Mode):
     def __init__(self, selection=0):
         super().__init__()
         self.selection = selection
-        # Combined "Calibrate Zero" replaces separate Homing/Calibrate
-        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Calibrate Zero", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Home Motors", "Calibrate EQX", "Motor ID Test", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -548,29 +446,33 @@ class SettingsMode(Mode):
         
     def on_confirm(self):
         if self.selection == 0:
-            g.ui.push(AltitudeEditorMode())
+            return AltitudeEditorMode()
         elif self.selection == 1:
-            g.ui.push(InclinationEditorMode())
+            return InclinationEditorMode()
         elif self.selection == 2:
-            g.ui.push(EccentricityEditorMode())
+            return EccentricityEditorMode()
         elif self.selection == 3:
-            g.ui.push(PeriapsisEditorMode())
+            return PeriapsisEditorMode()
         elif self.selection == 4:
-            g.ui.push(RevCountEditorMode())
+            return RevCountEditorMode()
         elif self.selection == 5:
-            g.ui.push(DatetimeEditorMode())
+            return DatetimeEditorMode()
         elif self.selection == 6:
-            g.ui.push(HomingMode())
+            return HomingMode()
         elif self.selection == 7:
+            return EQXCalibrationMode()
+        elif self.selection == 8:
             print("Running Motor ID Test...")
             if g.eqx_motor: g.eqx_motor.flash_led(1)
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
-        elif self.selection == 8:
-            g.ui.pop()
+            return None
+        elif self.selection == 9:
+            return MenuMode()
+        return None
     
     def on_back(self):
-        g.ui.pop()
+        return MenuMode()
     
     def render(self, disp):
         disp.fill(0)
@@ -591,112 +493,247 @@ class SettingsMode(Mode):
             disp.text(f"{prefix} {item}", 0, y)
         disp.show()
 
-class HomingMode(Mode):
+class EQXCalibrationMode(Mode):
     """
-    Unified 'Calibrate Zero' Mode.
-    1. Pauses background tracking.
-    2. Moves motors to where they THINK zero is.
-    3. Allows user to JOG EQX to where PHYSICAL zero is.
-    4. Saves the new offset (= OldOffset + Jog).
+    Manually calibrate EQX zero point by entering the TRUE physical angle using a numeric editor.
+    Offset = Raw_Angle - User_Defined_True_Angle
     """
     def __init__(self):
         super().__init__()
-        self.nudge_manager = input_utils.NudgeManager(fine_step=0.1, medium_step=1.0, coarse_step=5.0)
-        self.jog_val = 0.0
-        self.base_angle = 0.0
-        self.root_mode = None
-        self.was_tracking = False
-
-    def enter(self):
-        # 1. PAUSE BACKGROUND TRACKING
-        if g.ui.stack:
-            self.root_mode = g.ui.stack[0]
-            if hasattr(self.root_mode, 'tracking'):
-                self.was_tracking = self.root_mode.tracking
-                self.root_mode.tracking = False
-                print("Homing: Paused background tracking")
+        # Fields: 0=Sign, 1=Hundreds, 2=Tens, 3=Ones
+        self.sign = 1 # 1 or -1
+        self.hundreds = 0
+        self.tens = 0
+        self.ones = 0
+        self.field = 0
         
-        if g.eqx_motor:
-            # Avoid unwinding: Find nearest whole turn logical zero
-            curr = g.eqx_motor.position_deg
-            self.base_angle = round(curr / 360.0) * 360.0
-            
-            print(f"Calibrate Zero: Raw={curr:.1f} BaseImplied={self.base_angle:.1f} Off={g.eqx_motor.offset_degrees:.2f}")
-            g.eqx_motor.goto(self.base_angle)
-            
-        if g.aov_motor:
-            # Move AoV to 90 (Zenith) as requested
-            curr_a = g.aov_motor.position_deg
-            # Find nearest k*360 + 90
-            # (curr - 90) / 360 rounded gives the nearest cycle index relative to 90
-            base_a = round((curr_a - 90.0) / 360.0) * 360.0 + 90.0
-            g.aov_motor.goto(base_a)
-
-    def exit(self):
-        # Restore tracking state
-        if self.root_mode and hasattr(self.root_mode, 'tracking'):
-            self.root_mode.tracking = self.was_tracking
-            print(f"Homing: Restored tracking={self.was_tracking}")
-
+        # Pre-populate with current logical angle if available
+        if g.eqx_motor and g.eqx_motor.output_degrees is not None:
+             curr = g.eqx_motor.output_degrees
+             val = int(round(curr))
+             
+             if val < 0:
+                 self.sign = -1
+                 val = abs(val)
+             else:
+                 self.sign = 1
+                 
+             val = val % 360 # Wrap to safe range
+             if val > 180:   # Prefer -180 to 180 representation
+                 val = val - 360
+                 self.sign = -1
+                 val = abs(val)
+                 
+             self.hundreds = (val // 100) % 10
+             self.tens = (val // 10) % 10
+             self.ones = val % 10 
+        
     def on_encoder_rotate(self, delta):
-        """
-        Jog EQX motor to align with physical zero.
-        Target Logical = Base + Jog.
-        """
-        if g.eqx_motor:
-            d = self.nudge_manager.get_delta(delta)
-            self.jog_val += d
-            g.eqx_motor.goto(self.base_angle + self.jog_val)
-            
-    def on_confirm(self):
-        # Save new offset.
-        # We are physically at P. We want P to correspond to Logical 'base_angle'.
-        # Current logic: L = P + OldOff => P = L - OldOff
-        # Here L_current = base + jog.
-        # So P = base + jog - OldOff.
-        #
-        # New logic: L_new = P + NewOff.
-        # We want L_new = base.
-        # base = (base + jog - OldOff) + NewOff.
-        # 0 = jog - OldOff + NewOff.
-        # NewOff = OldOff - jog.
+        delta = input_utils.normalize_encoder_delta(delta)
+        d = delta
         
-        if g.eqx_motor:
-            old_off = g.eqx_motor.offset_degrees
-            new_off = (old_off - self.jog_val) % 360.0
+        if self.field == 0:
+            if d != 0: self.sign *= -1
+        elif self.field == 1:
+            self.hundreds = (self.hundreds + d) % 2 # 0-1
+        elif self.field == 2:
+            self.tens = (self.tens + d) % 10
+        elif self.field == 3:
+            self.ones = (self.ones + d) % 10
             
-            g.eqx_motor.offset_degrees = new_off
-            utils.save_motor_calibration("eqx", new_off)
-            print(f"Calibration Saved: {new_off:.2f} (Was {old_off:.2f}, Jog {self.jog_val:.2f})")
+    def on_encoder_press(self):
+        self.field = (self.field + 1) % 4
+        
+    def on_confirm(self):
+        if self.field < 3:
+            self.field += 1
+            return None
             
-            # Re-command base (clears the jog visual offset from logical, keeps physical)
-            g.eqx_motor.goto(self.base_angle)
+        # 1. Calculate the user-specified TRUE angle
+        user_deg = float(self.sign * (self.hundreds * 100 + self.tens * 10 + self.ones))
+        
+        if not g.eqx_motor:
+            print("No EQX motor to calibrate")
+            return SettingsMode(selection=7)
             
-        g.ui.pop()
+        # 2. Get current Raw angle
+        # Current logic: present_deg = raw - offset
+        # So: raw = present_deg + offset
+        current_offset = g.eqx_motor.offset_degrees
+        current_logical = g.eqx_motor.get_angle_degrees() # This uses current offset
+        if current_logical is None: current_logical = 0.0
+        
+        raw_deg = current_logical + current_offset
+        
+        # 3. Calculate NEW offset
+        # Target: user_deg = raw_deg - new_offset
+        # => new_offset = raw_deg - user_deg
+        new_offset = raw_deg - user_deg
+        
+        print(f"Calib: User={user_deg} Raw={raw_deg} OldOff={current_offset} NewOff={new_offset}")
+        
+        # 4. Apply and Save
+        g.eqx_motor.offset_degrees = new_offset
+        
+        # Save to hardware config
+        success = utils.save_motor_calibration("eqx", new_offset)
+        
+        if success:
+             print("Calibration Saved.")
+        
+        return SettingsMode(selection=7)
         
     def on_back(self):
-        # Cancel - Revert
+        if self.field > 0:
+            self.field -= 1
+            return None
+        return SettingsMode(selection=7)
+
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("CALIBRATE EQX", 0, 0)
+        
+        # Draw editor
+        # Format: [+/-] [0] [0] [0]
+        x_base = 20
+        y_pos = 20
+        
+        # Sign
+        s_char = "E" if self.sign > 0 else "W"
+        if self.field == 0:
+            disp.fb.fill_rect(x_base, y_pos-1, 10, 10, 1)
+            disp.fb.text(s_char, x_base+1, y_pos, 0)
+        else:
+            disp.fb.text(s_char, x_base+1, y_pos, 1)
+            
+        # Hundreds
+        if self.field == 1:
+            disp.fb.fill_rect(x_base+12, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.hundreds), x_base+13, y_pos, 0)
+        else:
+            disp.fb.text(str(self.hundreds), x_base+13, y_pos, 1)
+            
+        # Tens
+        if self.field == 2:
+            disp.fb.fill_rect(x_base+24, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.tens), x_base+25, y_pos, 0)
+        else:
+            disp.fb.text(str(self.tens), x_base+25, y_pos, 1)
+            
+        # Ones
+        if self.field == 3:
+            disp.fb.fill_rect(x_base+36, y_pos-1, 10, 10, 1)
+            disp.fb.text(str(self.ones), x_base+37, y_pos, 0)
+        else:
+            disp.fb.text(str(self.ones), x_base+37, y_pos, 1)
+            
+        disp.text("deg", x_base+50, y_pos)
+        
+        # Show Current Raw for reference
+        # We need raw, which is (present + offset)
+        raw_val = 0.0
         if g.eqx_motor:
-            print("Calibration Cancelled.")
-            g.eqx_motor.goto(0) # Go back to original logical 0
-        g.ui.pop()
+             curr = g.eqx_motor.output_degrees
+             if curr is None: curr = 0.0
+             raw_val = curr + g.eqx_motor.offset_degrees
+             
+        disp.text(f"Raw: {raw_val:.1f}", 0, 40)
+        disp.text("Confirm to Set", 0, 54)
+        disp.show()
+
+class HomingMode(Mode):
+    """Commands motors to calibrated zero, then allows EQX offset adjustment."""
+    def __init__(self):
+        super().__init__()
+        self.start_time = time.ticks_ms()
+        self.sent_command = False
+        self.success = False
+        self.eqx_offset_adjust = 0.0  # Track how much user has nudged EQX
+        # Compute the motor output angle that corresponds to globe 0°
+        if g.eqx_motor:
+            motor_mod = g.eqx_motor.position_deg % 360
+            eqx_mod = g.eqx_position_deg % 360
+            self.eqx_home_target = (motor_mod - eqx_mod) % 360
+        else:
+            self.eqx_home_target = 0.0
+        self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
+
+    def enter(self):
+        print(f"Homing EQX: motor={g.eqx_motor.position_deg:.1f}, "
+              f"globe={g.eqx_position_deg:.1f}, target={self.eqx_home_target:.1f}")
+
+    def update(self, dt):
+        # Send command once — home EQX to calibrated zero, not raw zero
+        if not self.sent_command:
+            if g.eqx_motor: g.eqx_motor.home(self.eqx_home_target)
+            if g.aov_motor: g.aov_motor.home(90)
+            self.sent_command = True
+
+        # Poll actual positions
+        if g.aov_motor: g.aov_motor.update_present_position()
+        if g.eqx_motor: g.eqx_motor.update_present_position()
+
+        # Check actual positions
+        aov = g.aov_motor.output_degrees if g.aov_motor else 90
+        aov = aov % 360
+        eqx = g.eqx_motor.output_degrees % 360 if g.eqx_motor else 0
+
+        # Complete when both arrive at target (AoV=90, EQX=calibrated zero + nudge)
+        eqx_target = (self.eqx_home_target + self.eqx_offset_adjust) % 360
+        err_eqx = abs((eqx - eqx_target + 180) % 360 - 180)
+        if abs(aov - 90) < 1.0 and err_eqx < 1.0:
+            self.success = True
+
+    def on_encoder_rotate(self, delta):
+        """After homing, allow nudging EQX to align globe with 0° longitude."""
+        if self.success and g.eqx_motor:
+            d = self.nudge_manager.get_delta(delta)
+            self.eqx_offset_adjust += d
+            g.eqx_motor.set_nearest_degrees(self.eqx_home_target + self.eqx_offset_adjust)
+            
+    def on_back(self):
+        if not self.success:
+            if g.aov_motor: g.aov_motor.stop()
+            if g.eqx_motor: g.eqx_motor.stop()
+            
+        return SettingsMode(selection=6)  # Home Motors is index 6
+        
+    def on_confirm(self):
+        if self.success:
+            if g.eqx_motor:
+                final_offset = (self.eqx_home_target + self.eqx_offset_adjust) % 360
+                g.eqx_motor.offset_degrees = final_offset
+                import json
+                try:
+                    with open("orbigator_config.json", "r") as f:
+                        config = json.load(f)
+                    config["motors"]["eqx"]["offset_deg"] = final_offset
+                    with open("orbigator_config.json", "w") as f:
+                        json.dump(config, f)
+                    print(f"EQX calibration saved: {final_offset:.2f}")
+                except Exception as e:
+                    print(f"Config save failed: {e}")
+        return SettingsMode(selection=6)
         
     def render(self, disp):
         disp.fill(0)
-        disp.text("CALIBRATE ZERO", 0, 0)
-        disp.text("Jog EQX to True 0", 0, 16)
         
-        disp.text(f"Jog: {self.jog_val:+.1f}", 0, 32)
+        # Show actual positions
+        aov = utils.wrap_phase_deg(g.aov_motor.output_degrees if g.aov_motor else 0)
+        eqx = utils.wrap_phase_deg(g.eqx_motor.output_degrees if g.eqx_motor else 0)
         
-        if g.eqx_motor: 
-            # Show actual physical angle?
-            # Phys = Log + Off
-            phys = (self.jog_val + g.eqx_motor.offset_degrees) % 360
-            disp.text(f"Phys: {phys:.1f}", 0, 44)
+        if self.success:
+            disp.text("HOMING COMPLETE", 0, 2)
+            disp.text("Nudge to align", 0, 14)
+            disp.text("globe to 0 LON", 0, 26)
+            disp.text(f"Offset: {self.eqx_offset_adjust:+.1f}", 0, 40)
+            disp.text("Confirm to Save", 0, 52)
+        else:
+            disp.text("HOMING MOTORS...", 0, 10)
+            disp.text("Please wait", 0, 22)
+            disp.text(f"A:{aov:.1f} E:{eqx:.1f}", 0, 54)
         
-        disp.text("Click to Save", 0, 56)
         disp.show()
-
 
 class AltitudeEditorMode(Mode):
     """Editor for orbital altitude."""
@@ -714,10 +751,10 @@ class AltitudeEditorMode(Mode):
         g.orbital_altitude_km = float(self.alt)
         g.orbital_period_min = utils.compute_period_from_altitude(g.orbital_altitude_km)
         utils.save_state()
-        g.ui.pop()
+        return SettingsMode(selection=0)  # Altitude is index 0
         
     def on_back(self):
-        g.ui.pop()
+        return SettingsMode(selection=0)
         
     def render(self, disp):
         disp.fill(0)
@@ -747,10 +784,10 @@ class InclinationEditorMode(Mode):
     def on_confirm(self):
         g.orbital_inclination_deg = float(self.inc_x10) / 10.0
         utils.save_state()
-        g.ui.pop()
+        return SettingsMode(selection=1)  # Inclination is index 1
         
     def on_back(self):
-        g.ui.pop()
+        return SettingsMode(selection=1)
         
     def render(self, disp):
         disp.fill(0)
@@ -799,27 +836,13 @@ class DatetimeEditorMode(Mode):
         utils.set_datetime(int(self.year), int(self.month), int(self.day), int(self.hour), int(self.minute), 0, g.rtc)
         # Force a state save to update the config timestamp
         utils.save_state()
-        
-        # If part of a wizard (next_mode), push it?
-        # But we are replacing mode return with stack ops.
-        # Original logic: return self.next_mode
-        # If next_mode was SettingsMode(selection=5), we just pop.
-        # If next_mode was OrbitMode (boot sequence), we should push/replace?
-        # DatetimeEditorMode is used in boot sequence if config says so.
-        # "g.current_mode = DatetimeEditorMode(next_mode=OrbitMode())" in orbigator.py
-        # We need to handle this.
-        if isinstance(self.next_mode, Mode):
-             # Transition to next mode
-             g.ui.replace(self.next_mode)
-        else:
-             # Default back to settings (pop)
-             g.ui.pop()
+        return self.next_mode
         
     def on_back(self):
         if self.field > 0:
             self.field -= 1
             return None
-        g.ui.pop()
+        return self.next_mode
         
     def render(self, disp):
         disp.fill(0)
@@ -883,10 +906,10 @@ class EccentricityEditorMode(Mode):
     def on_confirm(self):
         g.orbital_eccentricity = float(self.ecc_x100) / 100.0
         utils.save_state()
-        g.ui.pop()
+        return SettingsMode(selection=2)  # Eccentricity is index 2
         
     def on_back(self):
-        g.ui.pop()
+        return SettingsMode(selection=2)
         
     def render(self, disp):
         disp.fill(0)
@@ -925,10 +948,10 @@ class PeriapsisEditorMode(Mode):
     def on_confirm(self):
         g.orbital_periapsis_deg = float(self.periapsis)
         utils.save_state()
-        g.ui.pop()
+        return SettingsMode(selection=3)  # Periapsis is index 3
         
     def on_back(self):
-        g.ui.pop()
+        return SettingsMode(selection=3)
         
     def render(self, disp):
         disp.fill(0)
@@ -979,13 +1002,13 @@ class RevCountEditorMode(Mode):
             new_count = new_count * 10 + d
         g.orbital_rev_count = new_count
         utils.save_state()
-        g.ui.pop()
+        return SettingsMode(selection=4)  # Rev Count is index 4
         
     def on_back(self):
         if self.field > 0:
             self.field -= 1
             return None
-        g.ui.pop()
+        return SettingsMode(selection=4)
         
     def render(self, disp):
         disp.fill(0)
@@ -1034,8 +1057,7 @@ class MotorOfflineMode(Mode):
         elif self.motor_id == 1 and g.eqx_motor:
             g.eqx_motor.consecutive_failures = 0
         
-        # We were likely pushed on top of something. Pop to return.
-        g.ui.pop()
+        return MenuMode()  # Return to menu
         
     def on_back(self):
         return None  # Stay in offline mode
@@ -1077,7 +1099,6 @@ class SGP4Mode(Mode):
         self.last_eqx_angle = 0.0
         self.last_command_ticks = 0
         self.inclination = 0.0
-        self.last_tle_check = 0
         self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         
         # WiFi is handled globally by g.caps (R4.2)
@@ -1092,6 +1113,7 @@ class SGP4Mode(Mode):
 
         from satellite_catalog import get_satellite_count, get_satellite_name
         import sgp4
+        import orb_utils as utils
         
         # Load satellite catalog
         self.sat_count = get_satellite_count()
@@ -1113,9 +1135,6 @@ class SGP4Mode(Mode):
     
     def select_satellite_by_name(self, name):
         """Set active satellite by name."""
-        if self.satellite_name == name and self.initialized:
-            return True
-            
         from satellite_catalog import get_satellite_count, get_satellite_name
         for i in range(get_satellite_count()):
             if get_satellite_name(i) == name:
@@ -1127,6 +1146,7 @@ class SGP4Mode(Mode):
         """Load and initialize SGP4 for selected satellite."""
         from satellite_catalog import get_satellite_name, get_satellite_norad
         import sgp4
+        import orb_utils as utils
         
         self.satellite_index = index
         self.satellite_name = get_satellite_name(index)
@@ -1185,11 +1205,11 @@ class SGP4Mode(Mode):
         n = float(line2[52:63])
         
         # Initialize SGP4
-        import propagate
+        import propagators
         self.inclination = inc
         self.sgp4 = sgp4.SGP4()
         self.sgp4.init(epoch_year, epoch_day, bstar, inc, raan, ecc, argp, m, n)
-        self.propagator = propagate.MicroSGP4(self.sgp4)
+        self.propagator = propagators.SGP4Propagator(self.sgp4)
         self.tracking = True # Start tracking automatically on selection
         
         print(f"Loaded {self.satellite_name}: epoch {epoch_year} day {epoch_day:.2f}")
@@ -1237,6 +1257,7 @@ class SGP4Mode(Mode):
         
         # 6. Fetch TLE Data
         import tle_fetch
+        import orb_utils as utils
         # Use NORAD ID if available
         target_id = getattr(self, 'norad_id', self.satellite_name)
         tle_data = tle_fetch.fetch_tle(target_id)
@@ -1262,6 +1283,7 @@ class SGP4Mode(Mode):
     def set_manual_tle(self, name, line1, line2):
         """Set TLE manually from API."""
         import sgp4
+        import orb_utils as utils
         
         try:
             # Parse TLE
@@ -1283,7 +1305,7 @@ class SGP4Mode(Mode):
             self.satellite_name = name
             self.tle_age = "Manual"
             self.tracking = True # Start tracking immediately
-            self.propagator = propagate.MicroSGP4(self.sgp4)
+            self.propagator = propagators.SGP4Propagator(self.sgp4)
             
             print(f"Manual TLE set for {name}")
             return True, "TLE loaded successfully"
@@ -1332,22 +1354,12 @@ class SGP4Mode(Mode):
     
     def on_back(self):
         """Return to menu."""
-        g.ui.push(MenuMode())
+        return MenuMode()
     
-    def update_background(self, now_ms):
-        """Physics/Motor update loop that runs even when menu is open."""
+    def update(self, now_ms):
+        """Update satellite position and motors."""
+        """Update satellite position and motors."""
         
-        # --- Periodic TLE Check (every 60s) ---
-        if self.tracking and g.caps.has_wifi and not self.fetching:
-             if self.last_tle_check == 0 or time.ticks_diff(now_ms, self.last_tle_check) >= 60000:
-                 self.last_tle_check = now_ms
-                 # Check if update needed based on cache timestamp
-                 if self.satellite_name in self.tle_cache:
-                     last_fetch = self.tle_cache[self.satellite_name].get("last_fetch", 0)
-                     if utils.tle_needs_update(last_fetch):
-                         print(f"Periodic TLE Check: {self.satellite_name} is stale. Fetching...")
-                         self.fetching = True
-
         # --- Auto-Fetch Logic ---
         if self.fetching:
              # Ensure we don't spam fetch (10s retry delay could be added here if needed)
@@ -1362,7 +1374,7 @@ class SGP4Mode(Mode):
                  if not success:
                      # If failed, stop trying for a bit or forever?
                      # Let's stop trying for this session to avoid loop
-                     # print("Auto-fetch failed. Disabling until manual retry.")
+                     print("Auto-fetch failed. Disabling until manual retry.")
                      self.fetching = False
                  else:
                      # Success - _fetch_tle sets fetching=False and reloads
@@ -1405,8 +1417,9 @@ class SGP4Mode(Mode):
                 
                 if (diff_aov > 2.0 and not is_wrap_aov) or (diff_eqx > 2.0 and not is_wrap_eqx):
                     dt_ms = time.ticks_diff(now_ms, self.last_command_ticks)
-                    # print(f"\n[SGP4 JUMP] {self.satellite_name} @ {now_unix} (dt={dt_ms}ms)")
-                    pass
+                    print(f"\n[SGP4 JUMP] {self.satellite_name} @ {now_unix} (dt={dt_ms}ms)")
+                    print(f"  AoV: {self.last_target_aov:7.2f} -> {aov_angle:7.2f} (Δ={diff_aov:6.2f}°)")
+                    print(f"  EQX: {self.last_target_eqx:7.2f} -> {eqx_angle:7.2f} (Δ={diff_eqx:6.2f}°)")
             
             self.last_target_aov = aov_angle
             self.last_target_eqx = eqx_angle
@@ -1423,9 +1436,6 @@ class SGP4Mode(Mode):
                 g.eqx_motor.update_present_position(force=True) # Poll hardware after move
         
         # Note: SRAM persistence is now handled by motor.on_turn_change callback
-    
-    def update(self, now_ms):
-        self.update_background(now_ms)
     
     def render(self, disp):
         """Render SGP4 mode display."""
@@ -1547,7 +1557,7 @@ class TrackLLMode(SGP4Mode):
         utils.draw_network_status(disp)
         disp.show()
 
-    def update_background(self, now_ms):
+    def update(self, now_ms):
         """Update satellite position and motors."""
         if not self.propagator or not self.tracking:
             return
@@ -1562,7 +1572,7 @@ class TrackLLMode(SGP4Mode):
         self.last_unix = ts
         
         try:
-            # MicroSGP4.get_aov_eqx returns (aov, eqx, lat, lon)
+            # SGP4Propagator.get_aov_eqx returns (aov, eqx, lat, lon)
             aov, eqx, lat, lon = self.propagator.get_aov_eqx(ts)
             self.alt_km = self.propagator.get_altitude()
             
@@ -1572,7 +1582,7 @@ class TrackLLMode(SGP4Mode):
             # 3. Solve Virtual Inclination (Force Front Face)
             virt_aov, virt_eqx = utils.calculate_virtual_inclination(
                 lat, lon, 
-                g.orbital_inclination_deg, 
+                g.PHYSICAL_INCLINATION_DEG, 
                 current_aov=g.aov_position_deg, 
                 force_ascending=True
             )
@@ -1594,6 +1604,3 @@ class TrackLLMode(SGP4Mode):
              print("TrackLL: Propagator missing method")
         except Exception as e:
             print(f"TrackLL Error: {e}")
-
-    def update(self, now_ms):
-        self.update_background(now_ms)

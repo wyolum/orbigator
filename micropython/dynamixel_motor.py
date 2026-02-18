@@ -5,8 +5,7 @@ Supports multi-turn positioning (>360°) and RTC SRAM recovery for EQX.
 """
 
 from dynamixel_extended_utils import (
-    read_present_position, write_dword, write_byte, ping_motor,
-    set_extended_mode
+    read_present_position, ping_motor
 )
 import time
 import struct
@@ -208,37 +207,12 @@ class DynamixelMotor:
                 
         return self.output_degrees
     
-    def set_position(self, target_degrees, direction_override=None):
-        """
-        Set absolute position in degrees.
-        Handles calibration offset and optional direction constraints.
-        """
+    def _write_goal(self, target_output_deg):
+        """Write a goal position to hardware. Internal only - no path logic."""
         from dynamixel_extended_utils import write_dword
-        
-        # Apply calibration offset to target
-        target_calibrated = target_degrees + self.offset_degrees
-        
-        # Calculate optimal path
-        current = self.output_degrees + self.offset_degrees # Internal tracking is raw
-        delta = self.wrap_180(target_calibrated - current)
-        
-        # Apply direction constraints (Cable Safety)
-        effective_dir = direction_override if direction_override is not None else self.direction
-        
-        if effective_dir == 1: # Forward Only
-            if delta < -0.1: delta += 360 # If negative move, go 'long way'
-        elif effective_dir == -1: # Reverse Only
-            if delta > 0.1: delta -= 360
-            
-        safe_target = current + delta
-        
-        # Translate to hardware space via offset
-        target_abs_ticks = int(safe_target * self.gear_ratio * self.TICKS_PER_DEGREE)
+        target_abs_ticks = int(target_output_deg * self.gear_ratio * self.TICKS_PER_DEGREE)
         hw_goal = target_abs_ticks + self._hw_offset
-        
-        if write_dword(self.motor_id, 116, int(hw_goal)):
-            return True
-        return False
+        return write_dword(self.motor_id, self.ADDR_GOAL_POSITION, int(hw_goal))
     
     def set_speed(self, speed_percent):
         """
@@ -273,27 +247,33 @@ class DynamixelMotor:
         
     def set_nearest_degrees(self, target_degrees, direction_override=None):
         """
-        Move to target angle via shortest path (handling multiple turns).
-        This updates the internal 360-mod tracking to enable continuous rotation.
+        Move to target angle via shortest path.
+        This is the ONLY public method for commanding motor position.
+
+        Args:
+            target_degrees: Target in output degrees (same space as output_degrees)
+            direction_override: None=use motor default, 0=any, 1=forward, -1=reverse
         """
         current_deg = self.output_degrees
-        
+
         # Calculate shortest delta (-180 to 180)
         delta = self.wrap_180(target_degrees - current_deg)
-        
-        # Apply Direction Constraints if any
+
+        # Apply direction constraints (cable safety)
         effective_dir = direction_override if direction_override is not None else self.direction
-        if effective_dir == 1: # Forward Only
+        if effective_dir == 1:  # Forward Only
             if delta < -0.1: delta += 360
-        elif effective_dir == -1: # Reverse Only
+        elif effective_dir == -1:  # Reverse Only
             if delta > 0.1: delta -= 360
-            
-        target_abs = current_deg + delta
-        return self.set_position(target_abs, direction_override)
+
+        return self._write_goal(current_deg + delta)
     
-    def home(self, target_degrees=0):
-        """Move motor to a home position (default 0°)."""
-        return self.set_nearest_degrees(target_degrees, direction_override=0)
+    def home(self, globe_degrees=0):
+        """Move to the motor angle where the output shows globe_degrees.
+
+        Accounts for offset_degrees calibration.
+        """
+        return self.set_nearest_degrees(self.offset_degrees + globe_degrees, direction_override=0)
 
     def enable_torque(self, enable=True):
         from dynamixel_extended_utils import write_byte

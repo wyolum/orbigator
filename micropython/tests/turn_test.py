@@ -108,7 +108,7 @@ def test_motor_turns(motor, speed):
     ticks_per_turn = 4096
     target_ticks_fwd = start_ticks + (TURNS * ticks_per_turn)
     
-    motor.set_position(target_ticks_fwd / 4096 * 360)  # Convert to degrees for API
+    motor.set_nearest_degrees(target_ticks_fwd / 4096 * 360)  # Convert to degrees for API
     
     arrived, final_ticks = wait_for_arrival(motor, target_ticks_fwd)
     
@@ -136,7 +136,7 @@ def test_motor_turns(motor, speed):
     display.show()
     
     target_ticks_back = start_ticks  # Return to start
-    motor.set_position(start_deg)  # Use original degree value
+    motor.set_nearest_degrees(start_deg)  # Use original degree value
     
     arrived, final_ticks = wait_for_arrival(motor, target_ticks_back)
     
