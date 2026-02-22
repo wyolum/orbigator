@@ -54,3 +54,11 @@ ui = None # The Mode Stack Interface
 # OLED Idle / Burn-In Prevention
 last_input_ticks = 0       # ticks_ms of last user input
 oled_timeout_ms  = 120_000 # 2 min default; 0 = never sleep
+
+# Overhead Alert Radar
+observer_lat    = None  # float or None
+observer_lon    = None  # float or None
+observer_frame  = None  # ObserverFrame instance (precomputed ENU vectors)
+overhead_watcher = None # OverheadWatcher instance
+radar_display   = None  # RadarDisplay instance
+

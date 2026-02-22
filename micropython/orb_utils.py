@@ -798,3 +798,29 @@ def draw_network_status(disp, x=0, y=56):
         # Mini status in corner or bottom
         # OLED is 128x64. Let's put it on the bottom line.
         disp.text(ip, x, y)
+
+
+def fetch_observer_location():
+    """
+    Fetch observer lat/lon from the Wyolum endpoint.
+    Returns (lat_float, lon_float) or None on failure.
+    Silent fail-safe: tracking continues normally if this fails.
+    """
+    URL = "https://www.wyolum.com/utc_offset/utc_offset.py?dev_type=orbigator"
+    try:
+        import urequests
+        print(f"Fetching observer location from Wyolum...")
+        r = urequests.get(URL)
+        if r.status_code != 200:
+            print(f"Location fetch HTTP {r.status_code}")
+            r.close()
+            return None
+        data = r.json()
+        r.close()
+        lat = float(data.get("latitude", 0))
+        lon = float(data.get("longitude", 0))
+        print(f"  Observer location: {lat:.4f}N {lon:.4f}E")
+        return lat, lon
+    except Exception as e:
+        print(f"  Location fetch failed (overhead alert disabled): {e}")
+        return None

@@ -96,6 +96,7 @@ class MicroSGP4(Propagate):
     def __init__(self, sgp4_model):
         self.sgp4 = sgp4_model
         self.last_alt = 0.0
+        self.last_ecef = None   # (x_km, y_km, z_km) — updated in get_aov_eqx()
         # Cache for performance
         try:
             import sgp4
@@ -132,6 +133,10 @@ class MicroSGP4(Propagate):
             gmst = result['gmst']
             t_min = result.get('t_min', 0)
 
+            # Cache ECEF for observer_frame dot test
+            ecef = result.get('ecef', {})
+            self.last_ecef = (ecef.get('x', 0.0), ecef.get('y', 0.0), ecef.get('z', 0.0))
+
             # Store altitude for retrieval
             self.last_alt = alt_km
 
@@ -154,3 +159,7 @@ class MicroSGP4(Propagate):
 
     def get_altitude(self):
         return self.last_alt
+
+    def get_ecef(self):
+        """Return cached (x, y, z) ECEF km from last propagation, or None."""
+        return self.last_ecef

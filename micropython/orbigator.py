@@ -263,6 +263,24 @@ elif g.current_mode_id == "DATETIME":
 else:
     # Default to Orbit
     g.ui.set_root(OrbitMode())
+
+# ---------------- Overhead Alert Init ----------------
+if g.caps.has_wifi:
+    try:
+        loc = utils.fetch_observer_location()
+        if loc:
+            g.observer_lat, g.observer_lon = loc
+            from observer_frame import ObserverFrame
+            from overhead_watcher import OverheadWatcher
+            from radar_display import RadarDisplay
+            g.observer_frame  = ObserverFrame(g.observer_lat, g.observer_lon)
+            g.overhead_watcher = OverheadWatcher()
+            g.radar_display   = RadarDisplay()
+            print(f"Overhead Alert: armed at ({g.observer_lat:.2f}, {g.observer_lon:.2f})")
+    except Exception as _oa_err:
+        print(f"Overhead Alert init failed (disabled): {_oa_err}")
+        g.observer_frame = None
+
     
 # ---------------- Synchronous Alignment ----------------
 if ENABLE_MOTORS and g.current_mode_id != "DATETIME":

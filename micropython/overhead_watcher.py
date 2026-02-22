@@ -1,0 +1,78 @@
+"""
+overhead_watcher.py - Satellite Horizon State Machine
+======================================================
+Monitors the dot_up() value from ObserverFrame and triggers
+a display wake event when the satellite rises above the horizon.
+
+Hysteresis prevents flicker near the boundary. The hot-loop cost
+is just one float comparison per tick.
+"""
+
+import time
+
+# --- Tunable constants ---
+HORIZON_ON_DOT  = 0.0     # trigger when dot crosses zero (exact horizon)
+HORIZON_OFF_DOT = -0.05   # hysteresis: don't disarm until dot clearly below
+DWELL_MS        = 3000    # must be above horizon this long before alert fires
+WAKE_MS         = 30000   # alert display active for this many ms
+
+# States
+_BELOW   = 0
+_DWELL   = 1   # candidates: above ON but not yet confirmed
+_ABOVE   = 2   # alert active
+
+
+class OverheadWatcher:
+    """
+    State machine tracking whether the satellite is above the horizon.
+
+    Usage (every tracking tick):
+        watcher.update(dot, now_ms)
+        if watcher.is_alert_active():
+            ...show radar...
+    """
+
+    def __init__(self):
+        self._state        = _BELOW
+        self._dwell_start  = 0
+        self._wake_until   = 0   # ticks_ms when alert expires
+
+    # ------------------------------------------------------------------
+    def update(self, dot_up, now_ms):
+        """Call once per tracking tick with the dot_up() result."""
+
+        if self._state == _BELOW:
+            if dot_up > HORIZON_ON_DOT:
+                self._state = _DWELL
+                self._dwell_start = now_ms
+
+        elif self._state == _DWELL:
+            if dot_up <= HORIZON_ON_DOT:
+                # Dropped back below before dwell completed - reset
+                self._state = _BELOW
+            elif time.ticks_diff(now_ms, self._dwell_start) >= DWELL_MS:
+                # Confirmed above horizon - fire alert
+                self._state = _ABOVE
+                self._wake_until = time.ticks_add(now_ms, WAKE_MS)
+                print(f"OVERHEAD ALERT: satellite above horizon! dot={dot_up:.3f}")
+
+        elif self._state == _ABOVE:
+            # Extend wake if satellite is still up
+            if dot_up > HORIZON_ON_DOT:
+                self._wake_until = time.ticks_add(now_ms, WAKE_MS)
+
+            # Disarm once satellite clearly below (hysteresis)
+            if dot_up < HORIZON_OFF_DOT:
+                self._state = _BELOW
+                print("OVERHEAD: satellite set below horizon.")
+
+    # ------------------------------------------------------------------
+    def is_alert_active(self):
+        """True while the alert display should be shown."""
+        return self._state == _ABOVE
+
+    def alert_remaining_ms(self, now_ms):
+        """Milliseconds until alert expires (0 if not active)."""
+        if not self.is_alert_active():
+            return 0
+        return max(0, time.ticks_diff(self._wake_until, now_ms))

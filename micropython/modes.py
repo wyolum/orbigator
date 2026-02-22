@@ -120,6 +120,7 @@ class ModeStack:
                 g.disp.wake()
             except:
                 pass
+            return  # Swallow event: first touch only wakes display, doesn't change state
         
         if event_type == "ENC_ROTATE":
             active.on_encoder_rotate(value)
@@ -1508,12 +1509,46 @@ class SGP4Mode(Mode):
                 g.eqx_motor.update_present_position(force=True) # Poll hardware after move
         
         # Note: SRAM persistence is now handled by motor.on_turn_change callback
+
+        # --- Tier 0: Trig-free horizon test (hot loop) ---
+        if g.observer_frame and g.overhead_watcher and self.propagator:
+            try:
+                ecef = self.propagator.get_ecef()
+                if ecef:
+                    dot = g.observer_frame.dot_up(*ecef)
+                    was_active = g.overhead_watcher.is_alert_active()
+                    g.overhead_watcher.update(dot, now_ms)
+                    # Wake display when alert first triggers
+                    if g.overhead_watcher.is_alert_active() and not was_active:
+                        g.last_input_ticks = now_ms  # reset idle timer = wake display
+                        if g.disp and hasattr(g.disp, 'is_sleeping') and g.disp.is_sleeping:
+                            try: g.disp.wake()
+                            except: pass
+                        if g.radar_display:
+                            g.radar_display.reset_trail()
+            except Exception as _oa_err:
+                pass  # Fail silent - never interrupt tracking
     
     def update(self, now_ms):
         self.update_background(now_ms)
     
     def render(self, disp):
         """Render SGP4 mode display."""
+
+        # --- Tier 1: Radar alert display (only when satellite is overhead) ---
+        if g.overhead_watcher and g.overhead_watcher.is_alert_active():
+            if g.observer_frame and g.radar_display and self.propagator:
+                try:
+                    ecef = self.propagator.get_ecef()
+                    if ecef:
+                        az, el = g.observer_frame.az_el_deg(*ecef)
+                        g.radar_display.update(az, el)
+                        g.radar_display.render(disp, self.satellite_name or "SAT", az, el)
+                        return  # radar render replaces normal HUD
+                except:
+                    pass  # fall through to normal HUD on any error
+
+        # Normal SGP4 HUD
         disp.fill(0)
         
         if not self.satellite_name:
