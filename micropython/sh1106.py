@@ -20,6 +20,7 @@ class SH1106_I2C:
         
         # Initialize display
         self._init_display()
+        self.is_sleeping = False
         self.fill(0)
         self.show()
     
@@ -86,3 +87,13 @@ class SH1106_I2C:
             start = self.width * page
             end = start + self.width
             self.i2c.writeto(self.addr, bytes([0x40]) + self.buffer[start:end])
+    
+    def sleep(self):
+        """Turn display OFF (panel power retained, no burn-in)."""
+        self.i2c.writeto(self.addr, bytes([0x00, 0xAE]))
+        self.is_sleeping = True
+
+    def wake(self):
+        """Turn display ON."""
+        self.i2c.writeto(self.addr, bytes([0x00, 0xAF]))
+        self.is_sleeping = False

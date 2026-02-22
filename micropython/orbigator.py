@@ -96,9 +96,11 @@ try:
         disp = SH1106_I2C(OLED_W, OLED_H, i2c, addr=addrs[0])
         g.disp = disp
     else: raise Exception("No display")
-except:
+except Exception as _disp_err:
+    print(f"Display init failed: {_disp_err}")
     class DummyDisp:
         def __init__(self):
+            self.is_sleeping = False
             class DummyFB:
                 def text(self, *a, **k): pass
                 def pixel(self, *a, **k): pass
@@ -115,6 +117,8 @@ except:
         def show(self): pass
         def line(self,x1,y1,x2,y2,c=1): pass
         def pixel(self,x,y,c=1): pass
+        def sleep(self): self.is_sleeping = True
+        def wake(self): self.is_sleeping = False
     disp = DummyDisp(); g.disp = disp
 
 # RTC Init

@@ -112,6 +112,15 @@ class ModeStack:
         
         active = self.stack[-1]
         
+        # --- OLED Wake on Input ---
+        now_ms = time.ticks_ms()
+        g.last_input_ticks = now_ms
+        if g.disp and hasattr(g.disp, 'is_sleeping') and g.disp.is_sleeping:
+            try:
+                g.disp.wake()
+            except:
+                pass
+        
         if event_type == "ENC_ROTATE":
             active.on_encoder_rotate(value)
         elif event_type == "ENC_PRESS":
@@ -137,6 +146,31 @@ class ModeStack:
             self.stack[-1].update(dt)
             
     def render(self, disp):
+        # --- OLED Idle Sleep ---
+        if g.oled_timeout_ms > 0:
+            now_ms = time.ticks_ms()
+            # Bootstrap: start the idle timer on first render
+            if g.last_input_ticks == 0:
+                g.last_input_ticks = now_ms
+            idle_ms = time.ticks_diff(now_ms, g.last_input_ticks)
+            if idle_ms >= g.oled_timeout_ms:
+                # Time to sleep
+                if disp and hasattr(disp, 'is_sleeping') and not disp.is_sleeping:
+                    try:
+                        disp.fill(0)
+                        disp.show()
+                        disp.sleep()
+                    except Exception as e:
+                        print(f"OLED sleep error: {e}")
+                return  # Skip render while sleeping
+        
+        # Wake if needed (e.g. timeout was just changed to Never, or input woke us)
+        if disp and hasattr(disp, 'is_sleeping') and disp.is_sleeping:
+            try:
+                disp.wake()
+            except:
+                pass
+        
         if self.stack:
             self.stack[-1].render(disp)
             
@@ -538,7 +572,7 @@ class SettingsMode(Mode):
         super().__init__()
         self.selection = selection
         # Combined "Calibrate Zero" replaces separate Homing/Calibrate
-        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Calibrate Zero", "Motor ID Test", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Calibrate Zero", "Motor ID Test", "Screen Timeout", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -567,6 +601,8 @@ class SettingsMode(Mode):
             time.sleep_ms(500)
             if g.aov_motor: g.aov_motor.flash_led(2)
         elif self.selection == 8:
+            g.ui.push(ScreenTimeoutMode())
+        elif self.selection == 9:
             g.ui.pop()
     
     def on_back(self):
@@ -590,6 +626,55 @@ class SettingsMode(Mode):
             y = 16 + (i - start_idx) * 12
             disp.text(f"{prefix} {item}", 0, y)
         disp.show()
+
+class ScreenTimeoutMode(Mode):
+    """
+    Menu to select OLED screen timeout duration.
+    Options: 1 min, 2 min, 5 min, 10 min, Never
+    """
+    TIMEOUT_OPTIONS = [
+        ("1 min",  60_000),
+        ("2 min",  120_000),
+        ("5 min",  300_000),
+        ("10 min", 600_000),
+        ("Never",  0),
+    ]
+    
+    def __init__(self):
+        super().__init__()
+        # Set selection to current value
+        self.selection = 0
+        for i, (_, ms) in enumerate(self.TIMEOUT_OPTIONS):
+            if ms == g.oled_timeout_ms:
+                self.selection = i
+                break
+    
+    def on_encoder_rotate(self, delta):
+        delta = input_utils.normalize_encoder_delta(delta)
+        move = 1 if delta > 0 else -1 if delta < 0 else 0
+        self.selection = (self.selection + move) % len(self.TIMEOUT_OPTIONS)
+    
+    def on_confirm(self):
+        _, ms = self.TIMEOUT_OPTIONS[self.selection]
+        g.oled_timeout_ms = ms
+        # Reset idle timer so display stays on for a moment after selection
+        g.last_input_ticks = time.ticks_ms()
+        label, _ = self.TIMEOUT_OPTIONS[self.selection]
+        print(f"Screen timeout set to: {label}")
+        g.ui.pop()
+    
+    def on_back(self):
+        g.ui.pop()
+    
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SCREEN TIMEOUT", 0, 0)
+        for i, (label, ms) in enumerate(self.TIMEOUT_OPTIONS):
+            prefix = ">" if i == self.selection else " "
+            active = "*" if ms == g.oled_timeout_ms else " "
+            disp.text(f"{prefix}{active}{label}", 0, 16 + i * 10)
+        disp.show()
+
 
 class HomingMode(Mode):
     """
