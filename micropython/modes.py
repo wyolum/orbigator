@@ -1537,12 +1537,16 @@ class SGP4Mode(Mode):
 
         # --- Tier 1: Radar alert display (only when satellite is overhead) ---
         if g.overhead_watcher and g.overhead_watcher.is_alert_active():
+            # Keep display on for the whole pass — reset idle timer every render
+            import time as _t
+            g.last_input_ticks = _t.ticks_ms()
             if g.observer_frame and g.radar_display and self.propagator:
                 try:
                     ecef = self.propagator.get_ecef()
                     if ecef:
+                        now_ms = _t.ticks_ms()
                         az, el = g.observer_frame.az_el_deg(*ecef)
-                        g.radar_display.update(az, el)
+                        g.radar_display.update(az, el, now_ms)
                         g.radar_display.render(disp, self.satellite_name or "SAT", az, el)
                         return  # radar render replaces normal HUD
                 except:

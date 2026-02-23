@@ -21,8 +21,9 @@ _CX     = 64   # screen centre X
 _CY     = 45   # screen centre Y (lower half of display)
 _RADIUS = 18   # horizon ring radius in pixels
 
-# Trail ring buffer
-_TRAIL_LEN = 20
+# Trail ring buffer  (5-min pass @ 1 Hz = 300 pts)
+_TRAIL_LEN = 300
+_TRAIL_INTERVAL_MS = 1000   # add one trail point per second max
 
 
 class RadarDisplay:
@@ -35,6 +36,7 @@ class RadarDisplay:
         self._trail = [(0.0, 0.0)] * _TRAIL_LEN
         self._trail_idx = 0
         self._trail_count = 0
+        self._last_trail_ms = 0   # ticks_ms of last trail append
 
     # ------------------------------------------------------------------
     def _to_xy(self, az_deg, el_deg):
@@ -47,18 +49,25 @@ class RadarDisplay:
         return x, y
 
     # ------------------------------------------------------------------
-    def update(self, az_deg, el_deg):
-        """Append current position to trail ring buffer. Call ≤2 Hz."""
+    def update(self, az_deg, el_deg, now_ms=None):
+        """Append position to trail — throttled to 1 Hz to cover full pass."""
+        import time
+        if now_ms is None:
+            now_ms = time.ticks_ms()
+        if self._trail_count > 0 and time.ticks_diff(now_ms, self._last_trail_ms) < _TRAIL_INTERVAL_MS:
+            return
         self._trail[self._trail_idx] = (az_deg, el_deg)
         self._trail_idx = (self._trail_idx + 1) % _TRAIL_LEN
         if self._trail_count < _TRAIL_LEN:
             self._trail_count += 1
+        self._last_trail_ms = now_ms
 
     # ------------------------------------------------------------------
     def reset_trail(self):
         """Clear trail (call when satellite rises or changes)."""
         self._trail_count = 0
         self._trail_idx   = 0
+        self._last_trail_ms = 0
 
     # ------------------------------------------------------------------
     def render(self, disp, sat_name, az_deg, el_deg):
@@ -93,12 +102,11 @@ class RadarDisplay:
             disp.line(prev_x, prev_y, nx_, ny_)
             prev_x, prev_y = nx_, ny_
 
-        # --- Cardinal tick marks ---
+        # --- Cardinal tick marks (pixels only) ---
         disp.pixel(_CX,            _CY - _RADIUS - 2)  # N
         disp.pixel(_CX,            _CY + _RADIUS + 2)  # S
         disp.pixel(_CX - _RADIUS - 2, _CY)             # W
         disp.pixel(_CX + _RADIUS + 2, _CY)             # E
-        disp.text("N", _CX - 3, _CY - _RADIUS - 10)
 
         # --- Trail arc ---
         if self._trail_count >= 2:
