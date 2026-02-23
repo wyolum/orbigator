@@ -21,9 +21,9 @@ _CX     = 64   # screen centre X
 _CY     = 45   # screen centre Y (lower half of display)
 _RADIUS = 18   # horizon ring radius in pixels
 
-# Trail ring buffer  (5-min pass @ 1 Hz = 300 pts)
-_TRAIL_LEN = 300
-_TRAIL_INTERVAL_MS = 1000   # add one trail point per second max
+# Trail ring buffer  (1 pt/min × 20 pts = 20-min max pass coverage)
+_TRAIL_LEN = 20
+_TRAIL_INTERVAL_MS = 60_000   # one trail point per minute
 
 
 class RadarDisplay:
