@@ -70,8 +70,6 @@ class RadarDisplay:
         disp.text(f"Az:{az_i:+04d}", 0, 20)
         disp.text(f"El:{el_i:+03d}", 0, 36)
 
-        # --- Right panel divider (optional thin line) ---
-        disp.vline(63, 0, 64)
 
         # --- Horizon circle (16-segment) ---
         prev_x = _CX + _RADIUS
