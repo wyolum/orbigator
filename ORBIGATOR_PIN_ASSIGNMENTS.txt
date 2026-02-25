@@ -8,7 +8,7 @@ COMPONENT OVERVIEW
 - 2x DYNAMIXEL XL330-M288-T servos (EQX and AoV motors)
 - SN74HC126N quad tri-state buffer (half-duplex UART)
 - SH1106/SSD1306 OLED display (128x64)
-- DS3231 RTC (ChronoDot)
+- DS3232 RTC (ChronoDot)
 - Rotary encoder with push button
 - Back button (on combo board)
 - Confirm button (on combo board)
@@ -26,8 +26,8 @@ GP2  (Pin 4)  → Direction Control → 74HC126 Pin 1 (1OE - Output Enable)
 
 I2C0 (OLED Display + RTC)
 --------------------------
-GP4  (Pin 6)  → I2C0 SDA → OLED SDA + DS3231 SDA
-GP5  (Pin 7)  → I2C0 SCL → OLED SCL + DS3231 SCL
+GP4  (Pin 6)  → I2C0 SDA → OLED SDA + DS3232 SDA
+GP5  (Pin 7)  → I2C0 SCL → OLED SCL + DS3232 SCL
 
 ROTARY ENCODER
 --------------
@@ -98,7 +98,7 @@ I2C Address: 0x3C (default)
 Frequency: 100 kHz
 
 ========================================================
-DS3231 RTC (ChronoDot)
+DS3232 RTC (ChronoDot)
 ========================================================
 VCC → Pico 3.3V (or 5V if available)
 GND → Common ground
@@ -125,7 +125,7 @@ POWER DISTRIBUTION
 ---------------------
 - 74HC126 VCC (Pin 14)
 - OLED VCC
-- DS3231 VCC (can also use 5V)
+- DS3232 VCC (can also use 5V)
 
 5V RAIL (External Power Supply)
 --------------------------------
@@ -140,7 +140,7 @@ GROUND (Common)
 - DYNAMIXEL Motor 1 GND
 - DYNAMIXEL Motor 2 GND
 - OLED GND
-- DS3231 GND
+- DS3232 GND
 - Rotary encoder GND
 - External 5V supply GND
 

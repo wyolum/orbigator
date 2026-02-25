@@ -80,7 +80,7 @@ Raspberry Pi Pico 2 with DYNAMIXEL Motors
                     └───────────────────────────────────────────────────────────────┘ │
                                                                                       │
                     ┌─────────────────────────────────────────────────────────────────┼─┐
-                    │  DS3231 RTC (RTC1)                                              │ │
+                    │  DS3232 RTC (RTC1)                                              │ │
                     │  ChronoDot                                                      │ │
                     │  I2C Address: 0x68                                              │ │
                     │  **Backup Power: 0.47F Supercap (recommended) or CR2032**      │ │

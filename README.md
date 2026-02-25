@@ -27,7 +27,7 @@ The project has recently reached a major milestone with the implementation of a 
 - **Actuate** – DYNAMIXEL XL330-M288-T motors using Extended Position Control (Mode 4) for continuous, turn-preserving rotation.
   - **Motor ID 1 (EQX)**: Rotates the orbital plane (Equator Crossing / LAN).
   - **Motor ID 2 (AoV)**: Direct-drive for the satellite pointer's anomaly.
-- **Interface** – SH1106 OLED display for status and menus, rotary encoder for adjustment, and DS3231 RTC for accurate timekeeping.
+- **Interface** – SH1106 OLED display for status and menus, rotary encoder for adjustment, and DS3232 RTC for accurate timekeeping.
 
 ## Repository Structure
 
