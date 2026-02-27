@@ -9,6 +9,10 @@ Coordinate mapping (right panel):
   r = cos(el_rad)           1.0 at horizon, 0 at zenith
   x = CX + RADIUS * r * sin(az_rad)
   y = CY - RADIUS * r * cos(az_rad)
+
+Two drawing layers:
+  predicted_track  – 1×1 white pixels computed once at pass start
+  live_track       – 2×2 dots added in real-time as satellite crosses
 """
 
 import math
@@ -18,46 +22,43 @@ _CX     = 96   # centre of right panel
 _CY     = 32   # vertical centre
 _RADIUS = 29   # 64/2 - 3 px margin
 
-# Trail ring buffer  (1 pt/min × 20 pts → 20-min max pass)
-_TRAIL_LEN         = 20
-_TRAIL_INTERVAL_MS = 60_000   # one trail point per minute
+
+def to_xy(az_deg, el_deg):
+    """Convert az/el to pixel coordinates on the radar circle."""
+    az_r = math.radians(az_deg)
+    el_r = math.radians(el_deg)
+    r    = math.cos(el_r)
+    x    = int(_CX + _RADIUS * r * math.sin(az_r) + 0.5)
+    y    = int(_CY - _RADIUS * r * math.cos(az_r) + 0.5)
+    return x, y
 
 
 class RadarDisplay:
     def __init__(self):
-        self._trail         = [(0.0, 0.0)] * _TRAIL_LEN
-        self._trail_idx     = 0
-        self._trail_count   = 0
-        self._last_trail_ms = 0
+        self.predicted_track = []   # [(x, y), ...]  1px white dots
+        self.live_track      = []   # [(x, y), ...]  2×2 filled dots
+        self._last_live_xy   = None # last pixel coords for dedup
 
     # ------------------------------------------------------------------
-    def _to_xy(self, az_deg, el_deg):
-        az_r = math.radians(az_deg)
-        el_r = math.radians(el_deg)
-        r    = math.cos(el_r)
-        x    = int(_CX + _RADIUS * r * math.sin(az_r) + 0.5)
-        y    = int(_CY - _RADIUS * r * math.cos(az_r) + 0.5)
-        return x, y
+    def set_predicted_track(self, xy_pairs):
+        """Set the predicted track (list of (x, y) pixel coords).
+        Called once when a pass begins."""
+        self.predicted_track = list(xy_pairs)
 
     # ------------------------------------------------------------------
-    def update(self, az_deg, el_deg, now_ms=None):
-        """Append to trail, throttled to 1 Hz."""
-        import time
-        if now_ms is None:
-            now_ms = time.ticks_ms()
-        if self._trail_count > 0 and time.ticks_diff(now_ms, self._last_trail_ms) < _TRAIL_INTERVAL_MS:
-            return
-        self._trail[self._trail_idx] = (az_deg, el_deg)
-        self._trail_idx = (self._trail_idx + 1) % _TRAIL_LEN
-        if self._trail_count < _TRAIL_LEN:
-            self._trail_count += 1
-        self._last_trail_ms = now_ms
+    def add_live_point(self, x, y):
+        """Append a live tracking point if it differs from the last one."""
+        if self._last_live_xy and self._last_live_xy == (x, y):
+            return  # same pixel — skip
+        self._last_live_xy = (x, y)
+        self.live_track.append((x, y))
 
     # ------------------------------------------------------------------
-    def reset_trail(self):
-        self._trail_count   = 0
-        self._trail_idx     = 0
-        self._last_trail_ms = 0
+    def reset(self):
+        """Clear both tracks (call when pass ends or new pass starts)."""
+        self.predicted_track = []
+        self.live_track      = []
+        self._last_live_xy   = None
 
     # ------------------------------------------------------------------
     def render(self, disp, sat_name, az_deg, el_deg):
@@ -66,10 +67,8 @@ class RadarDisplay:
         # --- Left panel: Az / El readout ---
         az_i = int(az_deg + 0.5) % 360
         el_i = int(el_deg + 0.5)
-        # Use explicit sign; Az is 0-360 so always positive
         disp.text(f"Az:{az_i:+04d}", 0, 20)
         disp.text(f"El:{el_i:+03d}", 0, 36)
-
 
         # --- Horizon circle (16-segment) ---
         prev_x = _CX + _RADIUS
@@ -87,19 +86,16 @@ class RadarDisplay:
         disp.pixel(_CX - _RADIUS - 2, _CY)              # W
         disp.pixel(_CX + _RADIUS + 2, _CY)              # E
 
-        # --- Trail arc ---
-        if self._trail_count >= 2:
-            start_i = (self._trail_idx - self._trail_count) % _TRAIL_LEN
-            px, py = None, None
-            for j in range(self._trail_count):
-                az_t, el_t = self._trail[(start_i + j) % _TRAIL_LEN]
-                tx, ty = self._to_xy(az_t, el_t)
-                if px is not None:
-                    disp.line(px, py, tx, ty)
-                px, py = tx, ty
+        # --- Predicted track (1×1 white pixels) ---
+        for px, py in self.predicted_track:
+            disp.pixel(px, py)
+
+        # --- Live track (2×2 dots) ---
+        for lx, ly in self.live_track:
+            disp.fill_rect(lx, ly, 2, 2)
 
         # --- Current-position dot (3×3) ---
-        sx, sy = self._to_xy(az_deg, el_deg)
+        sx, sy = to_xy(az_deg, el_deg)
         disp.fill_rect(sx - 1, sy - 1, 3, 3)
 
         disp.show()

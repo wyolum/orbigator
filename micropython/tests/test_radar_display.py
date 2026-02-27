@@ -7,8 +7,8 @@ Phase 1: Fast-forward through the next 24 hours using the cached ISS TLE
          to find the next overhead pass at the stored observer location.
          Collects real az/el waypoints (1 per minute during pass).
 
-Phase 2: Animates those waypoints on the OLED radar display (2s per step),
-         showing the actual predicted track.
+Phase 2: Builds predicted track (1px white dots) up-front, then
+         animates live tracking dots (2×2) frame-by-frame on the OLED.
 
 Phase 3: Logic assertions (does not require a display).
 """
@@ -134,21 +134,23 @@ if not pass_points:
 
 print(f"\nPass: {len(pass_points)} waypoints")
 
-# ── Load trail into RadarDisplay ──────────────────────────────────────────
-from radar_display import RadarDisplay, _CX, _CY, _RADIUS
+# ── Build predicted track + animate live dots ─────────────────────────────
+from radar_display import RadarDisplay, to_xy, _CX, _CY, _RADIUS
 rd = RadarDisplay()
-for az, el in pass_points:
-    rd._trail[rd._trail_idx] = (az, el)
-    rd._trail_idx   = (rd._trail_idx + 1) % len(rd._trail)
-    rd._trail_count = min(rd._trail_count + 1, len(rd._trail))
-rd._last_trail_ms = time.ticks_ms()
 
-# ── Animate ───────────────────────────────────────────────────────────────
+# Build predicted track (all points as 1px white pixels)
+predicted_xy = [to_xy(az, el) for az, el in pass_points]
+rd.set_predicted_track(predicted_xy)
+print(f"Predicted track: {len(predicted_xy)} points")
+
+# Animate: add live points one at a time (2×2 dots)
 print("Animating (2s/frame)... Ctrl-C to skip")
 try:
     for step, (az, el) in enumerate(pass_points):
+        lx, ly = to_xy(az, el)
+        rd.add_live_point(lx, ly)
         rd.render(disp, sat_name, az, el)
-        print(f"  t={step:2d}min  Az={az:6.1f}  El={el:5.1f}")
+        print(f"  t={step:2d}min  Az={az:6.1f}  El={el:5.1f}  px=({lx},{ly})  live={len(rd.live_track)}")
         time.sleep(2)
 except KeyboardInterrupt:
     print("  (animation skipped)")
@@ -167,7 +169,7 @@ else:
     errors += 1
 
 # 2. Zenith maps to display centre
-cx, cy = rd._to_xy(0, 90)
+cx, cy = to_xy(0, 90)
 if cx == _CX and cy == _CY:
     print(f"PASS  zenith -> ({_CX},{_CY})")
 else:
@@ -175,7 +177,7 @@ else:
     errors += 1
 
 # 3. N-horizon on ring
-hx, hy = rd._to_xy(0, 0)
+hx, hy = to_xy(0, 0)
 dist = math.sqrt((hx - _CX)**2 + (hy - _CY)**2)
 if abs(dist - _RADIUS) <= 1.5:
     print(f"PASS  N-horizon at {dist:.1f}px radius (expected {_RADIUS})")
@@ -183,19 +185,25 @@ else:
     print(f"FAIL  N-horizon at {dist:.1f}px")
     errors += 1
 
-# 4. Throttle blocks rapid updates
-rd2 = RadarDisplay()
-now = time.ticks_ms()
-rd2.update(0, 0, now)
-before = rd2._trail_count
-rd2.update(45, 20, now + 500)
-if rd2._trail_count == before:
-    print("PASS  trail throttle blocks rapid updates")
+# 4. Predicted track set correctly
+if len(rd.predicted_track) == len(pass_points):
+    print(f"PASS  predicted_track has {len(rd.predicted_track)} points")
 else:
-    print("FAIL  trail throttle did not block")
+    print(f"FAIL  predicted_track has {len(rd.predicted_track)}, expected {len(pass_points)}")
+    errors += 1
+
+# 5. Live track deduplication works
+rd2 = RadarDisplay()
+rd2.add_live_point(50, 50)
+rd2.add_live_point(50, 50)  # same — should be deduplicated
+rd2.add_live_point(51, 50)  # different — should be added
+if len(rd2.live_track) == 2:
+    print("PASS  live_track deduplication works")
+else:
+    print(f"FAIL  live_track has {len(rd2.live_track)} points, expected 2")
     errors += 1
 
 if errors == 0:
-    print("\n\u2713 All checks passed.")
+    print("\n✓ All checks passed.")
 else:
-    print(f"\n\u2717 {errors} check(s) failed.")
+    print(f"\n✗ {errors} check(s) failed.")

@@ -1516,37 +1516,81 @@ class SGP4Mode(Mode):
                 ecef = self.propagator.get_ecef()
                 if ecef:
                     dot = g.observer_frame.dot_up(*ecef)
-                    was_active = g.overhead_watcher.is_alert_active()
                     g.overhead_watcher.update(dot, now_ms)
-                    # Wake display when alert first triggers
-                    if g.overhead_watcher.is_alert_active() and not was_active:
-                        g.last_input_ticks = now_ms  # reset idle timer = wake display
+
+                    # --- Pass just started: forward-propagate predicted track ---
+                    if g.overhead_watcher.pass_just_started:
+                        g.last_input_ticks = now_ms  # wake display
                         if g.disp and hasattr(g.disp, 'is_sleeping') and g.disp.is_sleeping:
                             try: g.disp.wake()
                             except: pass
                         if g.radar_display:
-                            g.radar_display.reset_trail()
+                            g.radar_display.reset()
+                            self._build_predicted_track()
+
+                    # --- Live tracking point (every tick while overhead) ---
+                    if g.overhead_watcher.is_alert_active() and g.radar_display:
+                        g.last_input_ticks = now_ms  # keep display awake
+                        az, el = g.observer_frame.az_el_deg(*ecef)
+                        from radar_display import to_xy
+                        lx, ly = to_xy(az, el)
+                        g.radar_display.add_live_point(lx, ly)
             except Exception as _oa_err:
                 pass  # Fail silent - never interrupt tracking
     
     def update(self, now_ms):
         self.update_background(now_ms)
     
+    def _build_predicted_track(self):
+        """Forward-propagate the pass at 30s intervals to build predicted track."""
+        import satellite_position as satpos
+        from radar_display import to_xy
+        obs = g.observer_frame
+        sgp4_obj = self.sgp4
+        if not obs or not sgp4_obj or not g.radar_display:
+            return
+        now_unix = utils.get_timestamp()
+        step_s = 30
+        t = now_unix
+        points = []
+        # Scan forward until satellite sets (el < 0), max 4 hours safety cap
+        max_t = now_unix + 14400
+        while t < max_t:
+            try:
+                result = satpos.compute_satellite_geodetic(
+                    sgp4_obj, sgp4_obj.epoch_year, sgp4_obj.epoch_day,
+                    unix_timestamp=t
+                )
+                ecef = result.get('ecef', {})
+                sx = ecef.get('x', 0)
+                sy = ecef.get('y', 0)
+                sz = ecef.get('z', 0)
+                dot = obs.dot_up(sx, sy, sz)
+                if dot > 0:
+                    az, el = obs.az_el_deg(sx, sy, sz)
+                    px, py = to_xy(az, el)
+                    points.append((px, py))
+                elif points:
+                    # Satellite has set — pass complete
+                    break
+            except:
+                pass
+            t += step_s
+        g.radar_display.set_predicted_track(points)
+        print(f"Predicted track: {len(points)} pts over ~{(t - now_unix)//60}min")
+
     def render(self, disp):
         """Render SGP4 mode display."""
 
         # --- Tier 1: Radar alert display (only when satellite is overhead) ---
         if g.overhead_watcher and g.overhead_watcher.is_alert_active():
-            # Keep display on for the whole pass — reset idle timer every render
             import time as _t
             g.last_input_ticks = _t.ticks_ms()
             if g.observer_frame and g.radar_display and self.propagator:
                 try:
                     ecef = self.propagator.get_ecef()
                     if ecef:
-                        now_ms = _t.ticks_ms()
                         az, el = g.observer_frame.az_el_deg(*ecef)
-                        g.radar_display.update(az, el, now_ms)
                         g.radar_display.render(disp, self.satellite_name or "SAT", az, el)
                         return  # radar render replaces normal HUD
                 except:
