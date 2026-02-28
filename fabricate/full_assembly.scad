@@ -258,15 +258,19 @@ module base_with_1010_hole(){
       // translate([15,-35, -50-inch])cylinder(d=20, h=100+inch);
 
       //motor cables
-      rotate([0,0,-10])translate([30,0, -50-inch])scale([1, 1.5, 1])cylinder(d=10, h=100+inch);
 
       // spring arm access (swingarms)
       for(ang=[0, 120, 240]){
-	rotate([0,0,27+ang])translate([45,0, -50-inch])scale([1, 1.5, 1])cylinder(d=15, h=100+inch);
+	rotate([0,0,27+ang])translate([45,0, -50-inch])scale([1., 2, 1])cylinder(d=15, h=100+inch);
+      }
+      for(ang=[180, -60]){
+	rotate([0,0,27+ang])translate([35,0, -50-inch])scale([2., 2, 1])cylinder(d=15, h=100+inch);
       }
 
       // motor handling
       translate([0,r-7, -50])cube([25, 38, 100], center=true);
+      translate([8,19.5, -80])cylinder(d=12, h=100);
+      translate([-8,19.5, -80])cylinder(d=12, h=100);
 
       // temporary test print only
       //rotate([0,90,0])scale([.3, 1, 1])translate([0,0,40])cylinder(d=20, h=50);
