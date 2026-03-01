@@ -54,11 +54,11 @@ Place each component using `A` (Add Symbol):
 - Reference: `DISP1`
 - Value: `SSD1306`
 
-#### RTC1 - DS3231
+#### RTC1 - DS3232
 - Library: `Timer_RTC`
-- Symbol: `DS3231M`
+- Symbol: `DS3232MZ`
 - Reference: `RTC1`
-- Value: `DS3231`
+- Value: `DS3232`
 
 #### M1, M2 - DYNAMIXEL Motors
 - Library: `Connector`
@@ -75,18 +75,12 @@ Place each component using `A` (Add Symbol):
 
 ### Passive Components
 
-#### Resistors (Press `A`, Library: `Device`, Symbol: `R`)
 - `R1`: 10kΩ (DATA bus pull-up)
 - `R2`: 4.7kΩ (I2C SDA pull-up)
 - `R3`: 4.7kΩ (I2C SCL pull-up)
-- `R4`: 47Ω (Supercap charging)
-
-#### Capacitors (Press `A`, Library: `Device`)
-- `C1`: Symbol `CP`, Value `0.47F 5.5V` (Supercapacitor)
-- `C2`: Symbol `C`, Value `100nF` (74HC126 decoupling)
-- `C3`: Symbol `C`, Value `100nF` (Pico decoupling)
 
 ### Connectors
+
 
 #### J1 - Power Input
 - Library: `Connector`
@@ -142,18 +136,13 @@ Use `W` (Wire tool) to connect components according to `NETLIST.md`.
 5. ENC1 GND → GND
 
 #### RTC Backup Power
-1. +3V3 → R4 Pin 1
-2. R4 Pin 2 → C1 Pin 1 (positive)
-3. R4 Pin 2 → RTC1 BAT pin
-4. C1 Pin 2 (negative) → GND
+1. Connect CR2032 (+) to RTC1 `V_BAT` pin
+2. Connect CR2032 (-) to `GND`
 
 #### Motor Power
 1. +5V → M1 Pin 2 (VDD), M2 Pin 2 (VDD), J2 Pin 2
 2. GND → M1 Pin 1, M2 Pin 1, J2 Pin 1
 
-#### Decoupling Capacitors
-1. C2 Pin 1 → +3V3, C2 Pin 2 → GND (near 74HC126)
-2. C3 Pin 1 → +3V3, C3 Pin 2 → GND (near Pico)
 
 ## Step 5: Add Labels and Annotations
 
@@ -167,7 +156,6 @@ Use `W` (Wire tool) to connect components according to `NETLIST.md`.
 2. Add text notes (Press `T`):
    - "CRITICAL: I2C pull-ups required!" near R2/R3
    - "10kΩ to +5V" near R1
-   - "Supercap backup (recommended)" near C1
 
 ## Step 6: Assign Footprints
 
@@ -176,9 +164,7 @@ Use `W` (Wire tool) to connect components according to `NETLIST.md`.
 3. Key footprints:
    - U1: `Module:Raspberry_Pi_Pico_SMD`
    - U2: `Package_DIP:DIP-14_W7.62mm`
-   - R1-R4: `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal`
-   - C1: `Capacitor_THT:CP_Radial_D10.0mm_P5.00mm`
-   - C2-C3: `Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm`
+   - R1-R3: `Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal`
 
 ## Step 7: Run Electrical Rules Check (ERC)
 
@@ -253,8 +239,7 @@ Use `W` (Wire tool) to connect components according to `NETLIST.md`.
 - [ ] All nets connected (no airwires)
 - [ ] I2C pull-ups (R2, R3) present and correct
 - [ ] DATA bus pull-up (R1) to +5V
-- [ ] Supercap charging circuit (R4, C1) correct
-- [ ] Decoupling caps near ICs
+- [ ] RTC Backup Battery (BAT1) connected
 - [ ] ERC passes with no errors
 - [ ] Footprints assigned
 - [ ] PCB layout complete
@@ -272,9 +257,8 @@ Use `W` (Wire tool) to connect components according to `NETLIST.md`.
 - Verify 74HC126 direction control (GP2 → 1OE)
 
 ### RTC Losing Time
-- Check supercap polarity (C1)
-- Verify R4 (47Ω) is in series
-- Check BAT pin connection
+- Check battery voltage (CR2032)
+- Verify `V_BAT` connection
 
 ## Need Help?
 

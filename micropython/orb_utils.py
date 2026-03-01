@@ -332,6 +332,7 @@ def save_state(config=None):
                 "aov_deg": (getattr(g, 'aov_position_deg', 0.0)) % 360.0,
                 "rev_count": getattr(g, 'orbital_rev_count', 0),
                 "mode_id": getattr(g, 'current_mode_id', "ORBIT"),
+                "display_mode": getattr(g, 'display_mode', "HUD"),
                 "sat_name": getattr(g.current_mode, 'satellite_name', "") if getattr(g, 'current_mode_id', "") == "SGP4" else "",
                 "timestamp": now
             }
@@ -516,6 +517,7 @@ def load_state():
         g.orbital_eccentricity = config.get("eccentricity", 0.0)
         g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
         g.orbital_rev_count = config.get("rev_count", 0)
+        g.display_mode = config.get("display_mode", "HUD")
         
         from dynamixel_extended_utils import get_new_pos
 

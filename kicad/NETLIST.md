@@ -18,7 +18,6 @@ This netlist describes all electrical connections in the Orbigator circuit.
 - ENC1 (Encoder) VCC
 - R2 (4.7kΩ) Pin 1
 - R3 (4.7kΩ) Pin 1
-- R4 (47Ω) Pin 1
 
 ### GND (Common Ground)
 - J1 (Barrel Jack) Pin 2
@@ -29,9 +28,6 @@ This netlist describes all electrical connections in the Orbigator circuit.
 - DISP1 (OLED) GND
 - RTC1 (DS3231) GND
 - ENC1 (Encoder) GND
-- C1 (Supercap) Pin 2
-- C2 (100nF) Pin 2
-- C3 (100nF) Pin 2
 
 ## Signal Nets
 
@@ -83,8 +79,8 @@ This netlist describes all electrical connections in the Orbigator circuit.
 
 ### RTC_BAT (Backup Power)
 - RTC1 (DS3231) BAT pin
-- R4 (47Ω) Pin 2
-- C1 (Supercap) Pin 1
+- BAT1 (CR2032) Positive pin
+
 
 ## Net Summary
 
@@ -102,7 +98,7 @@ This netlist describes all electrical connections in the Orbigator circuit.
 | ENC_A | 3 | Encoder channel A |
 | ENC_B | 3 | Encoder channel B |
 | ENC_SW | 3 | Encoder button |
-| RTC_BAT | 3 | Supercap backup circuit |
+| RTC_BAT | 2 | Battery backup (CR2032) |
 
 ## Design Rules
 
@@ -125,7 +121,7 @@ This netlist describes all electrical connections in the Orbigator circuit.
 1. **Keep I2C traces short** - Minimize capacitance
 2. **Place pull-up resistors near devices** - R2/R3 near Pico, R1 near motors
 3. **Separate power planes** - Keep 5V and 3.3V domains clear
-4. **Decoupling capacitors** - Place C2 near 74HC126, C3 near Pico
+4. **Future Improvement** - Add decoupling capacitors (0.1µF) near ICs in next revision.
 5. **Motor connector placement** - Easy cable routing to motors
 6. **Encoder connector** - Accessible for user interaction
 

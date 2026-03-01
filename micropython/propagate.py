@@ -53,33 +53,71 @@ class KeplerJ2(Propagate):
 
     def get_aov_eqx(self, unix_time):
         """
-        Calculates motor angles using High-Precision Periodic Time Reduction.
-        This preserves 32-bit float precision by keeping elapsed time within one period.
+        Calculates motor angles and LLA.
+        Returns (aov_deg, eqx_deg, lat_deg, lon_deg).
         """
         # Calculate elapsed time within a single period to avoid float precision loss.
-        # (unix_time % period - start_time % period) % period
         aov_elapsed = (unix_time % self.period_sec - self.start_time % self.period_sec) % self.period_sec
 
         # Earth rotation period is ~86400s
         eqx_period = 360.0 / abs(self.eqx_rate) if self.eqx_rate != 0 else 86400.0
         eqx_elapsed = (unix_time % eqx_period - self.start_time % eqx_period) % eqx_period
 
-        # AoV Position
+        # AoV Position (Argument of Latitude)
         if self.eccentricity > 0.001:
             aov_pos, _ = utils.compute_elliptical_position(
                 aov_elapsed, self.period_sec, self.eccentricity, self.periapsis_deg
             )
-            aov_deg = self.start_aov + aov_pos
+            arg_lat_deg = aov_pos 
         else:
-            aov_deg = self.start_aov + (self.aov_rate * aov_elapsed)
+            arg_lat_deg = (self.aov_rate * aov_elapsed)
+        
+        aov_deg = self.start_aov + arg_lat_deg
 
-        # EQX Position (Constant velocity)
+        # EQX Position (RAAN - GST)
         eqx_deg = self.start_eqx + (self.eqx_rate * eqx_elapsed)
 
-        return aov_deg, eqx_deg
+        # Calculate LLA for FOV map
+        # Simplified spherical trig for circular/elliptical orbit
+        import satellite_position
+        inc_r = math.radians(self.inclination_deg)
+        arg_lat_r = math.radians(arg_lat_deg)
+        
+        lat_r = math.asin(math.sin(inc_r) * math.sin(arg_lat_r))
+        # Account for RAAN - GST is already in eqx_deg (start_eqx includes initial RAAN-GST)
+        # But we need the cross-term for longitude
+        lon_node_r = math.radians(eqx_deg)
+        lon_r = lon_node_r + math.atan2(math.cos(inc_r) * math.sin(arg_lat_r), math.cos(arg_lat_r))
+        
+        lat_deg = math.degrees(lat_r)
+        lon_deg = math.degrees(lon_r)
+        if lon_deg > 180: lon_deg -= 360
+        elif lon_deg < -180: lon_deg += 360
+
+        # Calculate ECEF for consistency
+        r = self.altitude_km + 6371.0 # Radius
+        if self.eccentricity > 0.001:
+            # Re-calculate radius if elliptical
+            mean_motion = 2.0 * math.pi / self.period_sec
+            mean_anomaly = mean_motion * aov_elapsed
+            eccentric_anomaly = utils.solve_kepler_equation(mean_anomaly, self.eccentricity)
+            true_anomaly = utils.compute_true_anomaly(eccentric_anomaly, self.eccentricity)
+            r = utils.compute_orbital_radius((self.altitude_km + 6371.0), self.eccentricity, true_anomaly)
+
+        self.last_ecef = (
+            r * math.cos(lat_r) * math.cos(lon_r),
+            r * math.cos(lat_r) * math.sin(lon_r),
+            r * math.sin(lat_r)
+        )
+        self.last_alt = r - 6371.0
+
+        return aov_deg, eqx_deg, lat_deg, lon_deg
 
     def get_altitude(self):
-        return self.altitude_km
+        return getattr(self, "last_alt", self.altitude_km)
+
+    def get_ecef(self):
+        return getattr(self, "last_ecef", None)
 
     def nudge_aov(self, delta_deg):
         self.start_aov += delta_deg

@@ -12,6 +12,7 @@ dynamixel_extended_utils.py
 dynamixel_motor.py
 absolute_motor.py
 persistence.py
+world_map.py
 
 # Architecture & Capabilities
 capabilities.py

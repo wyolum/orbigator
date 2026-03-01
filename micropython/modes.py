@@ -12,6 +12,13 @@ import math
 # SGP4 imported locally in SGP4Mode
 import propagate
 
+try:
+    import world_map
+    HAS_WORLD_MAP = True
+except ImportError:
+    HAS_WORLD_MAP = False
+    print("Warning: world_map.py missing. FOV mode will fallback to HUD.")
+
 
 class Mode:
     """Base class for UI modes."""
@@ -278,6 +285,9 @@ class OrbitMode(Mode):
         self.tracking = True # Toggle with Confirm button
         self.last_aov_angle = 0.0
         self.last_eqx_angle = 0.0
+        self.lat_deg = 0.0
+        self.lon_deg = 0.0
+        self.alt_km = 0.0
         self.nudge_manager = input_utils.NudgeManager(fine_step=1.0, medium_step=1.0, coarse_step=1.0)
         self.last_aov_wrapped = 0.0  # Track wrapped AoV for south point detection
     
@@ -341,10 +351,10 @@ class OrbitMode(Mode):
         self.nudge_target = (self.nudge_target + 1) % 2
     
     def on_confirm(self):
-        self.tracking = not self.tracking
-        if not self.tracking:
-            if g.aov_motor: g.aov_motor.stop()
-            if g.eqx_motor: g.eqx_motor.stop()
+        # Toggle display mode instead of pausing
+        g.display_mode = "FOV" if g.display_mode == "HUD" else "HUD"
+        print(f"Display Mode set to: {g.display_mode}")
+        utils.save_state()
         return None
         
     def on_back(self):
@@ -358,7 +368,8 @@ class OrbitMode(Mode):
         # 1. Update target orientation from propagator (cache by second)
         now_unix = utils.get_timestamp()
         if now_unix != self.last_unix:
-            self.last_aov_angle, self.last_eqx_angle = self.propagator.get_aov_eqx(now_unix)
+            self.last_aov_angle, self.last_eqx_angle, self.lat_deg, self.lon_deg = self.propagator.get_aov_eqx(now_unix)
+            self.alt_km = self.propagator.get_altitude()
             self.last_unix = now_unix
         
         # Use cached values
@@ -409,6 +420,12 @@ class OrbitMode(Mode):
         self.update_background(now_ms)
     
     def render(self, disp):
+        if g.display_mode == "FOV" and self.propagator and self.tracking and HAS_WORLD_MAP:
+            disp.fill(0)
+            world_map.draw_equirectangular(disp, self.lat_deg, self.lon_deg, self.alt_km)
+            disp.show()
+            return
+
         disp.fill(0)
         target = "X" if self.nudge_target == 1 else "A"
         disp.text(f"ORBITING  [{target}]", 0, 0)
@@ -1391,29 +1408,28 @@ class SGP4Mode(Mode):
         # If tracking, ignore rotation (or could add nudge like OrbitMode)
     
     def on_encoder_press(self):
-        """Force TLE refresh (WiFi required)."""
-        if self.satellite_name:
-            if g.caps.has_wifi:
-                self._fetch_tle()
-            else:
-                # No WiFi hardware
-                import time
-                print("SGP4: WiFi not available")
-                g.disp.fill(0)
-                g.disp.text("No WiFi!", 0, 0)
-                g.disp.text("Cannot refresh", 0, 12)
-                g.disp.show()
-                time.sleep(1)
+        """Standard confirm action, fallback to TLE refresh if needed."""
+        # Check if we were expecting the dial to "Confirm" (per on-screen prompt)
+        self.on_confirm()
+        return None
+        
+    def force_tle_refresh(self):
+        """Manually trigger TLE fetch."""
+        if self.satellite_name and g.caps.has_wifi:
+            self._fetch_tle()
         return None
     
     def on_confirm(self):
-        """Start/stop tracking."""
-        self.tracking = not self.tracking
-        if self.tracking:
+        """Start tracking OR toggle display mode if already tracking."""
+        if not self.tracking:
+            self.tracking = True
             print(f"Tracking {self.satellite_name}")
             utils.save_state() # Save that we are tracking
         else:
-            print(f"Selection mode")
+            # Toggle display mode instead of stopping
+            g.display_mode = "FOV" if g.display_mode == "HUD" else "HUD"
+            print(f"Display Mode set to: {g.display_mode}")
+            utils.save_state()
         return None
     
     def on_back(self):
@@ -1579,6 +1595,16 @@ class SGP4Mode(Mode):
         g.radar_display.set_predicted_track(points)
         print(f"Predicted track: {len(points)} pts over ~{(t - now_unix)//60}min")
 
+    def render_fov(self, disp):
+        """Render the equirectangular map overlay."""
+        if not HAS_WORLD_MAP:
+            return
+
+        disp.fill(0)
+        world_map.draw_equirectangular(disp, self.lat_deg, self.lon_deg, self.alt_km)
+        
+        disp.show()
+
     def render(self, disp):
         """Render SGP4 mode display."""
 
@@ -1595,6 +1621,10 @@ class SGP4Mode(Mode):
                         return  # radar render replaces normal HUD
                 except:
                     pass  # fall through to normal HUD on any error
+
+        if g.display_mode == "FOV" and self.propagator and self.tracking and HAS_WORLD_MAP:
+            self.render_fov(disp)
+            return
 
         # Normal SGP4 HUD
         disp.fill(0)
@@ -1694,6 +1724,10 @@ class TrackLLMode(SGP4Mode):
             g.disp.show()
             
     def render(self, disp):
+        if g.display_mode == "FOV" and self.propagator and self.tracking and HAS_WORLD_MAP:
+            self.render_fov(disp)
+            return
+
         # Override render to show we are in TrackLL
         disp.fill(0)
         disp.text("FRONT FACE", 0, 0)

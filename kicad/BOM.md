@@ -17,7 +17,7 @@
 | Ref | Qty | Value | Description | Footprint | Datasheet | Notes |
 |-----|-----|-------|-------------|-----------|-----------|-------|
 | DISP1 | 1 | SSD1306/SH1106 | 128x64 OLED Display | Display:OLED_128x64_I2C | [Link](https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf) | I2C Address: 0x3C |
-| RTC1 | 1 | DS3231 | Real-Time Clock Module | Module:ChronoDot_RTC | [Link](https://datasheets.maximintegrated.com/en/ds/DS3231.pdf) | I2C Address: 0x68 |
+| RTC1 | 1 | DS3232 | Real-Time Clock Breakout | Module:Fermion_DS3232 | [Link](https://www.dfrobot.com/product-2241.html) | I2C Address: 0x68 (High Precision) |
 
 ## Motors
 
@@ -39,17 +39,9 @@
 | R1 | 1 | 10kΩ | Pull-up resistor | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal | - | DYNAMIXEL DATA bus pull-up to +5V |
 | R2 | 1 | 4.7kΩ | Pull-up resistor | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal | - | I2C SDA pull-up to +3.3V **CRITICAL** |
 | R3 | 1 | 4.7kΩ | Pull-up resistor | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal | - | I2C SCL pull-up to +3.3V **CRITICAL** |
-| R4 | 1 | 47Ω | Current limiting resistor | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal | - | Supercap charging resistor |
-
-## Capacitors
-
-| Ref | Qty | Value | Description | Footprint | Datasheet | Notes |
-|-----|-----|-------|-------------|-----------|-----------|-------|
-| C1 | 1 | 0.47F 5.5V | Supercapacitor | Capacitor_THT:CP_Radial_D10.0mm_P5.00mm | [Link](https://industrial.panasonic.com/cdbs/www-data/pdf/RDF0000/ABA0000C1218.pdf) | RTC backup power (recommended) |
-| C2 | 1 | 100nF | Ceramic capacitor | Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm | - | 74HC126 decoupling |
-| C3 | 1 | 100nF | Ceramic capacitor | Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm | - | Pico decoupling |
 
 ## Connectors
+
 
 | Ref | Qty | Value | Description | Footprint | Datasheet | Notes |
 |-----|-----|-------|-------------|-----------|-----------|-------|
@@ -73,10 +65,8 @@
    - Individual module pull-ups are NOT sufficient
 
 2. **RTC Backup Power**:
-   - **Recommended**: 0.47F supercapacitor (C1) with 47Ω resistor (R4)
-   - Provides several days to weeks of backup
-   - Much smaller footprint than CR2032
-   - Alternative: CR2032 battery (BAT1) for 5-10 years backup
+   - Use a **CR2032** battery (BAT1) for 5-10 years backup.
+   - Connect to the `V_BAT` pin on the DS3232 module.
 
 3. **DYNAMIXEL Pull-up (R1)**:
    - Required for reliable half-duplex communication
@@ -120,7 +110,7 @@
 - **Pico 2**: Adafruit, Pimoroni, SparkFun
 - **DYNAMIXEL XL330-M288-T**: ROBOTIS official store
 - **OLED Display**: Adafruit, Amazon, AliExpress
-- **DS3231 RTC**: Adafruit ChronoDot, Amazon
+- **DS3232 RTC**: DFRobot Fermion, Amazon
 - **Passives**: Digi-Key, Mouser, LCSC
 
 ## Revision History
@@ -128,3 +118,4 @@
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2025-12-21 | Justin Shaw | Initial BOM with supercap backup option |
+| 2.0 | 2026-03-01 | Antigravity | Corrected RTC to Fermion DS3232 and removed supercap/capacitors based on V2 reality |

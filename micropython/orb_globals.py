@@ -62,3 +62,6 @@ observer_frame  = None  # ObserverFrame instance (precomputed ENU vectors)
 overhead_watcher = None # OverheadWatcher instance
 radar_display   = None  # RadarDisplay instance
 
+# Display Mode (HUD or FOV)
+display_mode = "HUD"
+
