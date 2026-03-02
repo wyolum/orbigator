@@ -295,12 +295,13 @@ def set_datetime(year, month, day, hour, minute, second, rtc=None):
 
 import struct
 
-STATE_VERSION = 5
+STATE_VERSION = 6
+STATE_FORMAT_V5 = "<4sBIddddddIB16siB"       # V5: aov_abs only (EQX owns its SRAM)
 STATE_FORMAT_V4 = "<4sBIddddddIB16siiB"  # V4: aov_abs + eqx_abs (legacy)
 STATE_FORMAT_V3 = "<4sBIddddddIB16sB"
-STATE_FORMAT = "<4sBIddddddIB16siB"       # V5: aov_abs only (EQX owns its SRAM)
+STATE_FORMAT = "<4sBIddddddIB16siIB"       # V6: Added oled_timeout_ms
 STATE_MAGIC = b"ORB!"
-# Read enough bytes to cover the largest legacy format (V4)
+# Read enough bytes to cover the largest format
 STATE_SIZE = max(struct.calcsize(STATE_FORMAT), struct.calcsize(STATE_FORMAT_V4))
 
 def _compute_checksum(data):
@@ -333,6 +334,9 @@ def save_state(config=None):
                 "rev_count": getattr(g, 'orbital_rev_count', 0),
                 "mode_id": getattr(g, 'current_mode_id', "ORBIT"),
                 "display_mode": getattr(g, 'display_mode', "HUD"),
+                "oled_timeout_ms": getattr(g, 'oled_timeout_ms', 120_000),
+                "observer_lat": getattr(g, 'observer_lat', None),
+                "observer_lon": getattr(g, 'observer_lon', None),
                 "sat_name": getattr(g.current_mode, 'satellite_name', "") if getattr(g, 'current_mode_id', "") == "SGP4" else "",
                 "timestamp": now
             }
@@ -359,7 +363,7 @@ def save_state(config=None):
                     float(config["eccentricity"]), float(config["periapsis_deg"]),
                     int(config["rev_count"]),
                     m_id, sat_name_bytes,
-                    aov_abs, 0
+                    aov_abs, int(config["oled_timeout_ms"]), 0
                 )
                 
                 # Calculate and insert checksum
@@ -397,19 +401,19 @@ def load_state():
                 data = g.rtc.read_sram(g.rtc.SRAM_START, STATE_SIZE)
                 
             if data and data[:4] == STATE_MAGIC:
-                # 1. Try Version 5 (Current — EQX removed, AoV abs only)
-                if data[4] == 5:
-                    v5_size = struct.calcsize(STATE_FORMAT)
-                    v5_data = data[:v5_size]
-                    if v5_data[-1] == _compute_checksum(v5_data):
-                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, ck = struct.unpack(STATE_FORMAT, v5_data)
+                # 1. Try Version 6 (Current — Added OLED Timeout)
+                if data[4] == 6:
+                    v6_size = struct.calcsize(STATE_FORMAT)
+                    v6_data = data[:v6_size]
+                    if v6_data[-1] == _compute_checksum(v6_data):
+                        mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, oled_ms, ck = struct.unpack(STATE_FORMAT, v6_data)
                         config = {
                             "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
                             "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
                             "rev_count": rev,
                             "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
                             "sat_name": sat.decode('utf-8').strip('\x00'),
-                            "aov_abs_ticks": a_ticks
+                            "aov_abs_ticks": a_ticks, "oled_timeout_ms": oled_ms
                         }
                         if _validate_state(config):
                             print(f"SRAM state: OK v{ver}")
@@ -418,6 +422,24 @@ def load_state():
                             config = None
                     else:
                         print("SRAM state: checksum fail")
+                # 2. Backward Compatibility Bridge (V5)
+                elif data[4] == 5:
+                    try:
+                        v5_size = struct.calcsize(STATE_FORMAT_V5)
+                        v5_data = data[:v5_size]
+                        if v5_data[-1] == _compute_checksum(v5_data):
+                            mag, ver, ts, aov, eqx, alt, inc, ecc, per, rev, mid, sat, a_ticks, ck = struct.unpack(STATE_FORMAT_V5, v5_data)
+                            config = {
+                                "timestamp": ts, "aov_deg": aov, "eqx_deg": eqx,
+                                "altitude_km": alt, "inclination_deg": inc, "eccentricity": ecc, "periapsis_deg": per,
+                                "rev_count": rev,
+                                "mode_id": {0: "ORBIT", 1: "SGP4", 2: "DATETIME"}.get(mid, "SGP4"),
+                                "sat_name": sat.decode('utf-8').strip('\x00'),
+                                "aov_abs_ticks": a_ticks
+                            }
+                            print("SRAM state: V5 bridge success")
+                    except:
+                        config = None
                 # 2. Backward Compatibility Bridge (V4 — had eqx_abs_ticks)
                 elif data[4] == 4:
                     try:
@@ -518,6 +540,13 @@ def load_state():
         g.orbital_periapsis_deg = config.get("periapsis_deg", 0.0)
         g.orbital_rev_count = config.get("rev_count", 0)
         g.display_mode = config.get("display_mode", "HUD")
+        g.oled_timeout_ms = config.get("oled_timeout_ms", 120_000)
+        
+        lat = config.get("observer_lat")
+        lon = config.get("observer_lon")
+        if lat is not None and lon is not None:
+            g.observer_lat = float(lat)
+            g.observer_lon = float(lon)
         
         from dynamixel_extended_utils import get_new_pos
 

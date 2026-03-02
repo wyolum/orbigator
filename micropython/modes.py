@@ -590,7 +590,7 @@ class SettingsMode(Mode):
         super().__init__()
         self.selection = selection
         # Combined "Calibrate Zero" replaces separate Homing/Calibrate
-        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Calibrate Zero", "Motor ID Test", "Screen Timeout", "Back"]
+        self.items = ["Set Altitude", "Set Inclination", "Set Eccentricity", "Set Periapsis", "Set Rev Count", "Set Zulu Time", "Calibrate Zero", "Motor ID Test", "Screen Timeout", "Set Location", "Back"]
     
     def on_encoder_rotate(self, delta):
         delta = input_utils.normalize_encoder_delta(delta)
@@ -621,6 +621,8 @@ class SettingsMode(Mode):
         elif self.selection == 8:
             g.ui.push(ScreenTimeoutMode())
         elif self.selection == 9:
+            g.ui.push(LatLonEditorMode())
+        elif self.selection == 10:
             g.ui.pop()
     
     def on_back(self):
@@ -679,6 +681,7 @@ class ScreenTimeoutMode(Mode):
         g.last_input_ticks = time.ticks_ms()
         label, _ = self.TIMEOUT_OPTIONS[self.selection]
         print(f"Screen timeout set to: {label}")
+        utils.save_state()
         g.ui.pop()
     
     def on_back(self):
@@ -969,6 +972,116 @@ class DatetimeEditorMode(Mode):
         disp.show()
 
 
+class LatLonEditorMode(Mode):
+    """Editor for manual Lat/Lon entry."""
+    def __init__(self):
+        super().__init__()
+        lat = g.observer_lat if g.observer_lat is not None else 0.0
+        lon = g.observer_lon if g.observer_lon is not None else 0.0
+        
+        self.lat_ns = 'N' if lat >= 0 else 'S'
+        self.abs_lat = int(abs(lat))
+        self.lon_ew = 'E' if lon >= 0 else 'W'
+        self.abs_lon = int(abs(lon))
+        self.field = 0 # 0=N/S, 1=Lat10, 2=Lat1, 3=E/W, 4=Lon100, 5=Lon10, 6=Lon1
+
+    def on_encoder_rotate(self, delta):
+        import input_utils
+        delta = input_utils.normalize_encoder_delta(delta)
+        d = 1 if delta > 0 else -1 if delta < 0 else 0
+        
+        if self.field == 0: # N/S
+            if d != 0: self.lat_ns = 'S' if self.lat_ns == 'N' else 'N'
+        elif self.field == 1: # Lat Tens
+            tens = self.abs_lat // 10
+            ones = self.abs_lat % 10
+            tens = (tens + d) % 10
+            self.abs_lat = min(90, tens * 10 + ones)
+        elif self.field == 2: # Lat Ones
+            tens = self.abs_lat // 10
+            ones = self.abs_lat % 10
+            ones = (ones + d) % 10
+            self.abs_lat = min(90, tens * 10 + ones)
+        elif self.field == 3: # E/W
+            if d != 0: self.lon_ew = 'W' if self.lon_ew == 'E' else 'E'
+        elif self.field == 4: # Lon Hund
+            hund = self.abs_lon // 100
+            rest = self.abs_lon % 100
+            hund = (hund + d) % 2
+            self.abs_lon = min(180, hund * 100 + rest)
+        elif self.field == 5: # Lon Tens
+            hund = self.abs_lon // 100
+            tens = (self.abs_lon % 100) // 10
+            ones = self.abs_lon % 10
+            tens = (tens + d) % 10
+            self.abs_lon = min(180, hund * 100 + tens * 10 + ones)
+        elif self.field == 6: # Lon Ones
+            hund = self.abs_lon // 100
+            tens = (self.abs_lon % 100) // 10
+            ones = self.abs_lon % 10
+            ones = (ones + d) % 10
+            self.abs_lon = min(180, hund * 100 + tens * 10 + ones)
+
+    def on_confirm(self):
+        if self.field < 6:
+            self.field += 1
+            return
+        
+        # Save
+        lat = float(self.abs_lat) * (1.0 if self.lat_ns == 'N' else -1.0)
+        lon = float(self.abs_lon) * (1.0 if self.lon_ew == 'E' else -1.0)
+        g.observer_lat = lat
+        g.observer_lon = lon
+        utils.save_state()
+        
+        # Arm overhead alert
+        try:
+            from orbigator import _arm_overhead_alert
+            _arm_overhead_alert(lat, lon)
+        except Exception as e:
+            print(f"LatLonEditor arm error: {e}")
+            
+        g.ui.pop()
+
+    def on_back(self):
+        if self.field > 0:
+            self.field -= 1
+            return
+        g.ui.pop()
+
+    def render(self, disp):
+        disp.fill(0)
+        disp.text("SET LOCATION", 0, 0)
+        
+        def draw_field(val_str, x, y, is_active):
+            w = len(val_str) * 8
+            if is_active:
+                disp.fb.fill_rect(x, y-1, w, 10, 1)
+                disp.fb.text(val_str, x, y, 0)
+            else:
+                disp.fb.text(val_str, x, y, 1)
+
+        # Row 16: LAT: N/S Tens Ones
+        disp.text("LAT:", 0, 16)
+        draw_field(self.lat_ns, 40, 16, self.field == 0)
+        draw_field(str(self.abs_lat // 10), 56, 16, self.field == 1)
+        draw_field(str(self.abs_lat % 10), 64, 16, self.field == 2)
+        disp.text("deg", 80, 16)
+
+        # Row 28: LON: E/W Hund Tens Ones
+        disp.text("LON:", 0, 28)
+        draw_field(self.lon_ew, 40, 28, self.field == 3)
+        draw_field(str(self.abs_lon // 100), 56, 28, self.field == 4)
+        draw_field(str((self.abs_lon % 100) // 10), 64, 28, self.field == 5)
+        draw_field(str(self.abs_lon % 10), 72, 28, self.field == 6)
+        disp.text("deg", 88, 28)
+
+        field_names = ["Lat N/S", "Lat Tens", "Lat Ones", "Lon E/W", "Lon Hund", "Lon Tens", "Lon Ones"]
+        disp.text(f"Edit: {field_names[self.field]}", 0, 40)
+        
+        footer = "Confirm >>Save" if self.field == 6 else "Confirm >> Next"
+        disp.text(footer, 0, 52)
+        disp.show()
 class EccentricityEditorMode(Mode):
     """Editor for orbital eccentricity."""
     def __init__(self):
@@ -1617,7 +1730,8 @@ class SGP4Mode(Mode):
                     ecef = self.propagator.get_ecef()
                     if ecef:
                         az, el = g.observer_frame.az_el_deg(*ecef)
-                        g.radar_display.render(disp, self.satellite_name or "SAT", az, el)
+                        g.radar_display.render(disp, self.satellite_name or "SAT", az, el, 
+                                               self.lat_deg, self.lon_deg, self.alt_km)
                         return  # radar render replaces normal HUD
                 except:
                     pass  # fall through to normal HUD on any error

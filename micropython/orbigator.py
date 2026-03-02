@@ -264,21 +264,32 @@ else:
     # Default to Orbit
     g.ui.set_root(OrbitMode())
 
-# ---------------- Overhead Alert Init ----------------
+def _arm_overhead_alert(lat, lon):
+    from observer_frame import ObserverFrame
+    from overhead_watcher import OverheadWatcher
+    from radar_display import RadarDisplay
+    g.observer_lat = lat
+    g.observer_lon = lon
+    g.observer_frame   = ObserverFrame(lat, lon)
+    g.overhead_watcher = OverheadWatcher()
+    g.radar_display    = RadarDisplay()
+    print(f"Overhead Alert: armed at ({lat:.1f}, {lon:.1f})")
+
+# Try WiFi auto-fetch first (Pico 2W)
 if g.caps.has_wifi:
     try:
         loc = utils.fetch_observer_location()
         if loc:
-            g.observer_lat, g.observer_lon = loc
-            from observer_frame import ObserverFrame
-            from overhead_watcher import OverheadWatcher
-            from radar_display import RadarDisplay
-            g.observer_frame  = ObserverFrame(g.observer_lat, g.observer_lon)
-            g.overhead_watcher = OverheadWatcher()
-            g.radar_display   = RadarDisplay()
-            print(f"Overhead Alert: armed at ({g.observer_lat:.2f}, {g.observer_lon:.2f})")
-    except Exception as _oa_err:
-        print(f"Overhead Alert init failed (disabled): {_oa_err}")
+            _arm_overhead_alert(*loc)
+    except Exception as e:
+        print(f"Overhead Alert WiFi fetch failed: {e}")
+
+# Fall back to saved location (works on non-WiFi hardware)
+if g.observer_frame is None and g.observer_lat is not None:
+    try:
+        _arm_overhead_alert(g.observer_lat, g.observer_lon)
+    except Exception as e:
+        print(f"Overhead Alert init failed: {e}")
         g.observer_frame = None
 
     
