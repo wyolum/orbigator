@@ -13,6 +13,7 @@ dynamixel_motor.py
 absolute_motor.py
 persistence.py
 world_map.py
+radar_display.py
 
 # Architecture & Capabilities
 capabilities.py
@@ -44,5 +45,4 @@ orbigator_config.json
 
 # Directories
 [DIRS]
-tests
 web

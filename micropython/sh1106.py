@@ -78,6 +78,13 @@ class SH1106_I2C:
         """Draw line."""
         self.fb.line(x1, y1, x2, y2, color)
     
+    def degree(self, x, y, color=1):
+        """Draw a small 2x2 circle for the degree symbol."""
+        self.pixel(x, y, color)
+        self.pixel(x+1, y, color)
+        self.pixel(x, y+1, color)
+        self.pixel(x+1, y+1, color)
+    
     def show(self):
         """Push buffer to display."""
         for page in range(self.height // 8):
