@@ -986,7 +986,6 @@ class LatLonEditorMode(Mode):
         self.field = 0 # 0=N/S, 1=Lat10, 2=Lat1, 3=E/W, 4=Lon100, 5=Lon10, 6=Lon1
 
     def on_encoder_rotate(self, delta):
-        import input_utils
         delta = input_utils.normalize_encoder_delta(delta)
         d = 1 if delta > 0 else -1 if delta < 0 else 0
         
@@ -1036,8 +1035,13 @@ class LatLonEditorMode(Mode):
         
         # Arm overhead alert
         try:
-            from orbigator import _arm_overhead_alert
-            _arm_overhead_alert(lat, lon)
+            from observer_frame import ObserverFrame
+            from overhead_watcher import OverheadWatcher
+            from radar_display import RadarDisplay
+            g.observer_frame   = ObserverFrame(lat, lon)
+            g.overhead_watcher = OverheadWatcher()
+            g.radar_display    = RadarDisplay()
+            print(f"Overhead Alert: armed at ({lat:.1f}, {lon:.1f})")
         except Exception as e:
             print(f"LatLonEditor arm error: {e}")
             
