@@ -339,9 +339,8 @@ class WebServer:
         body = {}
         if body_start < len(lines):
             body_text = '\r\n'.join(lines[body_start:])
-            if body_text:
+            if body_text.strip():
                 try:
-                # Parse body (JSON)
                     body = json.loads(body_text)
                 except:
                     pass

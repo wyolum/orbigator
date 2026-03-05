@@ -1319,7 +1319,8 @@ class SGP4Mode(Mode):
             print("Error: No satellites in catalog")
             return
         
-        # Load TLE cache
+        self.last_tle_check = int(time.ticks_ms())
+        self.last_fetch_attempt = 0
         self.tle_cache = utils.load_tle_cache()
         
         # Initialize        # Load satellite data/TLE
@@ -1558,35 +1559,37 @@ class SGP4Mode(Mode):
         
         # --- Periodic TLE Check (every 60s) ---
         if self.tracking and g.caps.has_wifi and not self.fetching:
+             # Prevent re-checking too often, especially if fetches fail
              if self.last_tle_check == 0 or time.ticks_diff(now_ms, self.last_tle_check) >= 60000:
                  self.last_tle_check = now_ms
-                 # Check if update needed based on cache timestamp
                  if self.satellite_name in self.tle_cache:
                      last_fetch = self.tle_cache[self.satellite_name].get("last_fetch", 0)
                      if utils.tle_needs_update(last_fetch):
-                         print(f"Periodic TLE Check: {self.satellite_name} is stale. Fetching...")
-                         self.fetching = True
+                         # Cooldown for fetch attempts (5 min)
+                         if self.last_fetch_attempt == 0 or time.ticks_diff(now_ms, self.last_fetch_attempt) >= 300000:
+                             print(f"Periodic TLE Check: {self.satellite_name} is stale. Fetching...")
+                             self.fetching = True
 
         # --- Auto-Fetch Logic ---
         if self.fetching:
-             # Ensure we don't spam fetch (10s retry delay could be added here if needed)
-             # For now, rely on single-shot or blocking call if we want simplicity
-             # But update() is 1Hz. Let's do it once.
-             # Actually, we should probably do this in a thread or check condition
-             # To keep it simple and safe in the main loop:
+             # Prevent spamming fetch on failures (cooldown: 5 minutes)
+             now_ms = time.ticks_ms()
+             if self.last_fetch_attempt != 0 and time.ticks_diff(now_ms, self.last_fetch_attempt) < 300000:
+                 self.fetching = False # Stop trying for a bit
+                 return
+
              if g.caps.has_wifi and (self.last_command_ticks == 0 or time.ticks_diff(now_ms, self.last_command_ticks) >= 2000):
-                 # Try to fetch
                  print("Attempting auto-fetch...")
+                 self.last_fetch_attempt = now_ms
+                 
+                 # Set last_tle_check to NOW so we don't trip periodic check immediately after blocking call
+                 self.last_tle_check = time.ticks_ms()
+                 
                  success = self._fetch_tle()
                  if not success:
-                     # If failed, stop trying for a bit or forever?
-                     # Let's stop trying for this session to avoid loop
-                     # print("Auto-fetch failed. Disabling until manual retry.")
                      self.fetching = False
-                 else:
-                     # Success - _fetch_tle sets fetching=False and reloads
-                     pass
-                 self.last_command_ticks = now_ms
+                 # self.last_command_ticks is updated at the end of update_background or here
+                 self.last_command_ticks = time.ticks_ms()
              return
 
         if not self.propagator or not self.tracking:

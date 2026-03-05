@@ -36,11 +36,12 @@ class SH1106_I2C:
             0xA6,        # Normal display (not inverted)
             0xA8, 0x3F,  # Multiplex ratio (64-1)
             0xAD, 0x8B,  # DC-DC enable
-            0xD3, 0x00,  # Display offset = 0
-            0xD5, 0x80,  # Clock divide ratio
-            0xD9, 0x22,  # Pre-charge period
-            0xDA, 0x12,  # COM pins hardware config
-            0xDB, 0x35,  # VCOMH deselect level
+            0xD3, 0x00,  # Set display offset to 0
+            0x40,        # Set display start line to 0
+            0xD5, 0x80,  # Set clock divide ratio/oscillator frequency
+            0xD9, 0x22,  # Set pre-charge period
+            0xDA, 0x12,  # Set COM pins hardware configuration
+            0xDB, 0x35,  # Set VCOMH deselect level
             0xAF,        # Display ON
         ]
         for c in cmds:
