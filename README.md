@@ -52,10 +52,44 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 
 ## ⚡ Quick Start
 
-1.  **3D Print & Assemble**: Check the [fabricate/](fabricate/) folder for the latest parts.
-2.  **Flash MicroPython**: Install the Pico 2 firmware.
-3.  **Upload Code**: use Thonny or `mpremote` to copy the `micropython/` files to the board.
-4.  **Track!**: Power up and select your satellite from the "SGP4" menu.
+1.  **3D Print**: High-quality production STLs are located in [**fabricate/stls/Production/**](fabricate/stls/Production/).
+2.  **Assemble**: Follow the assembly logic in the [fabricate/](fabricate/) folder.
+3.  **Flash MicroPython**: Install the Pico 2 firmware.
+4.  **Upload Code**: Use Thonny or `mpremote` to copy the `micropython/` files to the board.
+5.  **Track!**: Power up and select your satellite from the "SGP4" menu.
+
+---
+
+## 🧾 Bill of Materials (BOM)
+
+### Electronics
+*   **Controller**: [Raspberry Pi Pico 2](https://www.raspberrypi.com/products/raspberry-pi-pico-2/)
+*   **Motors**: 2x [DYNAMIXEL XL330-M288-T](https://www.robotis.us/dynamixel-xl330-m288-t/)
+*   **Display**: 128x64 SH1106 OLED (I2C)
+*   **RTC**: DS3231/DS3232 (ChronoDot recommended)
+*   **Logic**: 1x SN74HC126N Quad Tri-State Buffer (for half-duplex UART)
+*   **UI**: 1x Rotary Encoder (with Push Switch), 2x Momentary Push Buttons
+*   **Passives**: 1x 10kΩ resistor, 2x 4.7kΩ resistors
+*   **Power**: 5V 4-5A External Power Supply
+
+### Hardware & Mechanical
+*   **Globe**: Standard desktop globe (approx. 10-12")
+*   **Fasteners**: Self-tapping screws (included with XL330 motors)
+*   **3D Parts**: Printed from the `Production/` folder (PLA or PETG)
+
+---
+
+## 📐 3D Printing (Production Parts)
+
+The following parts are required for the full assembly and can be found in `fabricate/stls/Production/`:
+
+*   `1_drive_gear.stl` - Main EQX drive
+*   `1_flex_aov_arm.stl` - Satellite pointer arm
+*   `1_globe_interface.stl` - Secure mount for the globe
+*   `1_inclination_aov_mount.stl` - Hardware-implemented inclination bracket
+*   `1_sled_3.stl` - Electronic housing and base
+*   `3_swingarm.stl` - Differential assembly
+*   `3_shim.stl` / `3_washer.stl` - Mechanical tolerances
 
 ---
 
