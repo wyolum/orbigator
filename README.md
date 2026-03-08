@@ -67,19 +67,19 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 ## 🧾 Bill of Materials (BOM)
 
 ### Electronics
-*   **Controller**: [Raspberry Pi Pico 2](https://www.raspberrypi.com/products/raspberry-pi-pico-2/)
-*   **Motors**: 2x [DYNAMIXEL XL330-M288-T](https://www.robotis.us/dynamixel-xl330-m288-t/)
-*   **Display**: 128x64 SH1106 OLED (I2C)
+*   **Controller**: [Raspberry Pi Pico 2W](https://www.adafruit.com/product/6087)
+*   **Motors**: 2x [DYNAMIXEL XL330-M288-T](https://robotis.us/dynamixel-xl330-m288-t/)
+*   **Display/UI**: [I2C OLED Display with EC11 Rotary Encoder](https://www.crcibernetica.com/i2c-oled-display-with-ec11-rotary-encoder/)
 *   **RTC**: DS3231/DS3232 (ChronoDot recommended)
 *   **Logic**: 1x SN74HC126N Quad Tri-State Buffer (for half-duplex UART)
-*   **UI**: 1x Rotary Encoder (with Push Switch), 2x Momentary Push Buttons
+*   **UI Extras**: 2x Momentary Push Buttons
 *   **Passives**: 1x 10kΩ resistor, 2x 4.7kΩ resistors
-*   **Power**: 5V 4-5A External Power Supply
+*   **Power**: 5V 4-5A External Power Supply with [5.5mm DC Barrel Jack](https://www.amazon.com/dp/B0D9B7WR23)
 
 ### Hardware & Mechanical
-*   **Globe**: Standard desktop globe (approx. 10-12")
-*   **Bearings**: 3x 13mm OD Bearings (e.g., 624ZZ or similar 13x5x4)
-*   **Fasteners**: Self-tapping screws (included with XL330 motors)
+*   **Globe**: [12" Transparent Desktop Globe](https://www.amazon.com/dp/B0086OHL9A)
+*   **Bearings**: 3x [13mm OD Carbon Steel Ball Bearings](https://www.amazon.com/dp/B07SV6QSR3) (e.g., 624ZZ)
+*   **Fasteners**: Self-tapping screws (included with motors), [M3 Male Stud Mounting Magnets](https://www.kjmagnetics.com/mm-c-12-neodymium-male-stud-mounting-magnet?pl=1.2&pf=), and [Tension Springs](https://www.amazon.com/dp/B076LZ8L1M)
 *   **3D Parts**: Printed from the `Production/` folder (PLA or PETG)
 
 ---
