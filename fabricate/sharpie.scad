@@ -27,3 +27,5 @@ color("yellow")difference(){
   translate([0,20,0])cube([2, 40, 40], center=true);
   translate([0,13,15/2])rotate([0,90,0])cylinder(d=3.5, h=20, center=true, $fn=30);
 }
+
+sharpie();
