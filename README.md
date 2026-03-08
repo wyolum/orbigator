@@ -1,59 +1,78 @@
-# Orbigator – An Analog Orbit Propagator
+# 🌍 Orbigator: The Analog Orbit Propagator
 
-![3D model of Orbigator on a globe](images/2025-07-10_18-57.png)
+[![Platform: Pico 2](https://img.shields.io/badge/Platform-Raspberry%20Pi%20Pico%202-blue.svg)](https://www.raspberrypi.com/products/raspberry-pi-pico-2/)
+[![Language: MicroPython](https://img.shields.io/badge/Language-MicroPython-orange.svg)](https://micropython.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![As seen on Hackaday](https://img.shields.io/badge/As%20seen%20on-Hackaday-black.svg)](https://hackaday.com/2026/03/08/the-orbigator-satellite-tracking-with-style/)
 
-## About This Project
+**The Orbigator** is an open-source, physical satellite tracker that turns complex orbital mechanics into a desk-side companion. Powered by the **Raspberry Pi Pico 2** and precision **DYNAMIXEL servos**, it physically points to the ISS (or any satellite) in real-time with zero drift.
 
-Orbigator is an open‑source mechanical model that physically demonstrates how a satellite orbits the Earth. It uses a Raspberry Pi Pico 2 and precision DYNAMIXEL servo motors to move a pointer around a real globe, tracking a satellite's ground track in real-time.
+---
 
-The system computes complex orbital mechanics—including Kepler's laws and J2 perturbation effects—to determine the satellite's instantaneous position relative to the Earth's surface.
+## 🚀 Why the Orbigator?
 
-## Key Features (V1.1 Dec 2025)
+Inspired by [Will’s Builds ISS tracker](https://hackaday.com/2025/07/08/touch-lamp-tracks-iss-with-style/), the Orbigator introduces several key technical innovations to the DIY tracker space:
 
-The project has recently reached a major milestone with the implementation of a modern, mode-based architecture:
+### 🔄 Continuous, Uninterrupted Motion
+Unlike traditional trackers that use static globes (requiring wire unwinding every orbit), the Orbigator features a **rotating globe**. This allows for smooth, continuous tracking across multiple revolutions without ever needing to reset or "unwind."
 
-- **Zulu Time Display**: Real-time tracking is represented in Zulu (UTC) format on the OLED display (e.g., `13:24:11Z`).
-- **Dynamic Orbital Inclination**: The J2 precession formula now accounts for user-settable inclination (0.1° precision), allowing accurate tracking of ISS (51.6°), Sun-Sync, or Polar orbits.
-- **Revolution-Based Persistence**: To protect the Pico 2 flash memory, orbital state is saved precisely once per full motor revolution.
-- **Shortest-Path Catch-up**: On power-up, the system calculates the time elapsed via the RTC and performs an efficient "chase" move (max 180°) to sync to the current orbital target.
-- **Hardware Safety**: Stict motor speed limits (Safety Max = 10) protect the mechanical assembly and ensure magnets stay securely on the globe.
-- **RTC Reset Protection**: On boot, if the clock is detected as reset (e.g. dead battery), the system automatically prompts you to set the Zulu time before starting tracker operations.
-- **Manual Motor Alignment**: New "Set EQX" and "Set AoV" modes in the Settings menu allow for precise, real-time manual positioning of the motors for initial calibration or testing.
-- **Intuitive UI**: Consistent encoder logic (Clockwise = Navigate Down / Increase Value) and a safety-locked "Confirm" button during tracking.
+### 🎯 LVLH Attitude Control
+The orbital mechanics are implemented directly in the hardware geometry (inclination angle). This ensures the satellite pointer maintains a true **LVLH (Local Vertical, Local Horizontal)** attitude throughout the entire pass—exactly how real satellites orient themselves.
 
-## How It Works
+### 🧩 Zero-Drift absolute Positioning
+Leveraging the 32-bit absolute resolvers in DYNAMIXEL XL330-M288-T motors, the system recovers its orientation instantly after power cycles. No homing, no limits, and no drift—just persistent, mathematical accuracy.
 
-- **Compute** – Raspberry Pi Pico 2 running MicroPython executes the orbital equations. Main logic is in `micropython/orb_utils.py`.
-- **Actuate** – DYNAMIXEL XL330-M288-T motors using Extended Position Control (Mode 4) for continuous, turn-preserving rotation.
-  - **Motor ID 1 (EQX)**: Rotates the orbital plane (Equator Crossing / LAN).
-  - **Motor ID 2 (AoV)**: Direct-drive for the satellite pointer's anomaly.
-- **Interface** – SH1106 OLED display for status and menus, rotary encoder for adjustment, and DS3232 RTC for accurate timekeeping.
+---
 
-## Repository Structure
+## 🛠️ Technical Deep Dive
 
-| Directory | Contents |
-|-----------|----------|
-| `micropython/` | Firmware: `orbigator.py` (main), `modes.py` (UI), `orb_utils.py` (logic), `dynamixel_motor.py` (driver) |
-| `fabricate/` | OpenSCAD source files for 3D printing and full assembly |
-| `kicad/` | PCB design files, schematics, and manufacturing outputs |
-| `images/` | Renderings and fabrication drawings |
+### High-Performance Propagator
+The heart of the Orbigator is a custom **SGP4 implementation** running natively on the Pico 2's RISC-V cores. It handles real-time TLE propagation, J2 perturbation effects, and coordinate transformations entirely in MicroPython.
 
-## Key Documentation
+### Split-Screen Radar UI
+A custom **SH1106 OLED driver** provides a powerful command center:
+*   **Live Radar Plot**: A dynamic "Sky Plot" of the current satellite pass.
+*   **Localized World Map**: High-speed bitmask rendering provides a 90° ground track view centered on your observer location.
 
-- [ORBIGATOR_PIN_ASSIGNMENTS.txt](ORBIGATOR_PIN_ASSIGNMENTS.txt) - Complete GPIO pin assignments for Pico 2
-- [ORBIGATOR_CIRCUIT_DIAGRAM.txt](ORBIGATOR_CIRCUIT_DIAGRAM.txt) - ASCII circuit diagram showing all connections
-- [orbigator_kicad_netlist.py](orbigator_kicad_netlist.py) - KiCad-compatible netlist for schematic creation
-- [DYNAMIXEL_DRYLAB_SETUP.md](DYNAMIXEL_DRYLAB_SETUP.md) - Comprehensive guide to motor configuration and wiring
-- [EXTENDED_POSITION_MODE_GUIDE.md](EXTENDED_POSITION_MODE_GUIDE.md) - Best practices for continuous rotation
-- [SPEED_LIMIT_QUICKREF.md](SPEED_LIMIT_QUICKREF.md) - Critical safety guidelines for motor speeds
-- [DYNAMIXEL_CONNECTOR_SPECS.md](DYNAMIXEL_CONNECTOR_SPECS.md) - Pinout and connector details for XL-330 servos
+### Smart Persistence
+The system monitors its own state and saves to Flash/SRAM only during ideal intervals (e.g., at equator crossings) to maximize flash lifespan while ensuring a perfect "instant-on" recovery.
 
-## Getting Started
+---
 
-1. **Hardware**: Pulse-check the `ORBIGATOR_PIN_ASSIGNMENTS.txt` and `ORBIGATOR_CIRCUIT_DIAGRAM.txt`.
-2. **Firmware**: Upload the `micropython/` directory to your Pico 2.
-3. **Time**: Use `mpremote setrtc` to synchronize the clock.
-4. **Orbit**: Select "Orbit!" from the menu to start tracking. Use the "Settings" menu to adjust altitude and inclination.
+## 📦 Repository Structure
 
-## License
-MIT License.
+| Path | Description |
+|------|-------------|
+| [**micropython/**](micropython/) | Firmware: SGP4 propagator, UI stacks, and motor drivers. |
+| [**fabricate/**](fabricate/) | Mechanical design: OpenSCAD files for 3D printing and assembly. |
+| [**kicad/**](kicad/) | Electronics: PCB designs and schematics. |
+| [**web/**](micropython/web/) | Dashboard: Real-time control and configuration via web interface. |
+
+---
+
+## ⚡ Quick Start
+
+1.  **3D Print & Assemble**: Check the [fabricate/](fabricate/) folder for the latest parts.
+2.  **Flash MicroPython**: Install the Pico 2 firmware.
+3.  **Upload Code**: use Thonny or `mpremote` to copy the `micropython/` files to the board.
+4.  **Track!**: Power up and select your satellite from the "SGP4" menu.
+
+---
+
+## 📸 Media
+
+![Hero Shot](images/photo_2026-01-03_17-28-34.jpg)
+*The Orbigator tracking the ISS through the night.*
+
+> "A beautiful mix of technical precision and mechanical elegance."
+
+---
+
+## ⚖️ License
+
+Distributed under the MIT License.
+
+---
+
+**Developed with ❤️ by wyojustin**
+[GitHub](https://github.com/wyolum/orbigator) | [Hackaday.io](https://hackaday.io/project/orbigator)
