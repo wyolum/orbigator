@@ -26,6 +26,9 @@ Leveraging the 32-bit absolute resolvers in DYNAMIXEL XL330-M288-T motors, the s
 
 ## 🛠️ Technical Deep Dive
 
+![Technical View](images/blog_2026_01_03/render_iso.jpg)
+*Mathematical precision translated into mechanical motion.*
+
 ### High-Performance Propagator
 The heart of the Orbigator is a custom **SGP4 implementation** running natively on the Pico 2's RISC-V cores. It handles real-time TLE propagation, J2 perturbation effects, and coordinate transformations entirely in MicroPython.
 
@@ -100,6 +103,12 @@ The following parts are required for the full assembly and can be found in `fabr
 
 ![Hero Shot](images/photo_2026-01-03_17-28-34.jpg)
 *The Orbigator tracking the ISS through the night.*
+
+### System Details
+| UI & Setup | Electronics | Mechanical Assembly |
+|:---:|:---:|:---:|
+| ![Setup](images/blog_2026_01_03/setup_screen.jpg) | ![Circuit](images/blog_2026_01_03/breadboard_top.jpg) | ![Globe](images/blog_2026_01_03/globe_cutout.jpg) |
+| *Real-time status* | *Pico 2 & Buffers* | *Internal Hardware* |
 
 > "A beautiful mix of technical precision and mechanical elegance."
 
