@@ -99,10 +99,12 @@ The following parts are required for the full assembly and can be found in `fabr
 
 ---
 
-## 📸 Media
+## 📸 Media: As Seen on [WyoLum Blog](https://wyolum.com/orbigator-real-time-satellite-tracker-with-overhead-alert-radar/)
 
-![Hero Shot](images/photo_2026-01-03_17-28-34.jpg)
-*The Orbigator tracking the ISS through the night.*
+| [**Earthrise Shot**](docs/images/orbigator_lunar_display.jpg) | [**World Map Tracking**](docs/images/orbigator_worldmap_tracking.png) | [**Full Assembly**](docs/images/orbigator_full_assembly.jpg) |
+|:---:|:---:|:---:|
+| ![Earthrise](docs/images/orbigator_lunar_display.jpg) | ![World Map](docs/images/orbigator_worldmap_tracking.png) | ![Full Assembly](docs/images/orbigator_full_assembly.jpg) |
+| *ISS Tracking with Lunar Projection.* | *Real-time World Map Context.* | *Complete Mechanical Assembly.* |
 
 ### System Details
 | UI & Setup | Electronics | Mechanical Assembly |
