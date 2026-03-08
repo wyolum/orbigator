@@ -29,6 +29,8 @@ Leveraging the 32-bit absolute resolvers in DYNAMIXEL XL330-M288-T motors, the s
 ![Full Assembly](docs/images/orbigator_full_assembly.jpg)
 *Complete Mechanical Assembly: Precision motion and integrated control.*
 
+## 📸 Gallery
+
 ![Technical View](images/blog_2026_01_03/render_iso.jpg)
 *Mathematical precision translated into mechanical motion.*
 
