@@ -74,6 +74,7 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 
 ### Hardware & Mechanical
 *   **Globe**: Standard desktop globe (approx. 10-12")
+*   **Bearings**: 3x 13mm OD Bearings (e.g., 624ZZ or similar 13x5x4)
 *   **Fasteners**: Self-tapping screws (included with XL330 motors)
 *   **3D Parts**: Printed from the `Production/` folder (PLA or PETG)
 
@@ -81,15 +82,17 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 
 ## 📐 3D Printing (Production Parts)
 
-The following parts are required for the full assembly and can be found in `fabricate/stls/Production/`:
+The following parts are required for the full assembly and can be found in `fabricate/stls/Production/`. **The leading number in the filename indicates the required print quantity.**
 
 *   `1_drive_gear.stl` - Main EQX drive
 *   `1_flex_aov_arm.stl` - Satellite pointer arm
 *   `1_globe_interface.stl` - Secure mount for the globe
 *   `1_inclination_aov_mount.stl` - Hardware-implemented inclination bracket
 *   `1_sled_3.stl` - Electronic housing and base
-*   `3_swingarm.stl` - Differential assembly
-*   `3_shim.stl` / `3_washer.stl` - Mechanical tolerances
+*   `1_full_assembly.stl` - Reference model (not for printing)
+*   `3_swingarm.stl` - Differential assembly components
+*   `3_shim.stl` - Insert for the skate bearings (see `misc.scad` for 13mm dims)
+*   `3_washer.stl` - Vertical stop for the ring gear
 
 ---
 
