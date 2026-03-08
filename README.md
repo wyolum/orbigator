@@ -80,6 +80,7 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 *   **Globe**: [12" Transparent Desktop Globe](https://www.amazon.com/dp/B0086OHL9A)
 *   **Bearings**: 3x [13mm OD Carbon Steel Ball Bearings](https://www.amazon.com/dp/B07SV6QSR3) (e.g., 624ZZ) and [High-Performance Skate Bearings](https://www.amazon.com/dp/B09MPMW1XQ)
 *   **Fasteners**: Self-tapping screws (included with motors), [M3 Male Stud Mounting Magnets](https://www.kjmagnetics.com/mm-c-12-neodymium-male-stud-mounting-magnet?pl=1.2&pf=), and [Tension Springs](https://www.amazon.com/dp/B076LZ8L1M)
+*   **Hardware**: 10-20 US pennies (used as counterweight)
 *   **3D Parts**: Printed from the `Production/` folder (PLA or PETG)
 
 ---
