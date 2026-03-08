@@ -26,6 +26,9 @@ Leveraging the 32-bit absolute resolvers in DYNAMIXEL XL330-M288-T motors, the s
 
 ## 🛠️ Technical Deep Dive
 
+![Full Assembly](docs/images/orbigator_full_assembly.jpg)
+*Complete Mechanical Assembly: Precision motion and integrated control.*
+
 ![Technical View](images/blog_2026_01_03/render_iso.jpg)
 *Mathematical precision translated into mechanical motion.*
 
@@ -101,10 +104,10 @@ The following parts are required for the full assembly and can be found in `fabr
 
 ## 📸 Media: As Seen on [WyoLum Blog](https://wyolum.com/orbigator-real-time-satellite-tracker-with-overhead-alert-radar/)
 
-| [**Earthrise Shot**](docs/images/orbigator_lunar_display.jpg) | [**World Map Tracking**](docs/images/orbigator_worldmap_tracking.png) | [**Full Assembly**](docs/images/orbigator_full_assembly.jpg) |
-|:---:|:---:|:---:|
-| ![Earthrise](docs/images/orbigator_lunar_display.jpg) | ![World Map](docs/images/orbigator_worldmap_tracking.png) | ![Full Assembly](docs/images/orbigator_full_assembly.jpg) |
-| *ISS Tracking with Lunar Projection.* | *Real-time World Map Context.* | *Complete Mechanical Assembly.* |
+| [**Earthrise Shot**](docs/images/orbigator_lunar_display.jpg) | [**World Map Tracking**](docs/images/orbigator_worldmap_tracking.png) |
+|:---:|:---:|
+| ![Earthrise](docs/images/orbigator_lunar_display.jpg) | ![World Map](docs/images/orbigator_worldmap_tracking.png) |
+| *ISS Tracking with Lunar Projection.* | *Real-time World Map Context.* |
 
 ### System Details
 | UI & Setup | Electronics | Mechanical Assembly |
