@@ -32,8 +32,8 @@ Leveraging the 32-bit absolute resolvers in DYNAMIXEL XL330-M288-T motors, the s
 *Complete Mechanical Assembly: Precision motion and integrated control.*
 
 
-### High-Performance Propagator
-The heart of the Orbigator is a custom **SGP4 implementation** running natively on the Pico 2's RISC-V cores. It handles real-time TLE propagation, J2 perturbation effects, and coordinate transformations entirely in MicroPython.
+### Lightweight, High-Performance Propagator
+The heart of the Orbigator is a custom, **lightweight SGP4 implementation** running natively on the Pico 2's RISC-V cores. Eschewing heavy ports, it was rolled specifically to provide high mathematical accuracy within the visual tolerances of the physical hardware, handling real-time TLE propagation and J2 perturbation effects entirely in MicroPython.
 
 ### Split-Screen Radar UI
 A custom **SH1106 OLED driver** provides a powerful command center:
