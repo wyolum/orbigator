@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![As seen on Hackaday](https://img.shields.io/badge/As%20seen%20on-Hackaday-black.svg)](https://hackaday.com/2026/03/08/the-orbigator-satellite-tracking-with-style/)
 
-> "What hardware hacker doesn’t have a soft spot for transparent cases? ... [wyojustin] has done a fantastic job of documenting the hardware and software aspects of the build." — **[Hackaday](https://hackaday.com/2026/03/08/the-orbigator-satellite-tracking-with-style/)**
+> "What hardware hacker doesn’t have a soft spot for transparent cases? ... [wyojustin] has done a fantastic job of documenting the hardware and software aspects of the build." — **[Hackaday](https://hackaday.com/2026/03/08/the-orbigator-satellite-tracking-with-style/)** ([Full Feature Archive](docs/HACKADAY_FEATURE.md))
 
 **The Orbigator** is an open-source, physical satellite tracker that turns complex orbital mechanics into a desk-side companion. Powered by the **Raspberry Pi Pico 2** and precision **DYNAMIXEL servos**, it physically points to the ISS (or any satellite) in real-time with zero drift.
 
