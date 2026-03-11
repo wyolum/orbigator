@@ -18,19 +18,7 @@ The Orbigator was officially featured on Hackaday on March 8, 2026. This documen
 >
 > As much as we love these polished orbital trackers, we’ve seen far more approachable builds if you don’t need something so elaborate. If you’re more interested in keeping an eye out for planes and can get your hands on a pan-and-tilt security camera, it’s even easier.
 
+
 ---
 
-## 💬 Community Highlights: The Propagator Debate
-
-A notable discussion emerged regarding the implementation of the orbital propagator:
-
-**Andrew (March 9, 2026 at 1:12 pm):**
-> Hopefully he ported the “predict” program to Micropython and didn’t just roll his own…
-
-**JUSTIN J SHAW (March 9, 2026 at 2:58 pm):**
-> I generally agree—leveraging proven code is usually the way to go. However, for this specific application, a full port is less crucial than it might seem. Because Low Earth Orbits (LEO) must be nearly circular to avoid serious Earth drag, the two main motions—Argument of Vehicle (AoV) and Equator Crossing (EQX)—operate at nearly constant rates.
->
-> Solving Kepler’s equation numerically handles the primary deviations in the AoV rate, and we can ignore the negligible EQX variations since Earth's rotation is the dominant factor there. For a physical pointer with mechanical tolerances, this lightweight approach provides a perfectly accurate visual without the overhead of a legacy library.
-
-### Technical Context
-The result of this discussion was a refinement of the project documentation to emphasize the "Hardware-Optimized" nature of the custom SGP4 implementation. Rather than using a heavy, generalized port, the Orbigator uses a custom MicroPython engine tuned specifically for real-time physical tracking, where mechanical and visual tolerances allow for a much leaner mathematical model.
+*Preserved for the Orbigator historical record. Original article by [Hackaday Staff](https://hackaday.com/2026/03/08/the-orbigator-satellite-tracking-with-style/).*
