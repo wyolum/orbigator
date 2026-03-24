@@ -1,0 +1,13 @@
+Designator,Footprint,Quantity,Value,LCSC Part #,JLCPCB Part #,LINK
+BT1,BatteryHolder_LINX_BAT-HLD-012-SMT,1,CR1220,C381116,,
+"C1, C2",805,2,100nF,C49678,,https://www.lcsc.com/product-detail/C49678.html?s_z=n_CC0805KRX7R9BB104
+D1,D_SMA,1,B130,C134423,,https://www.lcsc.com/product-detail/C134423.html?s_z=n_B130-13-F
+DISP1,OLED_ENC3,1,OLED_Encoder,,,
+J27,BarrelJack_Horizontal,1,Barrel_Jack_Switch,C381116,,https://www.lcsc.com/product-detail/C381116.html
+M1,JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical,1,DYNAMIXEL_1,C160259,,https://www.lcsc.com/product-detail/C160259.html?s_z=n_JST_EH_B3B-EH-A
+M2,JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical,1,DYNAMIXEL_2,C160259,,https://www.lcsc.com/product-detail/C160259.html?s_z=n_JST_EH_B3B-EH-A
+Q1,SOT-23,1,DMG2305UX,C150470,,https://www.lcsc.com/product-detail/C150470.html?s_z=n_DMG2305UX
+"R1, R2, R3, R4, R5",805,5,10k,C84376,,https://www.lcsc.com/product-detail/C84376.html
+U1,RaspberryPi_Pico_SMD_HandSolder,1,Pico_2,,C41407547,https://jlcpcb.com/partdetail/RaspberryPi-Pico2/C41407547
+U2,SOIC-14_3.9x8.7mm_P1.27mm,1,74LS126,C7644,,https://www.lcsc.com/product-detail/C7644.html?s_z=n_SN74HC126DR
+U4,SOIC-8_3.9x4.9mm_P1.27mm,1,DS3232M,C2827535,,https://www.lcsc.com/product-detail/C2827535.html?s_z=n_DS3232M

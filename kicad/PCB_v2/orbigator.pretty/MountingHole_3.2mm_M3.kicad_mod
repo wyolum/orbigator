@@ -1,14 +1,14 @@
 (footprint "MountingHole_3.2mm_M3"
-	(version 20241229)
+	(version 20260206)
 	(generator "pcbnew")
-	(generator_version "9.0")
+	(generator_version "10.0")
 	(layer "F.Cu")
 	(descr "Mounting Hole 3.2mm, no annular, M3")
 	(tags "mounting hole 3.2mm no annular m3")
 	(property "Reference" "H4"
 		(at 0 -4.2 0)
 		(layer "F.SilkS")
-		(uuid "1c9ec9f6-d799-4b85-a3e4-e8dead3b8651")
+		(uuid "e16ad0b2-9a68-458c-8864-763755b3f7ba")
 		(effects
 			(font
 				(size 1 1)
@@ -19,7 +19,7 @@
 	(property "Value" "MountingHole"
 		(at 0 4.2 0)
 		(layer "F.Fab")
-		(uuid "4758043f-c04b-432b-a7fb-795001223a64")
+		(uuid "08548429-dd21-4494-98be-708235d0e550")
 		(effects
 			(font
 				(size 1 1)
@@ -31,7 +31,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "75dd7d5f-5fd7-4a59-ad9c-e3b450f7ca2a")
+		(uuid "8c261bb4-f6e1-4539-8bff-1ce250218bff")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -43,7 +43,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "2ed50159-6741-4b93-93fa-632928b46cb3")
+		(uuid "f8e1c820-5fad-45dc-81d3-dfb7dada4ce8")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -52,6 +52,7 @@
 		)
 	)
 	(attr exclude_from_pos_files exclude_from_bom)
+	(duplicate_pad_numbers_are_jumpers no)
 	(fp_circle
 		(center 0 0)
 		(end 3.2 0)
@@ -61,7 +62,7 @@
 		)
 		(fill no)
 		(layer "Cmts.User")
-		(uuid "76f5f054-880c-4b0f-9f76-7d83b292e4a0")
+		(uuid "158ae3f2-c72f-4e31-930e-b3aa653d9e82")
 	)
 	(fp_circle
 		(center 0 0)
@@ -72,14 +73,14 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "1e042fb4-abe9-445f-adad-0c9d732595c9")
+		(uuid "de954a01-bbb5-4317-9702-b161eb1f40bd")
 	)
 	(pad "" np_thru_hole circle
 		(at 0 0)
 		(size 3.2 3.2)
 		(drill 3.2)
 		(layers "*.Cu" "*.Mask")
-		(uuid "e4e98293-6a58-4ed3-9a22-ce903cd431f3")
+		(uuid "36b580b4-a43e-4671-ba36-556f33d15f19")
 	)
 	(embedded_fonts no)
 )
