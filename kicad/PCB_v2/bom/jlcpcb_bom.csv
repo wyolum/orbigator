@@ -1,0 +1,14 @@
+Comment,Designator,Footprint,LCSC Part #,Notes
+Raspberry Pi Pico 2 (RP2350),U1,Module:Raspberry_Pi_Pico_SMD,,Source separately — Adafruit/Pimoroni/SparkFun
+74HC126 Quad Tri-State Buffer,U2,Package_DIP:DIP-14_W7.62mm,C5948,DIP-14 THT; SOIC-14 sub: C7918 (requires footprint change per V2 checklist)
+128x64 OLED I2C Display (SSD1306/SH1106),DISP1,Display:OLED_128x64_I2C,,Source separately — I2C addr 0x3C
+DS3232 RTC Module (DFRobot Fermion),RTC1,Module:Fermion_DS3232,,Source separately — DFRobot SKU DFR0641
+DYNAMIXEL XL330-M288-T Servo (ID 1 EQX Motor),M1,Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical,,Source separately — ROBOTIS store (connector footprint only on PCB)
+DYNAMIXEL XL330-M288-T Servo (ID 2 AoV Motor),M2,Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical,,Source separately — ROBOTIS store (connector footprint only on PCB)
+Alps EC11E Rotary Encoder with Push Switch,ENC1,Rotary_Encoder:RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm,C255506,Verify LCSC# before ordering
+10kΩ 1/4W Axial Resistor,R1,Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,,DYNAMIXEL DATA bus pull-up to +5V
+4.7kΩ 1/4W Axial Resistor,"R2,R3",Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal,,I2C SDA+SCL pull-ups to +3.3V — CRITICAL; do not omit
+5.5x2.1mm Barrel Jack Horizontal THT,J1,Connector_BarrelJack:BarrelJack_Horizontal,C136744,5V 4–5A supply input; verify LCSC# before ordering
+JST B3B-EH-A 3-Pin 2.5mm Pitch Vertical,J2,Connector_JST:JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical,C259024,DYNAMIXEL bus daisy-chain; verify LCSC# before ordering
+1x5 2.54mm Pin Header Vertical,J3,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,,Encoder header; cut from 1x40 strip
+CR2032 Coin Cell Holder THT,BAT1,Battery:BatteryHolder_Keystone_3000_1x12mm,,RTC backup power; 5–10 year life
