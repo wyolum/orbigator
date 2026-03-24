@@ -59,7 +59,7 @@ The system monitors its own state and saves to Flash/SRAM only during ideal inte
 ## ⚡ Quick Start
 
 1.  **3D Print**: High-quality production STLs are located in [**fabricate/stls/Production/**](fabricate/stls/Production/).
-2.  **Assemble**: Follow the assembly logic in the [fabricate/](fabricate/) folder.
+2.  **Assemble**: Follow our step-by-step [**Assembly Instructions**](docs/ASSEMBLY.md).
 3.  **Flash MicroPython**: Install the Pico 2 firmware.
 4.  **Upload Code**: Use Thonny or `mpremote` to copy the `micropython/` files to the board.
 5.  **Track!**: Power up and select your satellite from the "SGP4" menu.
