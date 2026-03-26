@@ -1,0 +1,29 @@
+### Footprint positions - created on 2026-03-26T18:42:58 ###
+### Printed by KiCad version 10.0.0-10.0.0~ubuntu24.04.1
+## Unit = mm, Angle = deg.
+## Side : All
+# Ref     Val                 Package                                           PosX       PosY       Rot  Side
+BT1       CR1220              batt_HARWIN_S8201-46R                          15.0000     6.0000  180.0000  bottom
+DISP1     OLED_Encoder        OLED_ENC3                                      35.0000    30.0000  180.0000  bottom
+C1        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    20.5000    44.2000    0.0000  top
+C2        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    26.0000    44.2000  180.0000  top
+C3        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    50.4000     7.0000  -90.0000  top
+C5        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    31.0000    45.6000  180.0000  top
+C6        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    34.3000     8.3000  180.0000  top
+C7        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    34.3000     6.2000  180.0000  top
+C8        100uF               CP_Elec_6.3x9.9                                45.1000     5.6000   90.0000  top
+C9        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    23.5000     2.2000    0.0000  top
+D1        B130                D_SMA                                          54.0000     4.8000  -90.0000  top
+J27       Barrel_Jack_Switch  BarrelJack_Horizontal                          59.8080     4.8425  180.0000  top
+M1        DYNAMIXEL_1         JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical          33.0000     3.0000    0.0000  top
+M2        DYNAMIXEL_2         JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical          33.0000    12.1000    0.0000  top
+Q1        DMG2305UX           SOT-23                                         54.0000    11.0000    0.0000  top
+R1        10k                 R_0805_2012Metric_Pad1.20x1.40mm_HandSolder    23.5000     4.7000    0.0000  top
+R2        10k                 R_0805_2012Metric_Pad1.20x1.40mm_HandSolder    23.5000     7.2000    0.0000  top
+R3        10k                 R_0805_2012Metric_Pad1.20x1.40mm_HandSolder    23.5000     9.7000    0.0000  top
+R4        10k                 R_0805_2012Metric_Pad1.20x1.40mm_HandSolder    14.0000    50.4000    0.0000  top
+R5        10k                 R_0805_2012Metric_Pad1.20x1.40mm_HandSolder    14.0000    46.9000    0.0000  top
+U1        Pico_2              RaspberryPi_Pico_SMD_HandSolder                36.1000    27.5000   90.0000  top
+U2        74LS126             SOIC-14_3.9x8.7mm_P1.27mm                      15.8000     7.2000  -90.0000  top
+U4        DS3232M             SOIC-8_3.9x4.9mm_P1.27mm                       20.0000    48.0000    0.0000  top
+## End
