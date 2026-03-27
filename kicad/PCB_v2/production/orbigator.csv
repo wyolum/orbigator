@@ -1,14 +1,14 @@
-"Id";"Designator";"Footprint";"Quantity";"Designation";"Supplier and ref";
-1;"BT1";"batt_HARWIN_S8201-46R";1;"CR1220";;;
-2;"C1, C2, C3, C5, C6, C7, C9";"C_0805_2012Metric_Pad1.18x1.45mm_HandSolder";7;"100nF";;;
-3;"C8";"CP_Elec_6.3x9.9";1;"100uF";;;
-4;"D1";"D_SMA";1;"B130";;;
-5;"DISP1";"OLED_ENC3";1;"OLED_Encoder";;;
-6;"J27";"BarrelJack_Horizontal";1;"Barrel_Jack_Switch";;;
-7;"M1";"JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical";1;"DYNAMIXEL_1";;;
-8;"M2";"JST_EH_B3B-EH-A_1x03_P2.50mm_Vertical";1;"DYNAMIXEL_2";;;
-9;"Q1";"SOT-23";1;"DMG2305UX";;;
-10;"R1, R2, R3, R4, R5";"R_0805_2012Metric_Pad1.20x1.40mm_HandSolder";5;"10k";;;
-11;"U1";"RaspberryPi_Pico_SMD_HandSolder";1;"Pico_2";;;
-12;"U2";"SOIC-14_3.9x8.7mm_P1.27mm";1;"74LS126";;;
-13;"U4";"SOIC-8_3.9x4.9mm_P1.27mm";1;"DS3232M";;;
+Id,Designator,Footprint,Quantity,Designation,Supplier and ref,,
+1,BT1,batt+AF8-HARWIN+AF8-S8201+AC0-46R,1,CR1220,C381116,,
+2,+ACI-C1, C2, C3, C5, C6, C7, C9+ACI-,C+AF8-0805+AF8-2012Metric+AF8-Pad1.18x1.45mm+AF8-HandSolder,7,100nF,C49678,,https://www.lcsc.com/product+AC0-detail/C49678.html?s+AF8-z+AD0-n+AF8-CC0805KRX7R9BB104
+3,C8,CP+AF8-Elec+AF8-6.3x9.9,1,100uF,C128532,,https://www.lcsc.com/product+AC0-detail/C128532.html
+4,D1,D+AF8-SMA,1,B130,C134423,,https://www.lcsc.com/product+AC0-detail/C134423.html?s+AF8-z+AD0-n+AF8-B130+AC0-13+AC0-F
+5,DISP1,OLED+AF8-ENC3,1,OLED+AF8-Encoder,,,
+6,J27,BarrelJack+AF8-Horizontal,1,Barrel+AF8-Jack+AF8-Switch,C381116,,https://www.lcsc.com/product+AC0-detail/C381116.html
+7,M1,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,DYNAMIXEL+AF8-1,C160259,,https://www.lcsc.com/product+AC0-detail/C160259.html?s+AF8-z+AD0-n+AF8-JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A
+8,M2,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,DYNAMIXEL+AF8-2,C160259,,https://www.lcsc.com/product+AC0-detail/C160259.html?s+AF8-z+AD0-n+AF8-JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A
+9,Q1,SOT+AC0-23,1,DMG2305UX,C150470,,https://www.lcsc.com/product+AC0-detail/C150470.html?s+AF8-z+AD0-n+AF8-DMG2305UX
+10,+ACI-R1, R2, R3, R4, R5+ACI-,R+AF8-0805+AF8-2012Metric+AF8-Pad1.20x1.40mm+AF8-HandSolder,5,10k,C84376,,https://www.lcsc.com/product+AC0-detail/C84376.html
+11,U1,RaspberryPi+AF8-Pico+AF8-SMD+AF8-HandSolder,1,Pico+AF8-2,,C41407547,https://jlcpcb.com/partdetail/RaspberryPi+AC0-Pico2/C41407547
+12,U2,SOIC+AC0-14+AF8-3.9x8.7mm+AF8-P1.27mm,1,74LS126,C7644,,https://www.lcsc.com/product+AC0-detail/C7644.html?s+AF8-z+AD0-n+AF8-SN74HC126DR
+13,U4,SOIC+AC0-8+AF8-3.9x4.9mm+AF8-P1.27mm,1,DS3232M,C2827535,,https://www.lcsc.com/product+AC0-detail/C2827535.html?s+AF8-z+AD0-n+AF8-DS3232M
