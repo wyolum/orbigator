@@ -1,4 +1,4 @@
-### Footprint positions - created on 2026-03-26T18:42:58 ###
+### Footprint positions - created on 2026-03-28T21:46:32 ###
 ### Printed by KiCad version 10.0.0-10.0.0~ubuntu24.04.1
 ## Unit = mm, Angle = deg.
 ## Side : All
@@ -8,7 +8,7 @@ DISP1     OLED_Encoder        OLED_ENC3                                      35.
 C1        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    20.5000    44.2000    0.0000  top
 C2        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    26.0000    44.2000  180.0000  top
 C3        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    50.4000     7.0000  -90.0000  top
-C5        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    31.0000    45.6000  180.0000  top
+C5        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    31.0000    44.2000  180.0000  top
 C6        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    34.3000     8.3000  180.0000  top
 C7        100nF               C_0805_2012Metric_Pad1.18x1.45mm_HandSolder    34.3000     6.2000  180.0000  top
 C8        100uF               CP_Elec_6.3x9.9                                45.1000     5.6000   90.0000  top
