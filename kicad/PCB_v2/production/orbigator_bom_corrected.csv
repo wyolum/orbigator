@@ -1,0 +1,14 @@
+Designator,Footprint,Quantity,LCSC Part,Value,JLCPCB Part ,LINK
+BT1,batt+AF8-HARWIN+AF8-S8201+AC0-46R,1,C6214863,CR1220,,https://www.lcsc.com/product+AC0-detail/C6214863.html
+"C1,C2,C3,C5,C6,C7,C9",805,7,C49678,100nF,,https://www.lcsc.com/product+AC0-detail/C49678.html
+C8,D6.3xL5.8mm+ACI-,1,C178540,100uF,,https://www.lcsc.com/product+AC0-detail/C178540.html
+D1,D+AF8-SMA,1,C134423,B130,,https://www.lcsc.com/product+AC0-detail/C134423.html
+DISP1,OLED+AF8-ENC3,1,C2897372,OLED+AF8-Encoder,,https://www.lcsc.com/product+AC0-detail/C2897372.html
+J27,BarrelJack+AF8-Horizontal,1,C381116,Barrel+AF8-Jack+AF8-Switch,,https://www.lcsc.com/product+AC0-detail/C381116.html
+M1,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,C160259,DYNAMIXEL+AF8-1,,https://www.lcsc.com/product+AC0-detail/C160259.html
+M2,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,C160259,DYNAMIXEL+AF8-2,,https://www.lcsc.com/product+AC0-detail/C160259.html
+Q1,SOT+AC0-23,1,C150470,DMG2305UX,,https://www.lcsc.com/product+AC0-detail/C150470.html
+"R1,R2,R3,R4,R5",805,5,C84376,10k,,https://www.lcsc.com/product+AC0-detail/C84376.html
+U1,RaspberryPi+AF8-Pico+AF8-SMD+AF8-HandSolder,1,,Pico+AF8-2,C41407547,https://jlcpcb.com/partdetail/RaspberryPi+AC0-Pico2/C41407547
+U2,SOIC+AC0-14+AF8-3.9x8.7mm+AF8-P1.27mm,1,C7644,74LS126,,https://www.lcsc.com/product+AC0-detail/C7644.html
+U4,SOIC+AC0-8+AF8-3.9x4.9mm+AF8-P1.27mm,1,C2827535,DS3232M,,https://www.lcsc.com/product+AC0-detail/C2827535.html
