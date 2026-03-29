@@ -1,14 +1,14 @@
-Designator,Footprint,Quantity,Value,LCSC Part +ACM-,JLCPCB Part +ACM-,LINK
-BT1,batt+AF8-HARWIN+AF8-S8201+AC0-46R,1,CR1220,C6214863,,https://www.lcsc.com/product+AC0-detail/C6214863.html
-+ACI-C1, C2, C3, C5, C6, C7, C9+ACI-,805,7,100nF,C49678,,https://www.lcsc.com/product+AC0-detail/C49678.html
-C8,+ACI-SMD,D6.3xL5.8mm+ACI-,1,100uF,C178540,,https://www.lcsc.com/product+AC0-detail/C178540.html
+Designator,Footprint,Quantity,Value,LCSC Part #,JLCPCB Part #,LINK
+BT1,batt+AF8-HARWIN+AF8-S8201+AC0-46R,1,CR1220,C6214863,,https://www.lcsc.com/product+AC0-detail/C6214863.html, DNP
+"C1, C2, C3, C5, C6, C7, C9",805,7,100nF,C49678,,https://www.lcsc.com/product+AC0-detail/C49678.html
+C8,"SMD,D6.3xL5.8mm",1,100uF,C178540,,https://www.lcsc.com/product+AC0-detail/C178540.html
 D1,D+AF8-SMA,1,B130,C134423,,https://www.lcsc.com/product+AC0-detail/C134423.html
 DISP1,OLED+AF8-ENC3,1,OLED+AF8-Encoder,C2897372,,https://www.lcsc.com/product+AC0-detail/C2897372.html
 J27,BarrelJack+AF8-Horizontal,1,Barrel+AF8-Jack+AF8-Switch,C381116,,https://www.lcsc.com/product+AC0-detail/C381116.html
 M1,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,DYNAMIXEL+AF8-1,C160259,,https://www.lcsc.com/product+AC0-detail/C160259.html
 M2,JST+AF8-EH+AF8-B3B+AC0-EH+AC0-A+AF8-1x03+AF8-P2.50mm+AF8-Vertical,1,DYNAMIXEL+AF8-2,C160259,,https://www.lcsc.com/product+AC0-detail/C160259.html
-Q1,SOT+AC0-23,1,DMG2305UX,C150470,,https://www.lcsc.com/product+AC0-detail/C150470.html
-+ACI-R1, R2, R3, R4, R5+ACI-,805,5,10k,C84376,,https://www.lcsc.com/product+AC0-detail/C84376.html
-U1,RaspberryPi+AF8-Pico+AF8-SMD+AF8-HandSolder,1,Pico+AF8-2,,C41407547,https://jlcpcb.com/partdetail/RaspberryPi+AC0-Pico2/C41407547
-U2,SOIC+AC0-14+AF8-3.9x8.7mm+AF8-P1.27mm,1,74LS126,C7644,,https://www.lcsc.com/product+AC0-detail/C7644.html
-U4,SOIC+AC0-8+AF8-3.9x4.9mm+AF8-P1.27mm,1,DS3232M,C2827535,,https://www.lcsc.com/product+AC0-detail/C2827535.html
+Q1,SOT+AC0-23,1,DMG2305UX,C2940629,,https://www.lcsc.com/product-detail/C2940629.html?s_z=n_DMG2305UX
+"R1, R2, R3, R4, R5",805,5,10k,C84376,,https://www.lcsc.com/product+AC0-detail/C84376.html
+U1,RaspberryPi_Pico_SMD_HandSolder,1,Pico_2,,C41407547,https://jlcpcb.com/partdetail/RaspberryPi+AC0-Pico2/C41407547, DNP
+U2,SOIC+AC0-14_3.9x8.7mm_P1.27mm,1,74LS126,C7644,,https://www.lcsc.com/product+AC0-detail/C7644.html
+U4,SOIC+AC0-8_3.9x4.9mm_P1.27mm,1,DS3232M,C2827535,,https://www.lcsc.com/product+AC0-detail/C2827535.html
