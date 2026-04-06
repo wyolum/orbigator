@@ -539,3 +539,4 @@ if(false){
 }
 
 //translate([100,0,-220])orbigator_board();
+translate([0,0,100])Ring();

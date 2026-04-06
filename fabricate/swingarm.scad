@@ -2,7 +2,7 @@ inch = 25.4;
 
 L = 1.5 * inch;
 H = 10;
-W = 6;
+W = 11;
 
 // coil_spring.scad
 // OpenSCAD parametric compression spring with "full-circle" end turns.
@@ -82,7 +82,7 @@ module swingarm1(){
       cylinder(d=18, h=6.5, center=true, $fn=30);
       cylinder(d=8, h=7.5, center=true, $fn=30);
     }
-    translate([L/2, 0, 0])cylinder(d=18, h=5., center=true, $fn=30);
+    translate([L/2, 0, 0])cylinder(d=18, h=5.5, center=true, $fn=30);
     translate([L/2, 0, 0])cylinder(d=3.5, h=H+2, center=true, $fn=30);
     translate([-L/2, 0, 0])cylinder(d=3.5, h=H+2, center=true, $fn=30);
     translate([0,-1.5,0])rotate([90,0,0])cylinder(d=6, h=10, $fn=30);
@@ -101,9 +101,11 @@ module bearing(){
 }
 
 module swingarm(){
-  translate([0,37.5,0]){
-    swingarm1();
-    //translate([L/2, 0, -2.5])bearing();
+  intersection(){
+    translate([0,37.5,0]){
+      swingarm1();
+      //translate([L/2, 0, -2.5])bearing();
+    }
   }
 }
 module base(){
@@ -139,5 +141,8 @@ module swingarms(){
   }
 }
 //static_parts();
-rotate([90, 0, 0])swingarm();
-
+//rotate([90, 0, 0])swingarm();
+intersection(){
+  swingarm();
+  cylinder(d=90, h=10, center=true);
+}
