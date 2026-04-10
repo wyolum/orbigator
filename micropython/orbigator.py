@@ -213,9 +213,9 @@ if ENABLE_MOTORS:
     g.aov_motor = aov_motor
     
     # EQX: SRAM Slot 0 (starts at 0x80)
-    # Direction None = Shortest Path
+    # Direction -1 = Reverse Only
     eqx_motor = AbsoluteDynamixel(EQX_MOTOR_ID, g.rtc, gear_ratio=EQX_GEAR_RATIO, 
-                                  sram_slot=0, offset_degrees=eqx_offset, direction=None)
+                                  sram_slot=0, offset_degrees=eqx_offset, direction=-1)
     eqx_motor.name = "EQX"
     g.eqx_motor = eqx_motor
     
@@ -343,10 +343,20 @@ if ENABLE_MOTORS and g.current_mode_id != "DATETIME":
         
         # Check delta using phase-aware logic
         # target_aov is already normalized to % 360 in the mode update
-        err_aov = abs((now_aov - target_aov + 180) % 360 - 180)
-        err_eqx = abs((now_eqx - target_eqx + 180) % 360 - 180)
+        shortest_aov = ((target_aov - now_aov) + 180) % 360 - 180
+        shortest_eqx = ((target_eqx - now_eqx) + 180) % 360 - 180
         
-        if err_aov < 1.0 and err_eqx < 1.0:
+        err_aov = abs(shortest_aov)
+        err_eqx = abs(shortest_eqx)
+        
+        def check_aligned(err, shortest, motor):
+            if err < 1.0: return True
+            d = getattr(motor, 'direction', None) or 0
+            if d > 0 and -20.5 < shortest < 0.0: return True  # Forward only deadband
+            if d < 0 and 0.0 < shortest < 20.5: return True   # Reverse only deadband
+            return False
+            
+        if check_aligned(err_aov, shortest_aov, aov_motor) and check_aligned(err_eqx, shortest_eqx, eqx_motor):
             aligned = True
             print("✓ Sync Complete.")
         else:
@@ -439,3 +449,4 @@ finally:
     print("\nOrbigator Exiting... Saving State.")
     utils.save_state()
     print("State Saved. Goodbye.")
+    

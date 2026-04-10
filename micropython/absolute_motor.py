@@ -295,16 +295,29 @@ class AbsoluteDynamixel:
         self._command(target_ticks)
 
     def mod_goto(self, mod_deg):
-        """Shortest path move to mod coordinate."""
+        """Shortest path move to mod coordinate, respecting direction constraint."""
         current_deg = self.position_deg
         
         target = mod_deg % 360
         current_mod = current_deg % 360
         
-        delta = ((target - current_mod) + 180) % 360 - 180
+        change = target - current_mod
+        shortest_delta = (change + 180) % 360 - 180
         
-        # Direction preference override? (Optional)
-        # If needed, implement 'direction' check here.
+        if self.direction is None or self.direction == 0:
+            delta = shortest_delta
+        elif self.direction > 0:
+            # Deadband: if target is slightly behind (noise/sync), don't spin 360. Just stay.
+            if -20.0 < shortest_delta < 0.0:
+                delta = 0.0
+            else:
+                delta = change % 360
+        else: # self.direction < 0
+            # Deadband: if target is slightly ahead, don't spin -360. Just stay.
+            if 0.0 < shortest_delta < 20.0:
+                delta = 0.0
+            else:
+                delta = change % 360 - 360
         
         self.goto(current_deg + delta)
 

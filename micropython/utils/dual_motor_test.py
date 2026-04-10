@@ -102,12 +102,12 @@ for mid in MOTOR_IDS:
 # Set slow speed limit on both
 print(f"Setting speed limit to {VELOCITY} on both motors...")
 for mid, m in motors.items():
-    m.set_speed_limit(velocity=VELOCITY)
+    m.set_speed_limit(speed_percent=VELOCITY)
 
 # Read current positions (degrees) for both
 start_pos = {}
 for mid, m in motors.items():
-    pos = m.get_angle_degrees()
+    pos = m.update_position()
     if pos is None:
         print(f"Failed to read current position for motor {mid}")
         raise RuntimeError(f"Motor {mid} communication failed")
@@ -174,8 +174,8 @@ try:
         update_display(rev, targets)
 
         # Command BOTH motors first (so they move together)
-        ok1 = motors[1].set_angle_degrees(targets[1])
-        ok2 = motors[2].set_angle_degrees(targets[2])
+        ok1 = motors[1]._write_goal(targets[1])
+        ok2 = motors[2]._write_goal(targets[2])
         if not (ok1 and ok2):
             print(f"Failed to set goal position (ok1={ok1}, ok2={ok2})")
             break
@@ -200,8 +200,8 @@ try:
                 if paused:
                     print("  ⏸ PAUSED - Press BACK or CONFIRM to resume")
                     # Stop motors by setting current position as target
-                    motors[1].set_angle_degrees(motors[1].get_angle_degrees())
-                    motors[2].set_angle_degrees(motors[2].get_angle_degrees())
+                    motors[1]._write_goal(motors[1].update_position())
+                    motors[2]._write_goal(motors[2].update_position())
                     if HAS_DISPLAY:
                         display.fill(0)
                         display.text("PAUSED", 32, 16)
@@ -211,8 +211,8 @@ try:
                 else:
                     print("  ▶ RESUMED")
                     # Resume by re-commanding the original targets
-                    motors[1].set_angle_degrees(targets[1])
-                    motors[2].set_angle_degrees(targets[2])
+                    motors[1]._write_goal(targets[1])
+                    motors[2]._write_goal(targets[2])
                 time.sleep(0.3)  # Debounce delay
             
             # Check encoder switch for direction reversal
@@ -224,8 +224,8 @@ try:
                 targets[1] = start_pos[1] + (rev * DEGREES_PER_REV * direction)
                 targets[2] = start_pos[2] - (rev * DEGREES_PER_REV * direction)
                 # Re-command motors with new targets
-                motors[1].set_angle_degrees(targets[1])
-                motors[2].set_angle_degrees(targets[2])
+                motors[1]._write_goal(targets[1])
+                motors[2]._write_goal(targets[2])
                 if HAS_DISPLAY:
                     display.fill(0)
                     display.text("Direction:", 16, 16)
@@ -242,8 +242,8 @@ try:
                 time.sleep(0.1)
                 continue
 
-            pos1 = motors[1].get_angle_degrees()
-            pos2 = motors[2].get_angle_degrees()
+            pos1 = motors[1].update_position()
+            pos2 = motors[2].update_position()
 
             if pos1 is None or pos2 is None:
                 print("Lost communication with one or both motors!")
@@ -278,8 +278,8 @@ try:
     print()
     print("=" * 60)
     print("Test Complete!")
-    final1 = motors[1].get_angle_degrees()
-    final2 = motors[2].get_angle_degrees()
+    final1 = motors[1].update_position()
+    final2 = motors[2].update_position()
     print(f"Final position motor 1: {final1}°")
     print(f"Final position motor 2: {final2}°")
     print("=" * 60)
@@ -298,8 +298,8 @@ except KeyboardInterrupt:
     print()
     print("=" * 60)
     print("Test stopped by user")
-    final1 = motors[1].get_angle_degrees()
-    final2 = motors[2].get_angle_degrees()
+    final1 = motors[1].update_position()
+    final2 = motors[2].update_position()
     if final1 is not None and final2 is not None:
         print(f"Final position motor 1: {final1}° (Δ{final1 - start_pos[1]:.1f}°)")
         print(f"Final position motor 2: {final2}° (Δ{final2 - start_pos[2]:.1f}°)")

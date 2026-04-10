@@ -37,11 +37,13 @@ wifi_setup.py
 web/index.html
 
 # Demos
-demo_eqx_negative.py
-demo_eqx_recovery.py
+demos/demo_eqx_negative.py
+demos/demo_eqx_recovery.py
 
 # Data & Config
 orbigator_config.json
+world.dat
+world_mask.bin
 
 # Directories
 [DIRS]

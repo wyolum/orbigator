@@ -325,7 +325,7 @@ class OrbitMode(Mode):
         self.initialized = True
         
         # Calculate where we SHOULD be right now
-        target_aov, target_eqx = self.propagator.get_aov_eqx(utils.get_timestamp())
+        target_aov, target_eqx, self.lat_deg, self.lon_deg = self.propagator.get_aov_eqx(utils.get_timestamp())
         
         print(f"Orbit Init (Abs Time): Target AoV={target_aov:.1f}, EQX={target_eqx:.1f}")
         
@@ -725,7 +725,16 @@ class HomingMode(Mode):
         if g.eqx_motor:
             # Avoid unwinding: Find nearest whole turn logical zero
             curr = g.eqx_motor.position_deg
-            self.base_angle = round(curr / 360.0) * 360.0
+            
+            # Select base angle using allowed direction
+            if getattr(g.eqx_motor, 'direction', None) == 1:
+                # Forward only, use ceiling
+                self.base_angle = float(-((-curr) // 360) * 360)
+            elif getattr(g.eqx_motor, 'direction', None) == -1:
+                # Reverse only, use floor
+                self.base_angle = float((curr // 360) * 360)
+            else:
+                self.base_angle = round(curr / 360.0) * 360.0
             
             print(f"Calibrate Zero: Raw={curr:.1f} BaseImplied={self.base_angle:.1f} Off={g.eqx_motor.offset_degrees:.2f}")
             g.eqx_motor.goto(self.base_angle)
@@ -751,6 +760,16 @@ class HomingMode(Mode):
         """
         if g.eqx_motor:
             d = self.nudge_manager.get_delta(delta)
+            
+            # Enforce physical direction limits while jogging
+            direct = getattr(g.eqx_motor, 'direction', None)
+            if direct == 1 and d < 0:
+                print("Cannot jog backwards (Forward Only motor)")
+                d = 0
+            elif direct == -1 and d > 0:
+                print("Cannot jog forwards (Reverse Only motor)")
+                d = 0
+                
             self.jog_val += d
             g.eqx_motor.goto(self.base_angle + self.jog_val)
             
